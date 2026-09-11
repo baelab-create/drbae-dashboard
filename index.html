@@ -411,7 +411,7 @@ body.sheet-open .sheet-handle .hc{transform:rotate(45deg)}
 .rp-head{display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:6px}
 .rp-head h2{font-size:21px;font-weight:800;letter-spacing:-.02em}
 .badge{font-size:10.5px;font-weight:800;padding:4px 9px;border-radius:12px;align-self:center}
-.pf-bar{display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:8px 12px 2px}
+.pf-bar{display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:10px 0 4px}
 .pf{border:1px solid #DFDCD2;background:#fff;border-radius:12px;padding:3px 10px;font-size:11.5px;font-weight:700;cursor:pointer;color:#41565F}
 .pf.on{background:#16262E;color:#fff;border-color:#16262E}
 #pf-partner{border:1px solid #DFDCD2;border-radius:12px;padding:3px 8px;font-size:11.5px;background:#fff;max-width:170px}
@@ -814,6 +814,7 @@ body.pg-mb{--accent:#1B2333;--accent-deep:#0F1420;--accent-soft:#E7E9EF}
   <nav class="tabs">
     <button class="tab on" data-pg="status">현황</button>
     <button class="tab" data-pg="map">지도</button>
+    <button class="tab" data-pg="rank">납품처 목록</button>
     <button class="tab" data-pg="report">샵 리포트</button>
     <button class="tab" data-pg="newshop">신규샵 위치 리포트</button>
     <button class="tab" data-pg="mb">마이크로 블랙</button>
@@ -925,12 +926,6 @@ body.pg-mb{--accent:#1B2333;--accent-deep:#0F1420;--accent-soft:#E7E9EF}
       <section class="sec" id="sec-shops">
         <button class="sec-h"><span class="chev2"></span><span class="t">지역별 납품처</span></button>
         <div class="sec-b">
-          <div class="pf-bar" id="pf-bar">
-            <button class="pf on" data-pf="">전체</button>
-            <button class="pf" data-pf="__direct">본사 직거래</button>
-            <select id="pf-partner"><option value="">파트너 선택…</option></select>
-            <span class="pf-cnt" id="pf-cnt"></span>
-          </div>
           <div class="search"><input id="q" type="text" placeholder="상호명 · 지역 검색"></div>
           <div class="list" id="list"></div>
         </div>
@@ -1041,6 +1036,13 @@ body.pg-mb{--accent:#1B2333;--accent-deep:#0F1420;--accent-soft:#E7E9EF}
       <button class="rksort" data-s="total">기간 누적순</button>
       <button class="rksort" data-s="recent" title="다시 누르면 최근↔오래된 순서 전환">최근 주문순 <span class="rkdir" id="rkdir">↓</span></button>
       <input id="rk-q" class="rk-search" type="text" placeholder="🔍 샵 검색">
+    </div>
+    <div class="pf-bar" id="pf-bar">
+      <span style="font-size:11.5px;color:#7A8B93;font-weight:700">관리 구분</span>
+      <button class="pf on" data-pf="">전체</button>
+      <button class="pf" data-pf="__direct">본사 직거래</button>
+      <select id="pf-partner"><option value="">파트너 선택…</option></select>
+      <span class="pf-cnt" id="pf-cnt"></span>
     </div>
     <div class="rk-cards" id="rk-cards"></div>
   </div>
@@ -2312,7 +2314,7 @@ function buildRank(){
   const cards=document.getElementById('rk-cards');
   if(!SHOPS.length){ box.innerHTML='<p class="hint" style="padding:20px">데이터를 업로드하면 표시됩니다.</p>'; cards.innerHTML=''; return; }
   const rq=(document.getElementById('rk-q').value||'').trim().toLowerCase();
-  const arr=SHOPS.filter(s=>!rq||(s.shop+s.sido+s.sigungu).toLowerCase().includes(rq));
+  const arr=SHOPS.filter(s=>pfOK(s)&&(!rq||(s.shop+s.sido+s.sigungu).toLowerCase().includes(rq)));
   if(!arr.length){ box.innerHTML='<p class="hint" style="padding:20px">검색 결과가 없습니다.</p>'; cards.innerHTML=''; return; }
   if(rankSort==='annual')      arr.sort((a,b)=>(b.y1||0)-(a.y1||0)||b.total-a.total);
   else if(rankSort==='total')  arr.sort((a,b)=>b.total-a.total);
@@ -2370,10 +2372,10 @@ function buildRank(){
       val=`<b>${money>0?fmt(money)+'원':'–'}</b><small>${pill}</small>`;
     }
     b.innerHTML=`<span class="rknum">${rank}</span>
-      <span class="rkinfo"><span class="rkname">${s.shop}</span><span class="rkreg">${s.sido} ${s.sigungu}</span></span>
+      <span class="rkinfo"><span class="rkname">${s.shop}${ptag(s)}</span><span class="rkreg">${s.sido} ${s.sigungu}</span></span>
       ${barHtml}
       <span class="rkval">${val}</span>`;
-    b.onclick=()=>{ switchPage('report'); selectReport(s._i); };
+    b.onclick=(e)=>{ if(e.target.closest('.ptag')) return; switchPage('report'); selectReport(s._i); };
     box.appendChild(b);
   });
 }
@@ -3080,7 +3082,7 @@ document.getElementById('pf-partner').addEventListener('change',e=>{
   e.target.classList.toggle('on',!!pfMode); if(!pfMode) document.querySelector('.pf[data-pf=""]').classList.add('on');
   applyPf();
 });
-function applyPf(){ try{ applyFilters(false); }catch(e){ buildList(); } }
+function applyPf(){ try{ applyFilters(false); }catch(e){ buildList(); } try{ buildRank(); }catch(e){} }
 // 배지 클릭 → 파트너 거래처에 연결(별칭) 팝오버
 document.addEventListener('click',e=>{
   const t=e.target.closest('.ptag'); const pop=document.getElementById('asg');
@@ -3129,7 +3131,7 @@ async function initData(){
   try{ await loadPartners(); }catch(e){ console.error(e); toast('파트너 목록을 불러오지 못했습니다'); }
   if(!remote){ document.getElementById('upov').style.display='flex'; return; }
   setData(remote.shops,remote.products,remote.meta,remote.label,remote.diag,remote.days);
-  computeAssign(); buildList();
+  computeAssign(); buildList(); try{ buildRank(); }catch(e){}
   toast('게시 데이터를 불러왔습니다 ('+remote.label.split(' · ')[0].replace('게시 데이터 ','')+')');
 }
 
