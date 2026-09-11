@@ -1,0 +1,3138 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>닥터배 대시보드</title>
+<meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="no-referrer">
+<meta name="description" content="전국 닥터배 협약 피부·두피 관리샵 분포 현황.">
+<!-- Open Graph (인스타 DM · 카카오톡 · 페이스북 링크 미리보기용) -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="DR.BAE × BAELAB">
+<meta property="og:locale" content="ko_KR">
+<meta property="og:url" content="https://baelab-create.github.io/drbae-map/">
+<meta property="og:title" content="닥터배 납품처 분포 지도">
+<meta property="og:description" content="전국 닥터배 협약 피부·두피 관리샵 분포 현황.">
+<meta property="og:image" content="https://baelab-create.github.io/drbae-map/og.jpg">
+<meta property="og:image:secure_url" content="https://baelab-create.github.io/drbae-map/og.jpg">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="닥터배 납품처 분포 지도">
+<!-- Twitter / X -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="닥터배 납품처 분포 지도">
+<meta name="twitter:description" content="전국 닥터배 협약 피부·두피 관리샵 분포 현황.">
+<meta name="twitter:image" content="https://baelab-create.github.io/drbae-map/og.jpg">
+
+
+<!-- ============================================================
+     [설정] KAKAO_KEY = 카카오 developers → 앱 → 플랫폼 키 → JavaScript 키
+     · 카카오 콘솔 [플랫폼 → Web → 사이트 도메인]에 배포 도메인 등록 필요
+     · [제품 설정 → 카카오맵 → 사용 설정 ON] 필요
+     ============================================================ -->
+<script>
+  const KAKAO_KEY = "c17fc06160320aad6520ed199509ed36";
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="core.js?v=1"></script>
+
+<link rel="stylesheet" as="style" crossorigin
+  href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+
+<style>
+:root{
+  --paper:#F6F7FB; --panel:#FFFFFF; --ink:#1B2333; --mute:#6B7480;
+  --line:#E4E7EF; --line2:#EEF1F6;
+  /* 기능색: 지도/브랜드=인디고, 순위=틸, 리포트=바이올렛, 경고/휴면=앰버 */
+  --indigo:#3B5BDB; --indigo-deep:#2C3E9E; --indigo-soft:#EAEEFB;
+  --teal:#0C8599; --teal-deep:#0A6E80; --teal-soft:#E3F3F5;
+  --violet:#7048E8; --violet-deep:#5936C4; --violet-soft:#EFEAFC;
+  --amber:#E8863B; --amber-deep:#C26A22; --amber-soft:#FBEEDF;
+  --green:#2F9E44; --rose:#E64980;
+  /* accent = 기본(지도/브랜드) */
+  --accent:#3B5BDB; --accent-deep:#2C3E9E; --accent-soft:#EAEEFB;
+  --warn:#E8863B;
+  --blue:#0C8599; --blue-deep:#0A6E80; --blue-soft:#E3F3F5;
+  --shadow:0 1px 2px rgba(27,35,51,.05),0 8px 28px rgba(27,35,51,.09);
+  --mono:'JetBrains Mono',ui-monospace,'SFMono-Regular',Menlo,Consolas,monospace;
+}
+body.pg-rank{--accent:var(--teal);--accent-deep:var(--teal-deep);--accent-soft:var(--teal-soft)}
+body.pg-report{--accent:var(--violet);--accent-deep:var(--violet-deep);--accent-soft:var(--violet-soft)}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:'Pretendard Variable',Pretendard,system-ui,sans-serif;
+  color:var(--ink); background:var(--paper);
+  display:flex; flex-direction:column; height:100vh; overflow:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* ---------- header ---------- */
+header{
+  flex:0 0 auto; display:flex; align-items:center; gap:22px;
+  padding:13px 24px; background:var(--panel); border-bottom:1px solid var(--line); z-index:20;
+}
+.brand{display:flex; align-items:baseline; gap:10px}
+.brand .leaf{
+  width:26px;height:26px;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,#E0625E,var(--accent-deep));
+  align-self:center; box-shadow:0 0 0 4px var(--accent-soft);
+}
+.brand h1{font-size:18px;font-weight:800;letter-spacing:-.02em}
+.brand span{font-size:12.5px;color:var(--mute);font-weight:500}
+.stats{display:flex; gap:26px; margin-left:auto}
+.stat{display:flex; flex-direction:column; align-items:flex-end}
+.stat b{font-family:var(--mono);font-size:19px;font-weight:600;line-height:1}
+.stat small{font-size:11px;color:var(--mute);margin-top:3px}
+
+body.mj{--accent:#E03131;--accent-deep:#B02525;--accent-soft:#FDECEC}
+body.mj .brand .leaf{background:radial-gradient(circle at 35% 30%,#F08080,#B02525)}
+body.mj .region-bar i{background:linear-gradient(90deg,#F08A8A,#B02525)}
+
+/* ---------- layout ---------- */
+.wrap{flex:1 1 auto; display:flex; min-height:0}
+aside{flex:0 0 340px; background:var(--panel); border-right:1px solid var(--line);
+  display:flex; flex-direction:column; min-height:0}
+.sbwrap{flex:1 1 auto;overflow-y:auto;min-height:0}
+.sbwrap::-webkit-scrollbar{width:9px}
+.sbwrap::-webkit-scrollbar-thumb{background:#E3D2D2;border-radius:9px;border:2px solid var(--panel)}
+
+.sec{border-bottom:1px solid var(--line2)}
+.sec-h{display:flex;align-items:center;gap:9px;width:100%;padding:13px 16px;background:none;border:none;
+  cursor:pointer;font-family:inherit;color:var(--ink);text-align:left}
+.sec-h:hover{background:#F7F8FC}
+.sec-h .t{font-size:12.5px;font-weight:800;letter-spacing:-.01em}
+#sec-summary .sec-h .t{box-shadow:-13px 0 0 var(--indigo);padding-left:3px}
+#sec-prod .sec-h .t{box-shadow:-13px 0 0 var(--violet);padding-left:3px}
+#sec-dorm .sec-h .t{box-shadow:-13px 0 0 var(--amber);padding-left:3px}
+#sec-shops .sec-h .t{box-shadow:-13px 0 0 var(--teal);padding-left:3px}
+.sec-h .sec-tag{margin-left:auto;font-family:var(--mono);font-size:10.5px;color:var(--mute);font-weight:600}
+.sec-h .chev2{width:8px;height:8px;border-right:2px solid var(--mute);border-bottom:2px solid var(--mute);
+  transform:rotate(45deg);transition:transform .18s;flex:0 0 auto;margin-right:1px}
+.sec.collapsed .chev2{transform:rotate(-45deg)}
+.sec.collapsed .sec-b{display:none}
+.sec-b{padding-bottom:10px}
+
+.sumgrid{padding:2px 16px 4px}
+.sumrow{display:flex;align-items:baseline;justify-content:space-between;padding:6px 0;border-top:1px solid var(--line2)}
+.sumrow:first-child{border-top:none}
+.sumrow span{font-size:11.5px;color:var(--mute);font-weight:600}
+.sumrow b{font-family:var(--mono);font-size:13px;font-weight:600}
+.sumrow.tot b{font-size:14.5px;color:var(--accent-deep)}
+/* ── 현황 탭 ── */
+.stpage{flex-direction:column;overflow-y:auto;background:var(--paper)}
+.st-inner{width:100%;max-width:760px;margin:0 auto;padding:26px 20px 40px}
+.st-range{font-size:13px;color:var(--mute);font-weight:600;margin-bottom:16px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.st-range b{color:var(--ink);font-family:var(--mono);font-weight:700}
+.st-file{margin-left:auto;font-size:11px;color:var(--mute);font-weight:500}
+.st-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px}
+.st-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px;display:flex;flex-direction:column;gap:8px}
+.st-card .k{font-size:11.5px;color:var(--mute);font-weight:700;letter-spacing:.03em}
+.st-card b{font-size:24px;font-weight:800;color:var(--ink);font-family:var(--mono);letter-spacing:-.01em}
+.st-card.tot{background:#1B2333;border-color:#1B2333}
+.st-card.tot .k{color:#AEB6C6}
+.st-card.tot b{color:#fff}
+.stpage .qual{margin:0}
+.stpage .hint{font-size:11.5px;color:var(--mute)}
+/* 현황 대시보드 */
+.st-inner{max-width:1060px}
+.st-grid.kpi2{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.st-card.kpi{position:relative;overflow:hidden}
+.st-card .k small{font-weight:600;color:var(--mute);opacity:.85;margin-left:4px}
+.st-card.kpi b{font-size:27px}
+.delta{font-size:12px;font-weight:700;font-family:var(--mono)}
+.delta.up{color:#1F7A33}
+.delta.dn{color:#C0392B}
+.delta.flat{color:var(--mute)}
+.spark{position:absolute;right:14px;bottom:12px;width:120px;height:38px;opacity:.9}
+.spark svg{display:block;width:100%;height:100%}
+.st-panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:16px;min-width:0}
+.st-panel h3{font-size:13px;font-weight:800;color:var(--ink)}
+.st-panel h3 small{font-size:10.5px;font-weight:600;color:var(--mute);margin-left:6px}
+.st-ph{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px;flex-wrap:wrap}
+.seg{display:flex;gap:4px;background:var(--paper);border:1px solid var(--line);border-radius:9px;padding:3px}
+.seg button{padding:5px 14px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;
+  background:none;border:none;border-radius:7px;color:var(--mute)}
+.seg button.on{background:var(--accent);color:#fff}
+.st-chart{position:relative;min-height:200px}
+.st-chart svg{display:block;width:100%;height:auto}
+.st-chart.sm{min-height:150px}
+.st-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:16px;margin-bottom:16px}
+.st-cols .st-panel{margin-bottom:0}
+.st-cols h3{margin-bottom:10px}
+.hbars{display:flex;flex-direction:column;gap:7px}
+.hbar{display:grid;grid-template-columns:96px 1fr 64px;align-items:center;gap:8px;font-size:11.5px}
+.hbar .hl{font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hbar .ht{height:14px;background:var(--line2);border-radius:0 4px 4px 0;overflow:hidden}
+.hbar .ht i{display:block;height:100%;background:var(--accent);border-radius:0 4px 4px 0;min-width:2px}
+.hbar .hv{font-family:var(--mono);font-size:10.5px;font-weight:600;color:var(--mute);text-align:right;white-space:nowrap}
+.ttip{position:absolute;z-index:20;pointer-events:none;display:none;background:var(--ink);color:#fff;
+  border-radius:8px;padding:7px 10px;font-size:11px;line-height:1.5;box-shadow:var(--shadow);white-space:nowrap}
+.ttip b{font-family:var(--mono);font-weight:700}
+.ttip .td{color:#AEB6C6;font-size:10px}
+
+.qual{margin:6px 16px 4px;padding:10px 12px;background:#F4F9F5;border:1px solid #D6EBDB;border-radius:10px}
+.qual-t{font-size:10.5px;font-weight:800;color:#217A33;margin-bottom:6px;letter-spacing:.02em}
+.qrow{display:flex;justify-content:space-between;font-size:11px;color:var(--mute);padding:3px 0}
+.qrow b{font-family:var(--mono);font-weight:600;color:var(--ink)}
+.qrow.warnq b{color:var(--amber-deep)}
+
+.dormsw{display:flex;gap:6px;padding:0 16px 4px}
+.dbtn{flex:1;padding:9px 8px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;
+  border:1px solid var(--line);border-radius:9px;background:#FDFAFA;color:var(--mute)}
+.dbtn b{font-family:var(--mono);font-weight:600;margin-left:3px}
+.dbtn:hover{border-color:var(--amber);color:var(--amber-deep)}
+.dbtn.on{background:var(--amber);border-color:var(--amber);color:#fff}
+
+.dorm-sort{color:var(--amber-deep);padding:8px 16px 3px;font-size:10.5px;color:var(--mute);font-weight:700;letter-spacing:.03em}
+.ditem{display:flex;align-items:center;gap:9px;width:100%;padding:7px 16px;background:none;border:none;
+  cursor:pointer;font-family:inherit;text-align:left;color:var(--ink)}
+.ditem:hover{background:var(--amber-soft)}
+.ditem .dd{width:8px;height:8px;border-radius:50%;background:var(--amber);flex:0 0 auto;opacity:.85}
+.ditem .dtx{flex:1 1 auto;min-width:0}
+.ditem .dn{font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.ditem .dr{font-size:10.5px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.ditem .dl{flex:0 0 auto;text-align:right}
+.ditem .dl b{display:block;font-family:var(--mono);font-size:11px;font-weight:600;color:var(--amber-deep)}
+.ditem .dl small{display:block;font-family:var(--mono);font-size:9.5px;color:var(--mute)}
+
+.prod-head{display:flex;align-items:center;padding:2px 16px 8px}
+.prod-head .lb{font-size:10.5px;color:var(--mute);font-weight:700;letter-spacing:.03em}
+.prod-head button{margin-left:auto;font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;
+  background:none;border:1px solid var(--line);border-radius:7px;padding:3px 8px;color:var(--mute)}
+.prod-head button:hover{border-color:var(--accent);color:var(--accent)}
+.pgroup{font-size:10.5px;font-weight:800;color:var(--mute);padding:8px 16px 4px;letter-spacing:.04em}
+.pchip{display:flex;align-items:center;gap:9px;width:100%;padding:6px 16px;background:none;border:none;
+  cursor:pointer;font-family:inherit;text-align:left;color:var(--ink)}
+.pchip:hover{background:var(--indigo-soft)}
+.pchip .box{width:13px;height:13px;border:1.6px solid #CFBFC0;border-radius:4px;flex:0 0 auto;position:relative}
+.pchip.on .box{background:var(--pc,var(--accent));border-color:var(--pc,var(--accent))}
+.pchip.on .box::after{content:"";position:absolute;left:3.6px;top:.8px;width:3.5px;height:7px;
+  border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
+.pchip .pn{flex:1 1 auto;min-width:0;font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pchip .pbar{width:44px;height:4px;border-radius:3px;background:var(--line2);overflow:hidden;flex:0 0 auto}
+.pchip .pbar i{display:block;height:100%;background:var(--accent);opacity:.75;border-radius:3px}
+.pchip .ps{font-family:var(--mono);font-size:10px;color:var(--mute);flex:0 0 auto;width:30px;text-align:right}
+
+.daterange{display:flex;align-items:center;gap:7px;padding:11px 16px 0;font-size:11.5px;color:var(--mute)}
+.daterange .lb{font-weight:700;color:var(--ink);font-size:11px;letter-spacing:.02em}
+.daterange .val{font-family:var(--mono);font-weight:600;color:var(--ink);font-size:11.5px}
+.daterange .cnt{margin-left:auto;font-family:var(--mono);font-size:10.5px}
+
+
+
+
+
+
+
+
+.search{padding:2px 16px 8px}
+.search input{width:100%; padding:10px 12px; font-size:13.5px; font-family:inherit;
+  border:1px solid var(--line); border-radius:9px; background:#FDFAFA; color:var(--ink)}
+.search input:focus{outline:none;border-color:var(--accent)}
+.search input::placeholder{color:#AD9C9E}
+
+.list{padding:2px 8px 6px}
+
+.region{margin:4px 0 2px}
+.region-head{display:flex; align-items:center; gap:9px; width:100%; padding:9px 10px;
+  background:none;border:none;cursor:pointer;font-family:inherit;color:var(--ink);text-align:left;border-radius:8px}
+.region-head:hover{background:var(--accent-soft)}
+.chev{width:8px;height:8px;border-right:2px solid var(--mute);border-bottom:2px solid var(--mute);
+  transform:rotate(45deg);transition:transform .18s;flex:0 0 auto}
+.region.collapsed .chev{transform:rotate(-45deg)}
+.region-name{font-size:13.5px;font-weight:700}
+.region-count{font-family:var(--mono);font-size:11.5px;color:var(--mute)}
+.region-bar{flex:1 1 auto;height:5px;border-radius:3px;background:var(--line2);overflow:hidden}
+.region-bar i{display:block;height:100%;background:linear-gradient(90deg,#7D93EC,var(--indigo-deep));border-radius:3px}
+
+.region.collapsed .shops{display:none}
+.shop{display:flex;align-items:center;gap:10px;width:100%;padding:8px 10px 8px 28px;
+  background:none;border:none;cursor:pointer;font-family:inherit;text-align:left;color:var(--ink);border-radius:7px}
+.shop:nth-child(even){background:#FBFBFE}
+.shop:hover{background:var(--accent-soft)}
+.shop.active{background:var(--accent-soft);box-shadow:inset 2px 0 0 var(--accent)}
+.shop.pick{background:var(--amber-soft);box-shadow:inset 2px 0 0 var(--amber)}
+.dot{width:9px;height:9px;border-radius:50%;flex:0 0 auto}
+.rdot{width:10px;height:10px;border-radius:50%;flex:0 0 auto;border:1.5px solid #fff;box-shadow:0 0 0 1px var(--line)}
+.shop-txt{flex:1 1 auto;min-width:0}
+.shop-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.shop-sub{font-size:11px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.shop-val{font-family:var(--mono);font-size:10.5px;color:var(--mute);flex:0 0 auto}
+
+.sheet-handle{display:none;position:relative;width:100%;padding:12px 16px 10px;background:var(--panel);
+  border:none;border-radius:16px 16px 0 0;cursor:pointer;font-family:inherit;color:var(--ink);
+  align-items:center;gap:9px;flex:0 0 auto}
+.sheet-handle .grip{position:absolute;top:6px;left:50%;transform:translateX(-50%);
+  width:38px;height:4px;border-radius:3px;background:#DFD0D0}
+.sheet-handle .hl{font-size:12.5px;font-weight:800}
+.sheet-handle .hd{font-family:var(--mono);font-size:10.5px;color:var(--mute);font-weight:600}
+.sheet-handle .hc{margin-left:auto;width:9px;height:9px;border-right:2px solid var(--mute);
+  border-bottom:2px solid var(--mute);transform:rotate(-135deg);transition:transform .25s}
+body.sheet-open .sheet-handle .hc{transform:rotate(45deg)}
+
+.hdr-actions{margin-left:auto;display:flex;align-items:center;gap:10px}
+.hdr-file{font-family:var(--mono);font-size:10.5px;color:var(--mute);max-width:230px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.upbtn{padding:8px 14px;font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;
+  background:var(--accent);color:#fff;border:none;border-radius:9px}
+.upbtn:hover{background:var(--accent-deep)}
+.upbtn.sec{background:var(--panel);color:var(--ink);border:1px solid var(--line)}
+.upbtn.sec:hover{background:var(--panel);border-color:var(--accent);color:var(--accent-deep)}
+
+.upov{position:absolute;inset:0;z-index:9;display:flex;align-items:center;justify-content:center;
+  background:rgba(250,247,246,.93);backdrop-filter:blur(3px);padding:24px}
+.upcard{max-width:490px;width:100%;background:var(--panel);border:2px dashed #CBD2E4;border-radius:18px;
+  padding:32px 30px;text-align:center;box-shadow:var(--shadow);transition:border-color .15s,background .15s}
+.upcard.drag{border-color:var(--accent);background:var(--indigo-soft)}
+.upcard h2{font-size:17px;margin-bottom:10px}
+.upcard p{font-size:13px;color:var(--mute);line-height:1.65;margin-bottom:12px}
+.uppick{padding:10px 22px;font-family:inherit;font-size:13.5px;font-weight:700;cursor:pointer;
+  background:var(--accent);color:#fff;border:none;border-radius:10px;margin-bottom:14px}
+.uppick:hover{background:var(--accent-deep)}
+.fmt-chips{display:flex;align-items:center;gap:6px;justify-content:center;margin-bottom:12px;flex-wrap:wrap}
+.fmt{font-family:var(--mono);font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px;
+  background:var(--indigo-soft);color:var(--indigo-deep);border:1px solid #CBD5F5}
+.fmt-note{font-size:10.5px;color:var(--mute)}
+.upsteps{text-align:left;margin:0 auto 14px;max-width:360px;padding-left:20px}
+.upsteps li{font-size:12.5px;color:var(--ink);line-height:1.7}
+.upsteps li::marker{color:var(--indigo);font-weight:800}
+.upnote{font-size:11px!important;color:#A8938F!important;text-align:left;
+  background:var(--teal-soft);border-radius:9px;padding:10px 12px}
+.uperr{color:#C0392B;font-size:12px;font-weight:600;min-height:16px;margin-top:6px}
+.uplink{margin-top:10px;background:none;border:none;cursor:pointer;font-family:inherit;
+  font-size:10.5px;color:#B4A09C;text-decoration:underline}
+.uplink:hover{color:var(--accent)}
+@media (max-width:820px){ .hdr-file{display:none} .upbtn{padding:7px 10px;font-size:11.5px} }
+
+/* ---------- tabs & pages ---------- */
+.tabs{display:flex;gap:4px;margin-left:20px;background:#EDEFF6;border-radius:11px;padding:4px}
+.tab{padding:7px 15px;font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;
+  border:none;border-radius:8px;background:none;color:var(--mute)}
+.tab:hover{color:var(--ink)}
+.tab.on{background:var(--panel);color:var(--accent-deep);box-shadow:0 1px 4px rgba(31,21,24,.1)}
+
+.page-el{display:none!important}
+.page-el.on{display:flex!important}
+.rankpage,.reportpage{flex:1 1 auto;min-height:0;flex-direction:column}
+
+/* ---- rank page ---- */
+.rk-top{flex:0 0 auto;padding:16px 24px 12px;background:var(--panel);border-bottom:1px solid var(--line)}
+.rk-sorts{display:flex;gap:7px;flex-wrap:wrap}
+.rksort{padding:8px 14px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;
+  border:1px solid var(--line);border-radius:9px;background:#FDFAFA;color:var(--mute)}
+.rksort:hover{border-color:var(--accent);color:var(--accent-deep)}
+.rksort.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.rk-search{margin-left:auto;padding:8px 12px;font-family:inherit;font-size:12px;min-width:170px;
+  border:1px solid var(--line);border-radius:9px;background:#FDFAFA;color:var(--ink)}
+.rk-search:focus{outline:none;border-color:var(--accent)}
+.rkdir{font-family:var(--mono);font-weight:800;margin-left:2px;opacity:.85}
+.rksort .rkdir{display:none}
+.rksort.on[data-s="recent"] .rkdir{display:inline}
+.rk-cards{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}
+.rkcard{flex:1;min-width:130px;background:var(--teal-soft);border:1px solid #CDE9ED;border-radius:11px;padding:11px 13px}
+.rkcard small{display:block;font-size:10.5px;color:var(--mute);font-weight:700;margin-bottom:4px}
+.rkcard b{font-family:var(--mono);font-size:16px;font-weight:600}
+/* 최근성 배지 공통 */
+.b-ok{background:#E5F5E9;color:#217A33}
+.b-warn{background:var(--amber-soft);color:var(--amber-deep)}
+.b-danger{background:#FCE4EC;color:#B0295C}
+.rkpill,.rkmon-badge{font-size:9.5px;font-weight:800;padding:2px 7px;border-radius:10px;display:inline-block}
+.rkcard.c-ok{background:#E5F5E9;border-color:#BFE6C8}
+.rkcard.c-ok b{color:#217A33}
+
+.rk-list{flex:1 1 auto;overflow-y:auto;padding:8px 24px 30px}
+.rkmon{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:9px;
+  margin:22px 0 6px;padding:10px 14px;border-radius:10px;
+  background:linear-gradient(90deg,var(--panel),var(--panel));
+  border:1px solid var(--line);border-left:5px solid var(--mute);box-shadow:0 2px 8px rgba(27,35,51,.06)}
+.rkmon:first-child{margin-top:2px}
+.rkmon.band-ok{border-left-color:var(--green);background:linear-gradient(90deg,#F0FAF2,var(--panel) 60%)}
+.rkmon.band-warn{border-left-color:var(--amber);background:linear-gradient(90deg,#FDF4E9,var(--panel) 60%)}
+.rkmon.band-danger{border-left-color:var(--rose);background:linear-gradient(90deg,#FDEEF3,var(--panel) 60%)}
+.rkmon-dot{width:9px;height:9px;border-radius:50%;flex:0 0 auto}
+.rkmon-dot.b-ok{background:var(--green)} .rkmon-dot.b-warn{background:var(--amber)} .rkmon-dot.b-danger{background:var(--rose)}
+.rkmon-t{font-size:14.5px;font-weight:800;letter-spacing:-.01em}
+.rkmon-c{margin-left:auto;font-family:var(--mono);font-size:11.5px;color:var(--mute);font-weight:600}
+.rkmon-c b{color:var(--ink);font-size:13px}
+/* 월 첫 행 위 여백으로 그룹 시각 분리 */
+.rkmon + .rkrow{border-top:none}
+.rkrow.dated{border-bottom:1px solid var(--line2)}
+.rk-list::-webkit-scrollbar{width:9px}
+.rk-list::-webkit-scrollbar-thumb{background:#E3D2D2;border-radius:9px}
+.rkrow{display:flex;align-items:center;gap:12px;width:100%;padding:10px 12px;background:none;border:none;
+  border-bottom:1px solid var(--line2);cursor:pointer;font-family:inherit;text-align:left;color:var(--ink);border-radius:8px}
+.rkrow:nth-child(even){background:#FBFBFE}
+.rkrow:hover{background:var(--accent-soft)}
+.rkrow .rknum{font-family:var(--mono);font-size:12.5px;font-weight:700;color:var(--mute);width:28px;height:24px;
+  flex:0 0 auto;display:flex;align-items:center;justify-content:center;border-radius:7px;background:#EEF1F6}
+.rkrow.top3 .rknum{color:#fff;background:var(--accent)}
+.rkrow .rkinfo{flex:0 0 200px;min-width:0}
+.rkrow .rkname{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.rkrow .rkreg{font-size:10.5px;color:var(--mute);display:block}
+.rkrow .rkbar{flex:1 1 auto;height:14px;border-radius:4px;background:var(--line2);overflow:hidden}
+.rkrow .rkbar.money{position:relative;height:20px;overflow:visible;background:#EDEFF4;border-radius:5px}
+.rkrow .rkbar.money i{display:flex;align-items:center;justify-content:flex-end;height:100%;border-radius:5px;position:relative}
+.rkbl{font-family:var(--mono);font-size:10.5px;font-weight:700;white-space:nowrap}
+.rkbl.in{color:#fff;padding-right:7px}
+.rkbl.out{position:absolute;left:calc(var(--w));margin-left:6px;top:50%;transform:translateY(-50%);color:var(--mute)}
+.rkbar.money i.b-ok{background:linear-gradient(90deg,#7ACF8E,var(--green))}
+.rkbar.money i.b-warn{background:linear-gradient(90deg,#EFAE6E,var(--amber-deep))}
+.rkbar.money i.b-danger{background:linear-gradient(90deg,#EC8FAE,var(--rose))}
+.rkrow .rkbar i{display:block;height:100%;background:linear-gradient(90deg,#63C7D6,var(--accent-deep));border-radius:4px}
+.rkbar.tl{background:#EDEFF4}
+.rkbar.tl i.b-ok{background:linear-gradient(90deg,#8FD9A0,var(--green))}
+.rkbar.tl i.b-warn{background:linear-gradient(90deg,#F2B77E,var(--amber-deep))}
+.rkbar.tl i.b-danger{background:linear-gradient(90deg,#F09BB8,var(--rose))}
+.rkrow .rkval{flex:0 0 auto;text-align:right;min-width:96px}
+.rkrow .rkval b{font-family:var(--mono);font-size:12.5px;font-weight:600;display:block}
+.rkrow .rkval small{font-family:var(--mono);font-size:10px;color:var(--mute);display:block;margin-top:2px}
+
+/* ---- report page ---- */
+.reportpage{flex-direction:column}
+.rp-bar{flex:0 0 auto;padding:14px 24px;background:var(--panel);border-bottom:1px solid var(--line)}
+.rp-bar{display:flex;gap:8px;flex-wrap:wrap}
+.rp-bar #rp-q{padding:10px 12px;font-family:inherit;font-size:12.5px;min-width:180px;
+  border:1px solid var(--line);border-radius:10px;background:#FDFAFA;color:var(--ink)}
+.rp-bar #rp-q:focus{outline:none;border-color:var(--accent)}
+.rp-bar select{min-width:320px;max-width:100%;padding:10px 12px;font-family:inherit;font-size:13.5px;font-weight:600;
+  color:var(--ink);border:1px solid var(--line);border-radius:10px;background:#FDFAFA;cursor:pointer}
+.rp-bar select:focus{outline:none;border-color:var(--accent)}
+.rp-main{flex:1 1 auto;overflow-y:auto;padding:22px 28px 40px;min-width:0}
+.rp-main::-webkit-scrollbar{width:9px}
+.rp-main::-webkit-scrollbar-thumb{background:#E3D2D2;border-radius:9px}
+.rp-empty{color:var(--mute);font-size:13.5px;padding:40px 10px}
+.rp-head{display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:6px}
+.rp-head h2{font-size:21px;font-weight:800;letter-spacing:-.02em}
+.badge{font-size:10.5px;font-weight:800;padding:4px 9px;border-radius:12px;align-self:center}
+.pf-bar{display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:8px 12px 2px}
+.pf{border:1px solid #DFDCD2;background:#fff;border-radius:12px;padding:3px 10px;font-size:11.5px;font-weight:700;cursor:pointer;color:#41565F}
+.pf.on{background:#16262E;color:#fff;border-color:#16262E}
+#pf-partner{border:1px solid #DFDCD2;border-radius:12px;padding:3px 8px;font-size:11.5px;background:#fff;max-width:170px}
+#pf-partner.on{background:#6b4fa1;color:#fff;border-color:#6b4fa1}
+.pf-cnt{font-size:11px;color:#7A8B93;margin-left:auto}
+.ptag{display:inline-block;font-size:9.5px;font-weight:800;padding:1px 6px;border-radius:8px;margin-left:5px;vertical-align:1px;cursor:pointer;white-space:nowrap}
+.ptag.d{background:#EAE8E1;color:#41565F}
+.ptag.p{background:#EEE8F7;color:#6b4fa1}
+.ptag.h{background:#F6EEDC;color:#8A6520}
+.asg{position:fixed;z-index:100000;background:#fff;border:1px solid #DFDCD2;border-radius:6px;box-shadow:0 8px 28px rgba(0,0,0,.18);padding:12px 14px;width:300px;max-height:70vh;overflow:auto;font-size:12.5px}
+.asg h5{margin:0 0 6px;font-size:13px}
+.asg .cur{color:#41565F;margin-bottom:8px}
+.asg select{width:100%;border:1px solid #DFDCD2;border-radius:4px;padding:5px 6px;font-size:12.5px;margin-bottom:8px}
+.asg .row{display:flex;gap:6px;justify-content:flex-end}
+.asg button{border:1px solid #DFDCD2;background:#fff;border-radius:4px;padding:4px 10px;font-size:12px;cursor:pointer}
+.asg button.k{background:#16262E;color:#fff;border-color:#16262E}
+.badge.ok{background:#E5F5E9;color:#217A33}
+.badge.warn{background:var(--amber-soft);color:var(--amber-deep)}
+.badge.danger{background:#FCE4EC;color:#B0295C}
+.rp-addr{font-size:12px;color:var(--mute);margin-bottom:16px}
+.rp-actions{margin-left:auto}
+.rp-actions button{padding:8px 14px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;
+  background:var(--panel);border:1px solid var(--line);border-radius:9px;color:var(--ink)}
+.rp-actions button:hover{border-color:var(--accent);color:var(--accent-deep)}
+.rp-metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:22px}
+.rpm{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:13px 15px;border-left:4px solid var(--violet)}
+.rpm:nth-child(1){border-left-color:var(--indigo)}
+.rpm:nth-child(2){border-left-color:var(--violet)}
+.rpm:nth-child(3){border-left-color:var(--teal)}
+.rpm:nth-child(4){border-left-color:var(--green)}
+.rpm:nth-child(5){border-left-color:var(--amber)}
+.rpm small{display:block;font-size:10.5px;color:var(--mute);font-weight:700;margin-bottom:5px}
+.rpm b{font-family:var(--mono);font-size:16.5px;font-weight:600;letter-spacing:-.01em}
+.rpm .sub{font-family:var(--mono);font-size:10px;color:var(--mute);margin-top:3px;display:block}
+.rp-sec{font-size:13.5px;font-weight:800;margin:22px 0 10px;padding-left:11px;border-left:4px solid var(--accent);line-height:1.3}
+.rp-chart{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px 8px}
+.rp-prods{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px 16px}
+.rprod{display:flex;align-items:center;gap:11px;padding:8px 0;border-top:1px solid var(--line2)}
+.rprod:first-child{border-top:none}
+.rprod .pn2{flex:0 0 190px;font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rprod .pb2{flex:1 1 auto;height:12px;border-radius:4px;background:var(--line2);overflow:hidden}
+.rprod .pb2 i{display:block;height:100%;background:linear-gradient(90deg,#9B84F0,var(--violet-deep));border-radius:4px}
+.rprod .pv2{flex:0 0 auto;text-align:right;min-width:110px}
+.rprod .pv2 b{font-family:var(--mono);font-size:12px;font-weight:600;display:block}
+.rprod .pv2 small{font-family:var(--mono);font-size:9.5px;color:var(--mute)}
+.rp-memo{min-height:130px;background:var(--panel);border:1.5px solid var(--line);border-radius:12px;
+  padding:13px 15px;font-size:13px;line-height:1.75;outline:none;white-space:pre-wrap;
+  background-image:repeating-linear-gradient(transparent,transparent 27px,var(--line2) 27px,var(--line2) 28px);
+  background-position:0 12px}
+.rp-memo:focus{border-color:var(--accent)}
+.rp-memo:empty::before{content:attr(data-ph);color:#AAB1BE;font-size:12px}
+
+.pchip2{display:inline-block;font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:11px;
+  border:1.5px solid;margin:2px 4px 2px 0;background:#fff}
+.lgi{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--mute);margin:6px 12px 0 0;font-weight:600}
+.lgi i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.nb-row{display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-top:1px solid var(--line2)}
+.nb-row:first-child{border-top:none}
+.nb-name{flex:0 0 52px;font-size:13px;font-weight:800}
+.nb-dist{flex:0 0 74px;font-family:var(--mono);font-size:12px;font-weight:600}
+.nb-dist.close{color:var(--warn)}
+.nb-prods{flex:1 1 auto;min-width:0}
+.rp-note{background:#FBF6EC;border:1px solid #EEDFC2;border-radius:10px;padding:10px 13px;
+  font-size:11.5px;color:#8A6D3B;line-height:1.55}
+.reco-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line2)}
+.reco-row:first-child{border-top:none}
+.reco-n{font-family:var(--mono);font-size:11px;color:var(--mute);flex:0 0 auto}
+body.pg-newshop{--accent:#2F9E44;--accent-deep:#217A33;--accent-soft:#E5F5E9}
+body.nsprint .ns-map-wrap{flex:0 0 340px;height:340px}
+.ns-toggle{margin-left:auto;display:inline-flex;align-items:center;gap:7px;
+  padding:9px 14px!important;background:var(--panel)!important;color:var(--mute)!important;
+  border:1.5px solid var(--line)!important;border-radius:20px!important;font-size:12px!important}
+.ns-toggle .tgdot{width:9px;height:9px;border-radius:50%;background:#C3C9D6;transition:background .15s}
+.ns-toggle b{font-family:var(--mono);font-size:11px}
+.ns-toggle.on{border-color:var(--accent)!important;color:var(--accent-deep)!important;background:var(--accent-soft)!important}
+.ns-toggle.on .tgdot{background:var(--accent)}
+.mjrow{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-top:1px solid rgba(0,0,0,.08);font-size:12px}
+.mjrow:first-child{border-top:none}
+.mjrow .mn{flex:0 0 70px;font-weight:800}
+.mjrow .md{flex:0 0 66px;font-family:var(--mono);font-weight:600}
+.mjrow .ml{flex:1 1 auto;line-height:1.6}
+.mjrow .ml .ent{font-family:var(--mono);font-size:11px;display:block}
+.mjrow .ms{flex:0 0 auto;font-family:var(--mono);font-weight:700;text-align:right}
+@media (max-width:820px){ .ns-toggle{margin-left:0} }
+.nspage{flex-direction:column}
+.ns-bar{flex:0 0 auto;display:flex;gap:8px;padding:14px 24px;background:var(--panel);border-bottom:1px solid var(--line)}
+.ns-bar input{flex:1;max-width:520px;padding:10px 13px;font-family:inherit;font-size:13.5px;
+  border:1px solid var(--line);border-radius:10px;background:#FDFAFA;color:var(--ink)}
+.ns-bar input:focus{outline:none;border-color:var(--accent)}
+.ns-bar button{padding:10px 16px;font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;
+  background:var(--accent);color:#fff;border:none;border-radius:10px}
+.ns-bar button:hover{background:var(--accent-deep)}
+.ns-bar #ns-print{background:var(--panel);color:var(--ink);border:1px solid var(--line)}
+.ns-bar #ns-print:hover{border-color:var(--accent);color:var(--accent-deep);background:var(--panel)}
+.ns-body{flex:1 1 auto;display:flex;min-height:0}
+.ns-map-wrap{flex:1 1 55%;position:relative;min-width:0}
+#nmap{width:100%;height:100%;background:#EFF1F0}
+.ns-maplegend{position:absolute;left:14px;bottom:14px;z-index:5;display:flex;gap:14px;
+  background:rgba(255,255,255,.94);border:1px solid var(--line);border-radius:10px;padding:8px 13px;
+  font-size:11px;color:var(--mute)}
+.ns-maplegend span{display:flex;align-items:center;gap:5px}
+.ns-maplegend i{width:11px;height:11px;border-radius:50%;border:2px dashed}
+.ns-maplegend .r1{border-color:#74B816;background:rgba(116,184,22,.18)}
+.ns-maplegend .r2{border-color:#E8863B;background:rgba(232,134,59,.14)}
+.ns-maplegend .r3{border-color:#9AA4B5;background:rgba(154,164,181,.12)}
+.ns-side{flex:1 1 45%;overflow-y:auto;padding:20px 24px 40px;background:var(--paper);min-width:0}
+.ns-side::-webkit-scrollbar{width:9px}
+.ns-side::-webkit-scrollbar-thumb{background:#D5DAE5;border-radius:9px}
+.nletter{transform:translate(-50%,-50%);width:26px;height:26px;border-radius:50%;background:#1B2333;
+  color:#fff;font-family:var(--mono);font-size:12.5px;font-weight:700;display:flex;align-items:center;
+  justify-content:center;border:2.5px solid #fff;box-shadow:0 2px 6px rgba(27,35,51,.35)}
+.ns-h{font-size:18px;font-weight:800;letter-spacing:-.02em;margin-bottom:4px}
+.ns-meta{font-size:11.5px;color:var(--mute);margin-bottom:14px;line-height:1.6}
+.ns-verdict{border-radius:12px;padding:14px 16px;margin-bottom:14px;font-size:13px;line-height:1.6}
+.ns-verdict.ok{background:#E5F5E9;border:1px solid #BFE6C8;color:#17501F}
+.ns-verdict.no{background:#FCE4EC;border:1px solid #F3BFD2;color:#7A1B3E}
+.ns-verdict b{font-size:14.5px}
+.ns-seminar{background:var(--panel);border:1px solid var(--line);border-left:4px solid #2F9E44;
+  border-radius:0 12px 12px 0;padding:12px 15px;font-size:12.5px;line-height:1.7;margin-bottom:16px}
+.ns-foot{font-size:10.5px;color:var(--mute);margin-top:14px;line-height:1.6}
+@media (max-width:820px){
+  .ns-body{flex-direction:column}
+  .ns-map-wrap{flex:0 0 45vh}
+  .ns-bar{flex-wrap:wrap}
+  .ns-bar input{min-width:0;max-width:none;flex:1 1 100%}
+}
+
+/* ---- 일자별 주문 ---- */
+.shippage{flex-direction:row}
+.sp-side{flex:0 0 280px;background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+.sp-head{flex:0 0 auto;padding:14px 16px 10px;font-size:12.5px;font-weight:800;border-bottom:1px solid var(--line2)}
+.sp-list{flex:1 1 auto;overflow-y:auto;padding:4px 8px 20px}
+.sp-list::-webkit-scrollbar{width:9px}
+.sp-list::-webkit-scrollbar-thumb{background:#D5DAE5;border-radius:9px}
+.sp-mon{font-size:10.5px;font-weight:800;color:var(--mute);padding:12px 10px 4px;letter-spacing:.03em}
+.sp-day{display:flex;align-items:center;gap:10px;width:100%;padding:9px 10px;background:none;border:none;
+  cursor:pointer;font-family:inherit;text-align:left;color:var(--ink);border-radius:8px}
+.sp-day:hover{background:var(--accent-soft)}
+.sp-day.active{background:var(--accent-soft);box-shadow:inset 2px 0 0 var(--accent)}
+.sp-day .dd2{font-family:var(--mono);font-size:13px;font-weight:700;flex:0 0 52px}
+.sp-day .dw{font-size:10.5px;color:var(--mute);flex:0 0 22px}
+.sp-day .dw.sun{color:#E03131}.sp-day .dw.sat{color:#1971C2}
+.sp-day .dv{margin-left:auto;text-align:right}
+.sp-day .dv b{font-family:var(--mono);font-size:11.5px;font-weight:600;display:block}
+.sp-day .dv small{font-family:var(--mono);font-size:9.5px;color:var(--mute)}
+.sp-main{flex:1 1 auto;overflow-y:auto;padding:20px 26px 40px;min-width:0}
+.sp-main::-webkit-scrollbar{width:9px}
+.sp-main::-webkit-scrollbar-thumb{background:#D5DAE5;border-radius:9px}
+.sp-dh{display:flex;align-items:baseline;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+.sp-dh h2{font-size:19px;font-weight:800}
+.sp-dh .sum{font-family:var(--mono);font-size:13px;color:var(--mute)}
+.sp-dh .sum b{color:var(--ink);font-size:15px}
+.sp-order{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:13px 16px;margin-bottom:10px}
+.sp-oh{display:flex;align-items:baseline;gap:9px;margin-bottom:8px}
+.sp-oh .nm{font-size:14px;font-weight:800}
+.sp-oh .rg{font-size:11px;color:var(--mute)}
+.ndtag{font-size:9.5px;font-weight:800;padding:2px 7px;border-radius:9px;background:var(--amber-soft);color:var(--amber-deep)}
+.sp-oh .amt{margin-left:auto;font-family:var(--mono);font-size:13.5px;font-weight:700;color:var(--accent-deep)}
+.sp-item{display:flex;align-items:baseline;gap:8px;font-size:12.5px;padding:4px 0;border-top:1px solid var(--line2)}
+.sp-item:first-of-type{border-top:none}
+.sp-item .pn3{flex:1 1 auto;min-width:0}
+.sp-item .q3{font-family:var(--mono);font-size:11px;color:var(--mute);flex:0 0 auto}
+.sp-item .a3{font-family:var(--mono);font-size:11.5px;flex:0 0 90px;text-align:right}
+@media (max-width:820px){
+  .shippage{flex-direction:column}
+  .sp-side{flex:0 0 38%;border-right:none;border-bottom:1px solid var(--line)}
+  .sp-main{padding:14px 14px 40px}
+}
+
+/* ---- 마이크로 블랙 ---- */
+body.pg-mb{--accent:#1B2333;--accent-deep:#0F1420;--accent-soft:#E7E9EF}
+.mbpage{flex-direction:column}
+.mb-top{flex:0 0 auto;padding:16px 24px 12px;background:var(--panel);border-bottom:1px solid var(--line)}
+.mb-title{font-size:15px;font-weight:800}
+.mb-title b{font-family:var(--mono)}
+.mb-hint{font-size:11.5px;color:var(--mute);margin-top:4px}
+.mb-list{flex:1 1 auto;overflow-y:auto;padding:10px 24px 40px}
+.mb-list::-webkit-scrollbar{width:9px}
+.mb-list::-webkit-scrollbar-thumb{background:#D5DAE5;border-radius:9px}
+.mb-row{display:flex;align-items:center;gap:12px;padding:10px 12px;border-bottom:1px solid var(--line2);border-radius:8px}
+.mb-row:nth-child(even){background:#FBFBFE}
+.mb-row:hover{background:var(--accent-soft)}
+.mb-row .no{font-family:var(--mono);font-size:11.5px;font-weight:700;color:#fff;background:#1B2333;
+  width:26px;height:22px;border-radius:7px;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+.mb-row .who{flex:0 0 150px;min-width:0}
+.mb-row .who b{font-size:13.5px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mb-row .who a{font-family:var(--mono);font-size:11px;color:var(--mute);text-decoration:none}
+.mb-row .who a:hover{color:var(--indigo);text-decoration:underline}
+.mb-row .svcs{flex:0 0 210px;display:flex;flex-wrap:wrap;gap:3px}
+.svcchip{font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:9px;background:#EEF1F6;color:#3C4658}
+.svcchip.tattoo{background:#1B2333;color:#fff}
+.mb-row .maddr{flex:1 1 auto;font-size:12px;color:var(--mute);min-width:0}
+.mb-row .mgo{flex:0 0 auto;padding:6px 11px;font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;
+  background:var(--panel);border:1px solid var(--line);border-radius:8px;color:var(--ink)}
+.mb-row .mgo:hover{border-color:#1B2333;background:#1B2333;color:#fff}
+.mbdot{transform:translate(-50%,-50%);width:14px;height:14px;border-radius:50%;background:#111;
+  border:2.5px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.35),0 2px 6px rgba(0,0,0,.4);cursor:pointer}
+.mbinfo{transform:translate(-50%,calc(-100% - 12px));background:#1B2333;color:#fff;border-radius:12px;
+  padding:12px 14px;min-width:210px;max-width:270px;box-shadow:0 6px 22px rgba(0,0,0,.35);position:relative}
+.mbinfo:after{content:'';position:absolute;left:50%;bottom:-7px;transform:translateX(-50%);
+  border:7px solid transparent;border-bottom:none;border-top-color:#1B2333}
+.mbinfo h4{font-size:13.5px;margin-bottom:4px}
+.mbinfo .sv{font-size:10.5px;color:#B9C1D4;margin-bottom:5px}
+.mbinfo .ad{font-size:10.5px;color:#8F99B0;line-height:1.5}
+.mbinfo a{color:#7DA7F5;font-family:var(--mono);font-size:11px;text-decoration:none}
+.mbinfo .x{position:absolute;top:6px;right:9px;background:none;border:none;color:#8F99B0;font-size:15px;cursor:pointer}
+@media (max-width:820px){
+  .mb-row{flex-wrap:wrap}
+  .mb-row .who{flex:1 1 40%}
+  .mb-row .svcs{flex:1 1 100%;order:3}
+  .mb-row .maddr{flex:1 1 100%;order:4}
+}
+
+@media print{
+  body *{visibility:hidden}
+  #rpmain,#rpmain *,#nsreport,#nsreport *{visibility:visible}
+  #rpmain,#nsreport{position:absolute;left:0;top:0;width:100%;overflow:visible;padding:8mm;background:#fff}
+  #nsreport{display:block}
+  #nsreport .ns-map-wrap{height:340px;margin-bottom:6mm}
+  .rp-actions,.ns-bar{display:none!important}
+  .rp-memo{border:1px solid #888;min-height:38mm;border-radius:4px;page-break-inside:avoid;background-image:none}
+  .rp-memo:empty::before{content:""}
+}
+
+@media (max-width:820px){
+  .tabs{margin-left:8px;padding:3px}
+  .tab{padding:6px 9px;font-size:11px}
+  .rkrow .rkinfo{flex:0 0 120px}
+  .rkrow .rkbar{display:none}
+  .rk-list{padding:8px 12px 30px}
+  .rp-main{padding:16px 14px 40px}
+  .rp-bar select{min-width:0;width:100%}
+  .rprod .pn2{flex:0 0 120px}
+}
+
+/* ---------- map ---------- */
+/* 사이드바 제거 — 샵 검색은 지도 위 툴바로 이동 (2026-08-18) */
+#aside{display:none!important}
+.map-col{flex:1 1 auto;position:relative;min-width:0}
+.map-search{position:relative}
+.map-search input{width:100%;padding:10px 12px;font-family:inherit;font-size:12.5px;font-weight:600;
+  background:rgba(255,255,255,.97);backdrop-filter:blur(4px);color:var(--ink);
+  border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow)}
+.map-search input:focus{outline:none;border-color:var(--accent)}
+.msr{position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:30;display:none;
+  background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);
+  max-height:340px;overflow-y:auto;padding:4px}
+.msr.open{display:block}
+.msr .msi{display:flex;align-items:center;gap:8px;width:100%;padding:8px 10px;background:none;border:none;
+  cursor:pointer;font-family:inherit;text-align:left;color:var(--ink);border-radius:8px;font-size:12.5px}
+.msr .msi:hover{background:var(--accent-soft)}
+.msr .msi .nm{flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:700}
+.msr .msi .rg{font-size:10.5px;color:var(--mute);flex:0 0 auto}
+.msr .msi .vv{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--mute);flex:0 0 auto}
+.msr .mse{padding:10px 12px;font-size:11.5px;color:var(--mute)}
+#map{width:100%;height:100%;background:#EFE8E7}
+.map-col.measure #map, .map-col.newshop #map{cursor:crosshair}
+
+/* toolbar */
+.toolbar{position:absolute;top:14px;left:14px;z-index:16;display:flex;flex-direction:column;gap:8px;width:290px}
+.tool-row{display:flex;gap:8px}
+.tbtn{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;
+  padding:9px 10px;font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;
+  background:rgba(255,255,255,.96);backdrop-filter:blur(4px);
+  border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);color:var(--ink)}
+.tbtn:hover{border-color:var(--accent)}
+.tbtn.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.tbtn svg{width:14px;height:14px;flex:0 0 auto}
+
+.card-t{background:rgba(255,255,255,.97);backdrop-filter:blur(4px);border:1px solid var(--line);
+  border-radius:12px;box-shadow:var(--shadow);padding:12px 13px}
+.card-t h4{font-size:12.5px;font-weight:800;margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.card-t p{font-size:11.5px;color:var(--mute);line-height:1.5}
+.hint{font-size:11.5px;color:var(--mute);line-height:1.5}
+.hint b{color:var(--accent);font-weight:700}
+
+.addr-row{display:flex;gap:6px;margin-top:9px}
+.addr-row input{flex:1;padding:8px 10px;font-size:12.5px;font-family:inherit;
+  border:1px solid var(--line);border-radius:8px;background:#FDFAFA;color:var(--ink);min-width:0}
+.addr-row input:focus{outline:none;border-color:var(--accent)}
+.addr-row button{padding:8px 12px;font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;
+  background:var(--accent);color:#fff;border:none;border-radius:8px}
+.addr-row button:hover{background:var(--accent-deep)}
+
+.verdict{margin-top:10px;padding:9px 11px;border-radius:9px;font-size:12px;line-height:1.5}
+.verdict.danger{background:#FDECEA;color:var(--indigo-deep);border:1px solid #F3C9C4}
+.verdict.ok{background:#EAF4EE;color:#1F5C41;border:1px solid #CBE3D5}
+.verdict b{font-weight:800}
+
+.near{margin-top:9px;border-top:1px solid var(--line2);padding-top:7px}
+.near-item{display:flex;align-items:center;gap:8px;width:100%;padding:5px 4px;background:none;border:none;
+  cursor:pointer;font-family:inherit;text-align:left;color:var(--ink);border-radius:6px;font-size:12px}
+.near-item:hover{background:var(--accent-soft)}
+.near-item .nm{flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600}
+.near-item .dm{font-family:var(--mono);font-size:11px;font-weight:600}
+.near-item .dm.close{color:var(--warn)}
+.near-item .dm.far{color:var(--mute)}
+
+.legend{position:absolute;left:16px;bottom:16px;z-index:5;background:rgba(255,255,255,.94);
+  backdrop-filter:blur(4px);border:1px solid var(--line);border-radius:11px;padding:11px 13px;
+  box-shadow:var(--shadow);font-size:11.5px;color:var(--mute);display:none}
+.legend b{display:block;color:var(--ink);font-size:11.5px;margin-bottom:7px;font-weight:700}
+.legend-row{display:flex;align-items:center;gap:7px;margin-top:5px}
+.legend-row i{border-radius:50%;background:#9AA4B5;flex:0 0 auto;opacity:.9}
+
+/* markers */
+.pin{transform:translate(-50%,-50%);cursor:pointer;position:relative}
+.pin .circle{border-radius:50%;border:2px solid #fff;box-shadow:0 2px 6px rgba(31,21,24,.3);transition:transform .15s}
+.pin:hover .circle,.pin.hot .circle{transform:scale(1.18)}
+.pin.hot .circle{box-shadow:0 0 0 4px rgba(179,43,51,.28),0 3px 8px rgba(31,21,24,.35)}
+.pin.sel .circle{box-shadow:0 0 0 5px rgba(232,134,59,.4),0 3px 8px rgba(27,35,51,.35)}
+.pin.mjr .circle{outline:3px solid #E03131;outline-offset:1px}
+.pin .badge{position:absolute;top:-9px;left:50%;transform:translateX(-50%);
+  background:var(--amber);color:#fff;font-size:9.5px;font-weight:800;padding:1px 5px;border-radius:7px;
+  font-family:var(--mono);white-space:nowrap}
+
+.newpin{transform:translate(-50%,-100%);position:relative;filter:drop-shadow(0 3px 6px rgba(31,21,24,.35))}
+.newpin .body{width:30px;height:30px;border-radius:50% 50% 50% 0;background:#111;
+  border:2.5px solid #fff;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center}
+.newpin .body span{transform:rotate(45deg);color:#fff;font-size:9px;font-weight:800;font-family:var(--mono)}
+
+.dlabel{transform:translate(-50%,-50%);background:var(--ink);color:#fff;font-family:var(--mono);
+  font-size:12px;font-weight:600;padding:4px 9px;border-radius:20px;white-space:nowrap;
+  box-shadow:0 2px 8px rgba(31,21,24,.35);border:1.5px solid #fff}
+.dlabel.warn{background:var(--warn)}
+
+/* info overlay */
+.info{transform:translate(-50%,calc(-100% - 16px));background:var(--panel);border:1px solid var(--line);
+  border-radius:12px;box-shadow:var(--shadow);padding:12px 14px;width:235px;position:relative}
+.info::after{content:"";position:absolute;left:50%;bottom:-8px;transform:translateX(-50%);width:14px;height:14px;
+  background:var(--panel);border-right:1px solid var(--line);border-bottom:1px solid var(--line);
+  clip-path:polygon(0 0,100% 100%,0 100%);rotate:45deg}
+.info h3{font-size:14px;font-weight:800;margin-bottom:4px}
+.info .addr{font-size:11.5px;color:var(--mute);line-height:1.45;margin-bottom:9px}
+.info .row{display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-top:1px solid var(--line2)}
+.info .row span{color:var(--mute)}
+.info .row b{font-family:var(--mono);font-weight:600}
+.info .close{position:absolute;top:8px;right:9px;border:none;background:none;cursor:pointer;color:#C6B4B4;font-size:17px;padding:2px}
+.info .close:hover{color:var(--ink)}
+.info-actions{display:flex;gap:6px;margin-top:10px;padding-top:9px;border-top:1px solid var(--line2)}
+.ia{flex:1;padding:7px 4px;font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;
+  background:var(--accent-soft);color:var(--accent-deep);border:1px solid transparent;border-radius:8px}
+.ia:hover{border-color:var(--accent)}
+.rkrow.flash{background:var(--accent-soft)!important;box-shadow:inset 0 0 0 2px var(--accent)}
+
+/* banner + toast */
+.banner{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:var(--paper);z-index:10;padding:30px}
+.banner .card{max-width:440px;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:28px 30px;box-shadow:var(--shadow)}
+.banner h2{font-size:17px;margin-bottom:10px}
+.banner p{font-size:13px;color:var(--mute);line-height:1.6;margin-bottom:8px}
+.banner code{font-family:var(--mono);font-size:12px;background:var(--accent-soft);color:var(--accent-deep);padding:2px 6px;border-radius:5px}
+.banner a{color:var(--accent-deep);font-weight:600}
+.toast{position:absolute;top:14px;left:50%;transform:translateX(-50%);z-index:8;background:var(--ink);color:#fff;
+  font-size:12px;padding:8px 15px;border-radius:20px;box-shadow:var(--shadow);opacity:0;transition:opacity .25s;pointer-events:none}
+.toast.show{opacity:.94}
+
+@media (max-width:820px){
+  header{padding:11px 16px}
+  .brand h1{font-size:16px}
+  .brand span{display:none}
+
+  .wrap{position:relative;flex-direction:column}
+  .map-col{position:absolute;inset:0}
+
+  aside{
+    position:absolute;left:0;right:0;bottom:0;top:auto;flex:none;
+    height:min(78vh,620px);
+    border-right:none;border-top:1px solid var(--line);border-radius:16px 16px 0 0;
+    box-shadow:0 -6px 30px rgba(31,21,24,.18);z-index:15;
+    transform:translateY(calc(100% - 50px));
+    transition:transform .28s cubic-bezier(.32,.72,0,1);
+  }
+  body.sheet-open aside{transform:translateY(0)}
+  .sheet-handle{display:flex}
+
+  .toolbar{width:calc(100% - 28px);max-width:340px}
+  .legend{bottom:64px;left:14px}
+  .toast{top:12px}
+  .daterange{padding-top:4px}
+}
+</style>
+</head>
+<body>
+
+<div id="gate" style="position:fixed;inset:0;z-index:99999;background:#F7F6F2;display:flex;align-items:center;justify-content:center;font-family:'Apple SD Gothic Neo','Malgun Gothic',sans-serif">
+  <div style="background:#fff;border:1px solid #DFDCD2;border-radius:6px;padding:32px 30px;max-width:440px;text-align:center">
+    <div style="font-size:11px;letter-spacing:.09em;color:#7A8B93;font-family:monospace">DR.BAE DASHBOARD</div>
+    <h2 style="margin:6px 0 8px;font-size:19px">구글 계정으로 로그인</h2>
+    <p style="color:#41565F;font-size:13px;margin:0 0 18px">배랩 본사 계정으로만 열립니다. 발송·납품처 데이터는 로그인 후에만 불러옵니다.</p>
+    <button id="gate-login" style="background:#16262E;color:#fff;border:0;border-radius:4px;padding:9px 18px;font-size:14px;font-weight:700;cursor:pointer">Google 로그인</button>
+    <div id="gate-msg" style="margin-top:10px;font-size:12px;color:#9A3B33;white-space:pre-line"></div>
+  </div>
+</div>
+<header>
+  <div class="brand">
+    <div class="leaf"></div>
+    <h1>닥터배 납품처 분포</h1>
+    <span>전국 피부관리실 · 에스테틱 공급 현황</span>
+  </div>
+  <nav class="tabs">
+    <button class="tab on" data-pg="status">현황</button>
+    <button class="tab" data-pg="map">지도</button>
+    <button class="tab" data-pg="report">샵 리포트</button>
+    <button class="tab" data-pg="newshop">신규샵 위치 리포트</button>
+    <button class="tab" data-pg="mb">마이크로 블랙</button>
+  </nav>
+  <div class="hdr-actions">
+    <span class="hdr-file" id="hdr-file"></span>
+    <button class="upbtn sec" id="btn-logout" title="로그아웃">로그아웃</button>
+    <button class="upbtn" id="btn-upload">⬆ 데이터 업로드</button>
+  </div>
+
+</header>
+
+<div class="page-el stpage on" id="page-status">
+  <div class="st-inner">
+    <div class="st-range">발송일 <b id="st-from">–</b> ~ <b id="st-to">–</b><span class="st-file" id="st-file"></span></div>
+
+    <div class="st-grid kpi2">
+      <div class="st-card kpi">
+        <span class="k">이번 주 매출 <small id="kw-sub"></small></span>
+        <b id="kw-amt">–</b>
+        <span class="delta" id="kw-delta"></span>
+        <div class="spark" id="kw-spark"></div>
+      </div>
+      <div class="st-card kpi">
+        <span class="k">이번 달 매출 <small id="km-sub"></small></span>
+        <b id="km-amt">–</b>
+        <span class="delta" id="km-delta"></span>
+        <div class="spark" id="km-spark"></div>
+      </div>
+    </div>
+
+    <div class="st-grid">
+      <div class="st-card"><span class="k">납품처</span><b id="s-shops">–</b></div>
+      <div class="st-card"><span class="k">시 · 도</span><b id="s-regions">–</b></div>
+      <div class="st-card"><span class="k">주문 건수</span><b id="s-orders">–</b></div>
+      <div class="st-card tot"><span class="k" id="lb-amount">연 주문 합계</span><b id="s-amount">–</b></div>
+      <div class="st-card tot"><span class="k" id="lb-year">올해 매출</span><b id="s-year">–</b></div>
+      <div class="st-card tot"><span class="k">2025년 매출 (신고 기준)</span><b>22,637만원</b></div>
+    </div>
+
+    <div class="st-panel">
+      <div class="st-ph">
+        <h3>매출 추이</h3>
+        <div class="seg">
+          <button id="tg-week" class="on">주간</button>
+          <button id="tg-month">월간</button>
+        </div>
+      </div>
+      <div class="st-chart" id="trend-chart"><p class="hint" style="padding:20px">데이터를 불러오면 표시됩니다.</p></div>
+    </div>
+
+    <div class="st-panel">
+      <div class="st-ph">
+        <h3>연도별 신고 매출 <small>홈택스 부가세 과세매출 기준</small></h3>
+        <div class="seg" id="yr-seg"></div>
+      </div>
+      <div class="hbars" id="yr-bars" style="margin:4px 0 16px"></div>
+      <div class="st-chart" id="yr-chart"></div>
+    </div>
+
+    <div class="st-cols">
+      <div class="st-panel"><h3>시·도별 매출 <small>TOP 8 · 기간 누적</small></h3><div class="hbars" id="rg-bars"></div></div>
+      <div class="st-panel"><h3>제품별 매출 <small>TOP 8 · 기간 누적</small></h3><div class="hbars" id="pd-bars"></div></div>
+      <div class="st-panel"><h3>월별 신규 납품처 <small>첫 주문 기준</small></h3><div class="st-chart sm" id="new-chart"></div></div>
+    </div>
+
+    <div class="qual" id="qual" style="display:none">
+      <div class="qual-t">데이터 검증 요약</div>
+      <div id="qual-body"></div>
+    </div>
+    <p class="hint" style="margin-top:14px">특정 샵을 찾으려면 <b>지도</b> 탭 왼쪽 위 검색창을 이용하세요.</p>
+  </div>
+</div>
+
+<div class="wrap page-el" id="page-map">
+  <aside id="aside">
+    <button class="sheet-handle" id="sheet-handle" aria-label="메뉴 열기/닫기">
+      <span class="grip"></span>
+      <span class="hl">메뉴</span>
+      <span class="hd" id="sheet-date">–</span>
+      <span class="hc"></span>
+    </button>
+    <div class="daterange">
+      <span class="lb">발송일</span>
+      <span class="val" id="dr-from">–</span><span>~</span><span class="val" id="dr-to">–</span>
+    </div>
+    <div class="sbwrap">
+
+      <section class="sec collapsed" id="sec-prod">
+        <button class="sec-h"><span class="chev2"></span><span class="t">제품별 현황</span><span class="sec-tag" id="pd-tag">전체</span></button>
+        <div class="sec-b">
+          <div class="prod-head"><span class="lb">제품 선택 시 해당 납품처만 표시</span><button id="pd-clear">전체 해제</button></div>
+          <div id="prodlist"></div>
+        </div>
+      </section>
+
+      <section class="sec collapsed" id="sec-dorm">
+        <button class="sec-h"><span class="chev2"></span><span class="t">주문 공백 샵</span><span class="sec-tag" id="dm-tag">OFF</span></button>
+        <div class="sec-b">
+          <p class="hint" style="padding:0 16px 8px">기준일: <b id="dorm-ref">–</b> (데이터 최신 발송일)<br>해당 기간 주문이 없는 샵만 표시합니다.</p>
+          <div class="dormsw">
+            <button class="dbtn" data-m="3">3개월 무주문 <b id="dorm-c3">–</b></button>
+            <button class="dbtn" data-m="6">6개월 무주문 <b id="dorm-c6">–</b></button>
+          </div>
+          <div id="dormlist"></div>
+        </div>
+      </section>
+
+      <section class="sec" id="sec-shops">
+        <button class="sec-h"><span class="chev2"></span><span class="t">지역별 납품처</span></button>
+        <div class="sec-b">
+          <div class="pf-bar" id="pf-bar">
+            <button class="pf on" data-pf="">전체</button>
+            <button class="pf" data-pf="__direct">본사 직거래</button>
+            <select id="pf-partner"><option value="">파트너 선택…</option></select>
+            <span class="pf-cnt" id="pf-cnt"></span>
+          </div>
+          <div class="search"><input id="q" type="text" placeholder="상호명 · 지역 검색"></div>
+          <div class="list" id="list"></div>
+        </div>
+      </section>
+
+    </div>
+  </aside>
+
+  <div class="map-col" id="mapcol">
+    <div id="map"></div>
+
+    <div class="toolbar" id="toolbar" style="display:none">
+      <div class="map-search" id="map-search">
+        <input id="ms-q" type="text" placeholder="🔍 샵 검색 (상호명 · 지역 · 주소)" autocomplete="off">
+        <div class="msr" id="ms-results"></div>
+      </div>
+      <div class="tool-row">
+        <button class="tbtn" id="btn-size" title="원 크기 표현 전환">
+          <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="6" cy="12" r="2.2"/><circle cx="12.5" cy="12" r="3.2"/><circle cx="20" cy="12" r="1.6"/></svg>
+          <span id="btn-size-label">크기: 금액</span>
+        </button>
+        <button class="tbtn" id="btn-mb" title="마이크로 블랙 전문점 27곳을 검정 점으로 표시">
+          <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+          <span>블랙 전문점</span>
+        </button>
+        <button class="tbtn" id="btn-measure">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 21 21 3"/><circle cx="4.5" cy="19.5" r="2"/><circle cx="19.5" cy="4.5" r="2"/></svg>
+          거리 측정
+        </button>
+        <button class="tbtn" id="btn-new">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11Z"/><path d="M12 8v5M9.5 10.5h5"/></svg>
+          신규샵 위치 검토
+        </button>
+      </div>
+
+      <div class="card-t" id="panel-measure" style="display:none">
+        <h4>📏 두 지점 간 거리</h4>
+        <p class="hint" id="measure-hint">지도의 핀 또는 위 검색창에서 <b>샵 1</b>을 클릭하세요.</p>
+        <div id="measure-result"></div>
+      </div>
+
+      <div class="card-t" id="panel-new" style="display:none">
+        <h4>📍 신규 입점 후보 검토</h4>
+        <p class="hint">후보 주소를 입력하면 기존 납품처와의 거리를 계산합니다.<br>반경 <b>1km</b> 이내에 기존 샵이 있으면 경고합니다.</p>
+        <div class="addr-row">
+          <input id="new-addr" type="text" placeholder="예: 서울 강남구 테헤란로 123">
+          <button id="btn-geo">검토</button>
+        </div>
+        <div id="new-result"></div>
+      </div>
+    </div>
+
+    <div class="legend" id="legend">
+      <b>연 주문금액 (원 크기)</b>
+      <div class="legend-row"><i style="width:10px;height:10px"></i><span>소</span></div>
+      <div class="legend-row"><i style="width:18px;height:18px"></i><span>중</span></div>
+      <div class="legend-row"><i style="width:26px;height:26px"></i><span>대</span></div>
+      <div class="legend-row" style="margin-top:8px;padding-top:7px;border-top:1px solid var(--line2)">
+        <span style="font-size:10.5px">원 색상 = <b>시·도</b> (좌측 지역 목록의 색 참조)</span>
+      </div>
+      <div class="legend-row" id="lg-blue" style="display:none">
+        <i style="width:11px;height:11px;background:#fff;outline:3px solid #E03131;outline-offset:1px"></i><span>마이크로젝션 구매처 (링)</span>
+      </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <div class="upov" id="upov">
+      <div class="upcard" id="dropzone">
+        <h2>📂 주문 데이터 업로드</h2>
+        <div class="fmt-chips"><span class="fmt">.xlsx</span><span class="fmt">.xls</span><span class="fmt">.csv</span><span class="fmt-note">UTF-8 · CP949(한글 윈도우) 자동 인식</span></div>
+        <ol class="upsteps">
+          <li>네이버 스마트스토어에서 <b>발주발송관리</b> 파일 다운로드</li>
+          <li>이 영역에 <b>끌어다 놓기</b> 또는 아래 버튼으로 선택</li>
+          <li>자동으로 제품 분류 · 샵 병합 · 지도 표시 → <b>검증 요약</b> 확인</li>
+          <li style="color:#217A33"><b>모든 기기에서 보기</b>: 토큰을 한 번 설정해 두면, 업로드 시
+              원본이 GitHub에 <b>자동 게시</b>되어 어느 기기에서든 접속만 하면 최신 데이터가 보입니다
+              (수동 방법: 파일을 <b>data.csv</b> 이름으로 리포에 직접 업로드해도 동일)</li>
+        </ol>
+        <button class="uppick" id="btn-pick">파일 선택</button>
+        <input type="file" id="file-in" accept=".xlsx,.xls,.csv" hidden>
+        <p class="upnote">· 데이터는 <b>브라우저 안에서만</b> 처리되며 어디에도 전송되지 않습니다.<br>
+        · 필수 컬럼: 주문번호 · 발송일 · 수취인명 · 상품명 · 옵션정보 · 수량 · 통합배송지 · 1년 주문금액 · 최종 상품별 총 주문금액<br>
+        · 업로드 후 <b>현황</b> 탭에서 분류율·병합 결과를 확인할 수 있습니다.</p>
+        <div class="uperr" id="uperr"></div>
+        
+        <button class="uplink" id="up-clear">저장된 데이터 · 좌표 캐시 삭제</button>
+      </div>
+    </div>
+
+    <div class="banner" id="banner">
+      <div class="card">
+        <h2>지도를 표시하려면 카카오 키가 필요합니다</h2>
+        <p>이 파일 상단 <code>KAKAO_KEY</code> 값에 발급받은 <b>JavaScript 키</b>를 넣어주세요.</p>
+        <p>① <a href="https://developers.kakao.com" target="_blank" rel="noopener">developers.kakao.com</a> → 앱 → JavaScript 키 복사<br>
+           ② [플랫폼 → Web]에 배포 도메인 등록<br>
+           ③ [제품 설정 → 카카오맵] 사용 설정 ON</p>
+        <p style="margin-top:10px;font-size:11.5px">현재 이 페이지 주소: <code id="key-origin">–</code></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page-el rankpage" id="page-rank">
+  <div class="rk-top">
+    <div class="rk-sorts">
+      <button class="rksort on" data-s="annual">최근 1년 주문액순</button>
+      <button class="rksort" data-s="total">기간 누적순</button>
+      <button class="rksort" data-s="recent" title="다시 누르면 최근↔오래된 순서 전환">최근 주문순 <span class="rkdir" id="rkdir">↓</span></button>
+      <input id="rk-q" class="rk-search" type="text" placeholder="🔍 샵 검색">
+    </div>
+    <div class="rk-cards" id="rk-cards"></div>
+  </div>
+  <div class="rk-list" id="ranklist"><p class="hint" style="padding:20px">데이터를 업로드하면 표시됩니다.</p></div>
+</div>
+
+<div class="page-el reportpage" id="page-report">
+  <div class="rp-bar">
+    <input id="rp-q" type="text" placeholder="🔍 샵 검색 (상호명 · 이름 · 지역 · 주소)">
+    <select id="rp-select"><option value="">샵을 선택하세요</option></select>
+  </div>
+  <div class="rp-main" id="rpmain">
+    <div class="rp-empty">위에서 샵을 선택하면 납품 분석 리포트가 표시됩니다.</div>
+  </div>
+</div>
+
+<div class="page-el nspage" id="page-newshop">
+  <div class="ns-bar">
+    <input id="ns-addr" type="text" placeholder="신규 입점 희망 주소를 입력하세요 (도로명 주소)">
+    <button id="ns-go">위치 검토</button>
+    <button id="ns-print" style="display:none">🖨 인쇄 / PDF 저장</button>
+    <button id="ns-mj" class="ns-toggle" title="ON: 최근 3개월 내 마이크로젝션 발주 38만원 이상 유지 샵만 입점 차단 기준으로 판정">
+      <span class="tgdot"></span>마이크로젝션 발주 · 3개월 내 <b id="ns-mj-state">OFF</b>
+    </button>
+  </div>
+  <div class="ns-body" id="nsreport">
+    <div class="ns-map-wrap">
+      <div id="nmap"></div>
+      <div class="ns-maplegend">
+        <span><i class="r1"></i>1km</span><span><i class="r2"></i>2km <b>(마이크로젝션 기준)</b></span><span><i class="r3"></i>3km</span>
+      </div>
+    </div>
+    <div class="ns-side" id="ns-results">
+      <div class="rp-note">상단에 주소를 입력하고 <b>위치 검토</b>를 누르면<br>반경 1·2·3km 분석과 마이크로젝션 입점 판정이 표시됩니다.</div>
+    </div>
+  </div>
+</div>
+
+<div class="page-el shippage" id="page-ship">
+  <div class="sp-side">
+    <div class="sp-head">주문 일자</div>
+    <div class="sp-list" id="sp-days"><p class="hint" style="padding:12px 16px">데이터를 업로드하면 표시됩니다.</p></div>
+  </div>
+  <div class="sp-main" id="sp-detail">
+    <div class="rp-empty">← 날짜를 선택하면 해당일 주문 내역이 표시됩니다.</div>
+  </div>
+</div>
+
+<div class="page-el mbpage" id="page-mb">
+  <div class="mb-top">
+    <div class="mb-title">⚫ 마이크로 블랙 전문점 <b>27곳</b></div>
+    <div class="mb-hint">고정 파트너 리스트 · 행의 [지도] 버튼 또는 지도 탭 툴바의 「⚫ 블랙 전문점」으로 지도에 검정 점으로 표시됩니다</div>
+  </div>
+  <div class="mb-list" id="mb-list"></div>
+</div>
+
+<script>
+/* ================== DATA LAYER (in-browser Excel/CSV parsing) ================== */
+let SHOPS=[], PRODUCTS=[], META={from:'–',to:'–',orders:0};
+let DORM_CUT={};
+let GEO={}; try{ GEO=JSON.parse(localStorage.getItem('drbae_geo_v1')||'{}'); }catch(e){}
+
+/* ===== SHARED-RULES:BEGIN — 자동 주입 영역 (직접 수정 금지) =====
+   원본: baelab-orders-private/shared/product_rules.js
+   이 블록은 게시할 때마다 원본으로 덮어써집니다. 규칙 수정은 원본에서만. */
+/* ============================================================================
+   닥터배 제품 SKU 분류 — 공유 규칙 (Single Source of Truth)
+   ----------------------------------------------------------------------------
+   이 파일이 유일한 원본입니다. 아래 두 프로그램이 같은 규칙을 씁니다.
+     · 발송 명세서 포장 프로그램 : packing/…html 이 <script src>로 직접 로드
+     · 납품처 분포 지도(drbae-map): publish_map_data.py 가 게시할 때 자동 주입
+   ⚠ 제품·규칙을 바꿀 때는 반드시 이 파일만 고치세요.
+      (한쪽에만 고쳐 두 프로그램의 분류가 어긋나던 사고가 2026-09-08에 있었습니다.)
+   ============================================================================ */
+/* ══════════════ 제품 SKU 분류 (닥터배 납품처 분포 앱과 동일 로직·팔레트 — 두 차트 색 구성 일치) ══════════════ */
+const SKU_NAME = {
+  EXO_BLUE:'엑소토카인 블루', PDRN:'피디로엔 핑크',
+  LIQMASK:'엑소토카인 리퀴드 마스크', GEL500:'엑소토카인 에센스겔 500ml', GEL150:'엑소토카인 에센스겔 150ml',
+  FIRM:'퍼밍크림 (장벽 크림)', CALM:'카밍 마스크 (크레이 팩)',
+  EXO_BLACK:'엑소토카인 블랙', TOCO_LIQ:'토코포르테 (액상)', SCALP_B:'스칼프 부스터 500ml', SCALP_S:'스칼프 샴푸 500ml',
+  HAIR_T:'헤어 토닉 500ml',
+  CALCI:'칼리파우더', MJ:'마이크로젝션', DERMA:'더마커런트 세트', AIR:'에어스프레이', ADAPTER:'더블 어댑터',
+  SUMMER_SET:'여름 피부열 관리 3종 세트', TEST_SKIN:'스킨부스터 5종 테스트', TEST_SCALP:'두피 테스트 구성',
+  DEMO:'첫구매 데모 테스트', BANNER:'미니배너 세트 (홍보물)',
+  SEMINAR:'오프라인 세미나', EDU:'교육 과정',
+  SB_ETC:'스킨부스터 (구성 미표기)', BASE:'기타 (택배비·브로셔 등)',
+  TOCO_BRN:'토코포르테 (액상)'   // 구버전 코드 호환용 별칭 (TOCO_LIQ로 통일됨)
+};
+const SKU_COLOR = {
+  EXO_BLUE:'#2F80D0', PDRN:'#D34E86', CALCI:'#71747B',
+  GEL500:'#A9763F', GEL150:'#C79A5B', LIQMASK:'#22355F', EXO_BLACK:'#111111',
+  TOCO_LIQ:'#7A4A1E', MJ:'#E03131', DERMA:'#7048E8', AIR:'#4DABF7', ADAPTER:'#64748B',
+  FIRM:'#2F9E44', CALM:'#82C91E', SCALP_B:'#B197FC', SCALP_S:'#FF8787', HAIR_T:'#0B7285',
+  SUMMER_SET:'#FCC419', TEST_SKIN:'#ADB5BD', TEST_SCALP:'#868E96',
+  DEMO:'#D0BFFF', BANNER:'#F783AC',
+  SEMINAR:'#CED4DA',             // 오프라인 세미나 (기존 '기타' 회색 유지 요청)
+  EDU:'#D9480F',                 // 교육 과정 (진한 테라코타 — 차트 내 고유색)
+  SB_ETC:'#868E96',              // 스킨부스터인데 옵션에 구성 표기가 없는 주문
+  BASE:'#B0AAA2',                // 기타는 따뜻한 회색으로 구분
+  TOCO_BRN:'#7A4A1E'             // 구버전 코드 호환용 별칭
+};
+function optPairs(o){
+  if(typeof o!=='string') return [];
+  return o.split(' / ').filter(p=>p.includes(':')).map(p=>{
+    const i=p.indexOf(':'); return [p.slice(0,i).trim(), p.slice(i+1).trim()];
+  });
+}
+function productsOfSku(opt, nm){
+  const ps=new Set();
+  for(const [k,v] of optPairs(opt)){
+    if(k.includes('샵')) continue;
+    const kv=k+' '+v;
+    if(kv.includes('마이크로젝션')) ps.add('MJ');
+    else if(kv.includes('더마커런트')) ps.add('DERMA');
+    else if(k.includes('퍼밍 재생크림')) ps.add('FIRM');
+    else if(k.includes('더블')) ps.add('ADAPTER');
+    else if(k.includes('에어')) ps.add('AIR');
+    else if(/^스킨부스터\s*\d+\s*종/.test(k.replace(/\s/g,' '))){
+      // 스킨부스터 N종 (교차선택 등) — 4종·5종·6종… 종수와 무관하게 옵션값으로 SKU 판정
+      // ⚠ 순서 주의: 구체적 제품명을 먼저 판정한다.
+      //   '칼리파우더-(피부&두피)'가 부위 단어('두피')에, '리퀴드 필링'이 '필링'(칼리)에 걸리면 안 됨.
+      if(v.includes('피디로엔')) ps.add('PDRN');
+      else if(v.includes('엑소-토코포르테')||v.includes('토코포르테')) ps.add('TOCO_LIQ');
+      else if(v.includes('리퀴드')) ps.add('LIQMASK');
+      else if(v.includes('칼리')||v.includes('마이크로파우더')||v.includes('필링')) ps.add('CALCI');
+      else if(v.includes('에센스겔')||v.includes('에센스 겔')) ps.add(v.includes('150')?'GEL150':'GEL500');
+      else if(v.includes('블랙')) ps.add('EXO_BLACK');
+      // 엑소토카인은 부위로 갈림: 두피·포 스칼프 = 블랙, 그 외(피부·페이스) = 블루
+      else if(v.includes('엑소토카인')) ps.add((v.includes('두피')||v.includes('포 스칼프')) ? 'EXO_BLACK' : 'EXO_BLUE');
+      else if(v.includes('포 스칼프')||v.includes('두피')) ps.add('EXO_BLACK');   // 부위 표기만 있을 때
+    }
+    else if(k.includes('엑소토카인 블랙')) ps.add('EXO_BLACK');
+    else if(k.includes('엑소토카인')) ps.add('EXO_BLUE');
+    else if(k.includes('피디로엔')) ps.add('PDRN');
+    else if(k.includes('토코포르테')) ps.add('TOCO_LIQ');   // 브라운/액상 = 같은 제품 → 통일
+    else if(k.includes('칼리파우더')) ps.add('CALCI');
+    else if(k.includes('리퀴드마스크')) ps.add('LIQMASK');
+    else if(k.includes('에센스겔')||k.includes('에센스 겔')){
+      if(kv.includes('150')&&kv.includes('500')){ps.add('GEL500');ps.add('GEL150');}
+      else if(kv.includes('150')) ps.add('GEL150');
+      else ps.add('GEL500');
+    }
+    else if(k.includes('퍼밍')) ps.add('FIRM');
+    else if(k.includes('카밍')) ps.add('CALM');
+    else if(k.includes('재생크림+크레이팩')){ps.add('FIRM');ps.add('CALM');}
+    else if(k.includes('스칼프 부스터')) ps.add('SCALP_B');
+    else if(k.includes('스칼프 샴푸')||k.includes('헤어 샴푸')) ps.add('SCALP_S');   // 두피 샴푸 500 (표기 2종)
+    else if(k.includes('토닉')) ps.add('HAIR_T');                                   // 헤어 토닉 500
+    // ⚠ '수료증'은 세미나 옵션(성함(수료증용))에도 쓰이므로 근거로 삼지 않는다
+    else if(k.includes('교육')) ps.add('EDU');   // 예: "교육 과정 선택: CASE 2 [피부] + 두피 기초"
+    else if(k.includes('[피부] 스킨부스터')) ps.add('TEST_SKIN');
+    else if(k.includes('[두피] 테스트')) ps.add('TEST_SCALP');
+    else if(k==='옵션 선택'){                          // 24년도 결제창
+      if(v.includes('피디로엔')) ps.add('PDRN');
+      else if(v.includes('엑소토카인')) ps.add('EXO_BLUE');
+      else if(v.includes('토코포르테')) ps.add('TOCO_LIQ');
+      else if(v.includes('칼리')) ps.add('CALCI');
+    }
+    else if(k==='구성 옵션'){                          // 예: 엑소3+피디3 (복수 가능)
+      if(v.includes('엑소')) ps.add('EXO_BLUE');
+      if(v.includes('피디')) ps.add('PDRN');
+      if(v.includes('토코')) ps.add('TOCO_LIQ');
+    }
+    else if(/^스킨부스터(_두피| 5종| 3종)?$/.test(k) || k==='닥터배_필수 선택' || k==='닥터배_두피'){
+      if(v.includes('피디로엔')) ps.add('PDRN');
+      else if(v.includes('엑소-토코포르테')||v.includes('토코포르테')) ps.add('TOCO_LIQ');
+      else if(v.includes('포 스칼프')||v.includes('두피')||v.includes('스칼프 부스터')) ps.add('EXO_BLACK');
+      else if(v.includes('엑소토카인')) ps.add('EXO_BLUE');
+      else if(v.includes('마이크로파우더')||v.includes('필링')) ps.add('CALCI');
+    }
+  }
+  if(!ps.size){                                        // 옵션으로 판정 실패 → 상품명 폴백
+    nm=String(nm||'');
+    if(nm.includes('첫구매')||nm.includes('데모')) ps.add('DEMO');
+    else if(nm.includes('교육')) ps.add('EDU');         // 교육 과정 (닥터배 교육 구성 등)
+    else if(nm.includes('세미나')) ps.add('SEMINAR');   // 오프라인 세미나 결제 건
+    else if(nm.includes('여름 피부열')) ps.add('SUMMER_SET');
+    // "샴푸, 에센스겔, 토닉"처럼 구성만 나열된 결제창 기본 항목(3천원)은 제품이 아니라 기타.
+    // 실제 발송 제품은 같은 주문의 다른 행(500ml 헤어 샴푸/토닉 등)으로 따로 들어오므로
+    // 여기서 제품으로 세면 이중 계상이 된다.
+    else if(nm.includes('샴푸') && nm.includes('토닉')) ps.add('BASE');
+    else if(nm.includes('토닉')) ps.add('HAIR_T');
+    else if(nm.includes('샴푸')) ps.add('SCALP_S');
+    else if(nm.includes('리퀴드')&&nm.includes('마스크')) ps.add('LIQMASK');
+    else if(nm.includes('에센스겔')||nm.includes('에센스 겔'))
+      ps.add(nm.includes('150')?'GEL150':'GEL500');       // 예: [26년도 결제창] 에센스 겔 (첫 오픈 특가)
+    else if(nm.includes('토코포르테')) ps.add('TOCO_LIQ');
+    else if(nm.includes('칼리파우더')) ps.add('CALCI');
+    else if(nm.includes('퍼밍')&&nm.includes('카밍')){ps.add('FIRM');ps.add('CALM');}
+    else if(nm.includes('마이크로젝션')) ps.add('MJ');
+    else if(nm.includes('퍼밍')) ps.add('FIRM');
+    else if(nm.includes('더마커런트')) ps.add('DERMA');
+    else if(nm.includes('배너')) ps.add('BANNER');
+    // 스킨부스터인데 옵션에 구성 표기가 없는 주문 (두피는 블랙이 기본 구성)
+    else if(nm.includes('스킨부스터')) ps.add(nm.includes('두피') ? 'EXO_BLACK' : 'SB_ETC');
+    else ps.add('BASE');
+  }
+  return [...ps];
+}
+
+/* 제품 그룹 (지도 앱의 제품 분류 표에서 사용) — skin=피부 / scalp=두피 / common=공통 / device=디바이스 / etc=세트·기타 */
+const GROUP_OF = {
+  EXO_BLUE:'skin', PDRN:'skin', LIQMASK:'skin', GEL500:'skin', GEL150:'skin', FIRM:'skin', CALM:'skin',
+  EXO_BLACK:'scalp', TOCO_LIQ:'scalp', SCALP_B:'scalp', SCALP_S:'scalp', HAIR_T:'scalp',
+  CALCI:'common',
+  MJ:'device', DERMA:'device', AIR:'device', ADAPTER:'device',
+  SUMMER_SET:'etc', TEST_SKIN:'etc', TEST_SCALP:'etc', DEMO:'etc', BANNER:'etc',
+  SEMINAR:'etc', EDU:'etc', SB_ETC:'etc', BASE:'etc'
+};
+/* ===== SHARED-RULES:END ===== */
+
+/* 공유 규칙(SKU_NAME·SKU_COLOR·productsOfSku) → 지도 기존 인터페이스로 연결 */
+const CATALOG = Object.keys(SKU_NAME).filter(c=>c!=='TOCO_BRN')
+  .map(c=>[c, SKU_NAME[c], GROUP_OF[c] || 'etc']);
+function productsOf(opt, nm){ return productsOfD(opt, nm).list; }
+function productsOfD(opt, nm){
+  const list = productsOfSku(opt, nm);
+  const viaOpt = optPairs(opt).some(([k])=>!k.includes('샵'));
+  return {list, via: viaOpt ? 'opt' : (list.includes('BASE') ? 'base' : 'name')};
+}
+function shopNameVia(opts){
+  const pats=[/샵\s*상호명\s*[:：]/, /샵\s*이름\s*[:：]/, /샵\s*인스타(?:\s*아이디)?\s*[:：]/, /인스타\s*아이디\s*(?:\(확인용\))?\s*[:：]/];
+  for(let i=0;i<pats.length;i++)
+    for(const o of opts){ if(typeof o==='string'&&pats[i].test(o)) return i; }
+  return -1;
+}
+/* ── 상호 별칭 정규화: 같은 샵의 다른 표기 → 대표 표기 ──
+   새 표기가 발견되면 아래에 '변형표기(소문자)': '대표표기' 형태로 한 줄 추가하면 됩니다. */
+const NAME_ALIASES={
+  'missingacademy'   : 'misong_academy',
+  'missing academy'  : 'misong_academy',
+  'missing _academy' : 'misong_academy',
+  'missing'          : 'misong_academy',
+  'skin_cloud___'    : '스킨클라우드'
+};
+function canonName(n){
+  n=String(n).trim();
+  return NAME_ALIASES[n.toLowerCase()] || n;
+}
+
+/* ── 병합용 정규화 (스펙 2026-07-19) ── */
+const normAddr=a=>String(a??'').replace(/\s+/g,'');
+const normName=n=>canonName(n).toLowerCase().replace(/[\s._\-]/g,'');
+const PLACEHOLDER=/^(창업준비중|준비중|창업예정|오픈예정|미정|없음|해당없음|개인|x+|\?+)$/;
+const validMergeName=n=>!!n && !PLACEHOLDER.test(n) && n!=='미상';
+const normPhone=p=>{ const d=String(p??'').replace(/\D/g,''); return d.length>=9?d:''; };  // 마스킹 전화 자동 무효
+/* tier 1 = 상호명 계열(법상 유일) / tier 2 = 인스타 계열(지점 간 공유 가능 → 후순위)
+   ※ 스펙 §5-2 보강: 다수결을 계열별 2단으로 — 프랜차이즈 공유 인스타 핸들이
+     서로 다른 지점을 잇거나(오병합) 지점명 다수결을 이기는 것(과소병합)을 방지 */
+const SHOP_PATS_T1=[/샵\s*상호명\s*[:：]+\s*([^/]+)/, /샵\s*이름[^:：/]*[:：]+\s*([^/]+)/];
+const SHOP_PATS_T2=[/샵\s*인스타(?:\s*아이디)?\s*[:：]+\s*([^/]+)/, /인스타\s*아이디[^:：/]*[:：]+\s*([^/]+)/];
+function parseShopName(o){
+  if(typeof o!=='string') return {name:'',tier:0};
+  for(const re of SHOP_PATS_T1){ const m=o.match(re); if(m) return {name:m[1].replace(/^[\s:：]+/,'').trim(), tier:1}; }
+  for(const re of SHOP_PATS_T2){ const m=o.match(re); if(m) return {name:m[1].replace(/^[\s:：]+/,'').trim(), tier:2}; }
+  return {name:'',tier:0};
+}
+
+function cleanShop(opts, recv){
+  const pats=[/샵\s*상호명\s*[:：]+\s*([^/]+)/, /샵\s*이름\s*[:：]+\s*([^/]+)/,
+              /샵\s*인스타(?:\s*아이디)?\s*[:：]+\s*([^/]+)/,
+              /인스타\s*아이디\s*(?:\(확인용\))?\s*[:：]+\s*([^/]+)/];
+  for(const re of pats)
+    for(const o of opts){ if(typeof o==='string'){ const m=o.match(re); if(m) return canonName(m[1]); } }
+  return canonName(recv??'')||'미상';
+}
+function sidoNorm(a){ const m=a.match(/^(\S+?[시도])/); const s=m?m[1]:'기타';
+  return (s==='전라북도'||s==='전북특별자치도')?'전북특별자치도':s; }
+function sigunguOf(a){ const m=a.match(/^\S+?[시도]\s+(\S+?[시군구])(?:\s+(\S+?구))?/);
+  return m?(m[1]+(m[2]?' '+m[2]:'')).trim():''; }
+function roadOf(a){ const m=a.match(/^(\S+?[시도]\s+.*?[로길]\s*\d+(?:-\d+)?)/); return m?m[1]:a; }
+function toYMD(v){
+  let d;
+  if(v instanceof Date) d=v;
+  else if(typeof v==='number') d=new Date(Math.round((v-25569)*86400000));
+  else{ const s=String(v??'').trim(); if(!s) return '';
+        d=new Date(s.replace(/\./g,'-').replace(' ','T')); }
+  if(!(d instanceof Date)||isNaN(d)) return '';
+  return d.getFullYear()+'.'+String(d.getMonth()+1).padStart(2,'0')+'.'+String(d.getDate()).padStart(2,'0');
+}
+const numOf=v=> typeof v==='number'?v:(parseFloat(String(v??'').replace(/,/g,''))||0);
+
+function buildShops(rows){
+  const REQ=['발송일','수취인명','상품명','옵션정보','수량','통합배송지'];
+  const missing=REQ.filter(c=>!(c in rows[0]));
+  if(missing.length) throw new Error('필수 컬럼 누락: '+missing.join(', '));
+  const hasAmt=('최종 상품별 총 주문금액' in rows[0]);      // 포장 프로그램 CSV엔 금액 없음 → 0 처리
+  const hasRep=('대표샵명' in rows[0]);                     // 병합 완료 CSV → 대표샵명을 샵 키로 사용
+  const data=rows.filter(r=>r['통합배송지']!=null&&String(r['통합배송지']).trim()!=='');
+  const excluded=rows.length-data.length;
+  if(!data.length) throw new Error('배송지가 있는 데이터 행이 없습니다');
+
+  const byAddr={}, repCnt={};
+  data.forEach(r=>{ const a=r['통합배송지'];
+    (byAddr[a]=byAddr[a]||{opts:[],recv:r['수취인명']}).opts.push(r['옵션정보']);
+    if(hasRep){ const rp=String(r['대표샵명']||'').trim();
+      if(rp){ const ra=normAddr(a); (repCnt[ra]=repCnt[ra]||{})[rp]=(repCnt[ra][rp]||0)+1; } } });
+  const repOf={};   // normAddr → 대표샵명 (주소별 최빈값 — 행 간 표기가 흔들려도 안정)
+  for(const ra in repCnt){ let best='',bc=0;
+    for(const n in repCnt[ra]) if(repCnt[ra][n]>bc){ bc=repCnt[ra][n]; best=n; }
+    repOf[ra]=best; }
+  const bestName={}; let recvShops=0;
+  for(const a in byAddr){
+    bestName[a]=cleanShop(byAddr[a].opts, byAddr[a].recv);
+    if(shopNameVia(byAddr[a].opts)<0) recvShops++;
+  }
+
+  const diagC={opt:0,name:0,base:0,baseAmt:0};
+  const dayMap={};
+  /* union-find (문자열 노드: A:주소 / N:대표상호 / P:전화) */
+  const UF={};
+  const find=x=>{ while(UF[x]!==undefined && UF[x]!==x) x=UF[x]=UF[UF[x]]??UF[x]; if(UF[x]===undefined) UF[x]=x; return x; };
+  const union=(a,b)=>{ a=find(a); b=find(b); if(a!==b) UF[b]=a; };
+  const nameFreq={};   // normAddr → {normName: count}
+  const _allD=data.map(r=>toYMD(r['발송일'])).filter(Boolean).sort();
+  const _latest=_allD.length?_allD[_allD.length-1]:'';
+  const groups={};
+  data.forEach(r=>{ const k=r['주문번호']+'||'+r['통합배송지']; (groups[k]=groups[k]||[]).push(r); });
+
+  const recs={};
+  for(const k in groups){
+    const g=groups[k], addr=g[0]['통합배송지'];
+    let r=recs[addr];
+    if(!r) r=recs[addr]={shop:bestName[addr],addr,road:roadOf(addr),sido:sidoNorm(addr),
+                         sigungu:sigunguOf(addr),annual:0,total:0,last:'',first:'',n:0,hist:{},ph:{},p:{},
+                         recvs:new Set()};   // 수취인(원장님) 이름 — 검색용
+    g.forEach(x=>{ const rv=String(x['수취인명']||'').trim(); if(rv) r.recvs.add(rv); });
+    r.annual=Math.max(r.annual, ...g.map(x=>numOf(x['1년 주문금액'])));
+    r.n+=1;
+    const _ak='A:'+normAddr(addr);
+    g.forEach(x=>{
+      const ph=normPhone(x['수취인연락처1']);
+      if(ph) union(_ak,'P:'+ph);                                   // 신호④ 전화
+      const pn=parseShopName(x['옵션정보']);
+      const nn=normName(pn.name);
+      if(validMergeName(nn)){
+        const f=nameFreq[normAddr(addr)]=nameFreq[normAddr(addr)]||{t1:{},t2:{}};
+        const t=pn.tier===1?f.t1:f.t2;
+        t[nn]=(t[nn]||0)+1;                                        // 신호② 준비: 계열별 상호 빈도
+      }
+    });
+    g.forEach(row=>{
+      const amtRow=numOf(row['최종 상품별 총 주문금액']);
+      r.total+=amtRow;
+      const ymd=toYMD(row['발송일']);
+      if(ymd){
+        if(ymd>r.last) r.last=ymd;
+        if(!r.first||ymd<r.first) r.first=ymd;
+        const mo=ymd.slice(0,7);
+        r.hist[mo]=(r.hist[mo]||0)+amtRow;
+      }
+      const pd=productsOfD(row['옵션정보'], row['상품명']);
+      const ps=pd.list;
+      if(pd.via==='opt') diagC.opt++; else if(pd.via==='base'){ diagC.base++; diagC.baseAmt+=amtRow; } else diagC.name++;
+      const amt=numOf(row['최종 상품별 총 주문금액'])/ps.length;
+      const qty=numOf(row['수량'])/ps.length;
+      const mo2=ymd?ymd.slice(0,7):null;
+      ps.forEach(c=>{ const e=r.p[c]=r.p[c]||[0,0]; e[0]+=qty; e[1]+=amt;
+        if(mo2){ const pm=r.ph[mo2]=r.ph[mo2]||{}; pm[c]=(pm[c]||0)+amt; } });
+      const dkey=ymd||_latest;                        // 발송일 없으면 최신 날짜로
+      if(dkey){                                       // 일자별 주문 원장
+        const dm=dayMap[dkey]=dayMap[dkey]||{};
+        const okey=k;
+        const oe=dm[okey]=dm[okey]||{shop:bestName[addr],sido:sidoNorm(addr),sigungu:sigunguOf(addr),total:0,items:[],_a:addr};
+        oe.total+=amtRow;
+        if(!ymd) oe.nd=true;                          // 발송일 미기재 플래그
+        oe.items.push({c:ps.slice(),q:numOf(row['수량']),a:Math.round(amtRow)});
+      }
+    });
+  }
+
+  /* ★ 동일샵 판단 — 스펙 2026-07-19 (docs/shop-merge.md)
+     신호: ①주소(공백 정규화) ②주소별 다수결 상호명 ③대표상호 접두 일치(짧은쪽 4자+) ④유효 전화번호
+     금지: 주문자ID/주문자번호(허브 계정 사고), 행 단위 상호명, 수취인명 */
+  // 신호②: 주소별 대표(최빈) 상호명 연결
+  const repNames=new Set();
+  for(const ad in nameFreq){
+    const f=nameFreq[ad];
+    const pick=t=>{ let rep='',mx=0; for(const n in t) if(t[n]>mx){mx=t[n];rep=n;} return rep; };
+    const rep=pick(f.t1)||pick(f.t2);                 // 상호명 계열 우선, 없으면 인스타 계열
+    if(rep){ union('A:'+ad,'N:'+rep); repNames.add(rep); }
+  }
+  // 신호③: 대표 상호명 접두 일치 (짧은 쪽 4자 이상)
+  const rn=[...repNames];
+  for(let i=0;i<rn.length;i++) for(let j=i+1;j<rn.length;j++){
+    const a=rn[i],b=rn[j], s=a.length<=b.length?a:b, l=a.length<=b.length?b:a;
+    if(s.length>=4 && l.startsWith(s)) union('N:'+a,'N:'+b);
+  }
+  // 연결요소 → 샵 엔티티
+  const recsArr=Object.values(recs);
+  const clusters={};
+  // 대표샵명 컬럼이 있으면(포장 프로그램·자동 게시 CSV) 그 값이 곧 병합 키 —
+  // 원본에서 병합이 끝난 상태이므로 자체 union-find 신호는 쓰지 않는다.
+  recsArr.forEach(r=>{ const ra=normAddr(r.addr);
+    const g = hasRep ? (repOf[ra] ? 'R:'+repOf[ra] : 'A:'+ra) : find('A:'+ra);
+    (clusters[g]=clusters[g]||[]).push(r); });
+  const shops=[], mergedNames=[], addrRep={};
+  for(const g in clusters){
+    const arr=clusters[g];
+    arr.sort((a,b)=> a.last>b.last?-1:1);
+    const m=arr[0];
+    if(hasRep && g.charAt(0)==='R') m.shop=g.slice(2);   // 표시명도 대표샵명으로 통일
+    if(arr.length>1){
+      const names=[...new Set(arr.map(x=>x.shop))];
+      names.forEach(n=>m.recvs.add(n));   // 병합 전 옛 표기명도 검색되게 (예: '아크네스킨랩')
+      mergedNames.push(`${m.shop} (${arr.length}개 주소${names.length>1?' · 통합: '+names.join(' / '):''})`);
+      for(let i=1;i<arr.length;i++){
+        const o=arr[i];
+        m.total+=o.total; m.annual=Math.max(m.annual,o.annual); m.n+=o.n;
+        if(o.last>m.last) m.last=o.last;
+        if(o.first&&(!m.first||o.first<m.first)) m.first=o.first;
+        for(const mo in o.hist) m.hist[mo]=(m.hist[mo]||0)+o.hist[mo];
+        for(const mo in o.ph){ const pm=m.ph[mo]=m.ph[mo]||{}; for(const c in o.ph[mo]) pm[c]=(pm[c]||0)+o.ph[mo][c]; }
+        for(const c in o.p){ const e=m.p[c]=m.p[c]||[0,0]; e[0]+=o.p[c][0]; e[1]+=o.p[c][1]; }
+        if(o.recvs) o.recvs.forEach(v=>m.recvs.add(v));   // 병합된 주소의 수취인명도 검색 대상
+      }
+    }
+    arr.forEach(x=>{ addrRep[x.addr]=m.shop; });
+    shops.push(m);
+  }
+  shops.forEach(r=>{
+    for(const mo in r.hist) r.hist[mo]=Math.round(r.hist[mo]);
+    for(const mo in r.ph) for(const c in r.ph[mo]) r.ph[mo][c]=Math.round(r.ph[mo][c]);
+    for(const c in r.p) r.p[c]=[Math.round(r.p[c][0]*10)/10, Math.round(r.p[c][1])];
+    r.mjTotal=r.p.MJ?r.p.MJ[1]:0; r.mjQty=r.p.MJ?r.p.MJ[0]:0;
+    r.total=Math.round(r.total);
+  });
+  const raw=s=>s.total;
+  shops.sort((a,b)=> a.sido<b.sido?-1:a.sido>b.sido?1:raw(b)-raw(a));
+
+  const dates=data.map(r=>toYMD(r['발송일'])).filter(Boolean).sort();
+  const meta={from:dates[0]||'–', to:dates[dates.length-1]||'–',
+              orders:new Set(data.map(r=>r['주문번호'])).size};
+  // 최근 1년(최근 12개월 버킷) 주문액 — 월별 이력에서 직접 계산
+  if(meta.to!=='–'){
+    let [cy,cm]=meta.to.slice(0,7).split('.').map(Number);
+    cm-=11; while(cm<1){cm+=12;cy--;}
+    const cutYM=cy+'.'+String(cm).padStart(2,'0');
+    shops.forEach(s=>{ let v=0; for(const mo in s.hist) if(mo>=cutYM) v+=s.hist[mo]; s.y1=Math.round(v); });
+  } else shops.forEach(s=>s.y1=0);
+  const products=CATALOG.map(([c,n,g])=>{
+    const ss=shops.filter(s=>s.p[c]);
+    return ss.length?{c,n,g,shops:ss.length,
+      amt:ss.reduce((a,s)=>a+s.p[c][1],0),
+      qty:Math.round(ss.reduce((a,s)=>a+s.p[c][0],0)*10)/10}:null;
+  }).filter(Boolean);
+  const days=Object.keys(dayMap).sort().reverse().map(d=>{
+    const orders=Object.values(dayMap[d]);
+    orders.forEach(o=>{ o.total=Math.round(o.total);
+      if(addrRep[o._a]) o.shop=addrRep[o._a];       // 병합된 대표 상호로 통일
+      delete o._a; });
+    orders.sort((a,b)=>b.total-a.total);
+    return {d, n:orders.length, total:orders.reduce((x,o)=>x+o.total,0), orders};
+  });
+  meta.noAmt=!hasAmt; meta.hasRep=hasRep;
+  const diag={rows:rows.length, excluded,
+    opt:diagC.opt, name:diagC.name, base:diagC.base, baseAmt:Math.round(diagC.baseAmt),
+    recvShops, merged:mergedNames.length, mergedNames, hasRep};
+  return {shops,products,meta,excluded,mergedNames,rows:rows.length,diag,days};
+}
+
+function parseBuf(name, buf){
+  let wb;
+  if(/\.csv$/i.test(name)){
+    let text=new TextDecoder('utf-8').decode(buf);
+    if(text.includes('\uFFFD')) text=new TextDecoder('euc-kr').decode(buf);  // cp949 CSV 대응
+    text=text.replace(/^\uFEFF/,'');                                          // BOM 제거
+    wb=XLSX.read(text,{type:'string',cellDates:true});
+  }else{
+    wb=XLSX.read(buf,{type:'array',cellDates:true});
+  }
+  const ws=wb.Sheets[wb.SheetNames[0]];
+  return XLSX.utils.sheet_to_json(ws,{defval:null});
+}
+async function readFile(file){
+  return parseBuf(file.name, await file.arrayBuffer());
+}
+/* ================== /DATA LAYER ================== */
+
+/* ── 마이크로 블랙 전문점 (고정 리스트) ── g: 지오코딩 보정 주소 */
+const MB_SHOPS=[
+ {nm:'권민경',ph:'01073136956',svc:'두피관리',addr:'서울 강남구 선릉로 711 2층'},
+ {nm:'강청림',ph:'01092295028',svc:'두피문신, 기타 뷰티',addr:'충남 홍성군 홍북읍 충남대로 50 국제아르페온2차 141호 아우라헤어'},
+ {nm:'박세은',ph:'01037260340',svc:'두피문신',addr:'전북특별자치도 완산구 우전로 250 문학빌딩 1층 젊어지다',g:'전북특별자치도 전주시 완산구 우전로 250'},
+ {nm:'유병웅',ph:'01080002920',svc:'두피관리, 두피문신',addr:'경기도 부천시 길주로 91 비잔티움상동 416호'},
+ {nm:'빈수현',ph:'01038470096',svc:'두피문신',addr:'경기도 수원시 팔달구 인계동 1031-14 정석빌딩 7층'},
+ {nm:'명주성',ph:'01046136568',svc:'두피관리, 두피문신',addr:'광주광역시 서구 상무중앙로 43 BYC빌딩 414호 탈모왕광주'},
+ {nm:'박정철',ph:'01051750234',svc:'피부관리, 두피관리, 두피문신',addr:'대구 중구 달구벌대로 2094 대구메디스퀘어 4층 401호 마이크로청담대구'},
+ {nm:'정채안',ph:'01023498894',svc:'두피문신',addr:'울산광역시 중구 성남동 먹자거리 2, 1층 마이크로청담 울산',g:'울산광역시 중구 성남동'},
+ {nm:'나혁',ph:'01963698462',svc:'두피문신',addr:'강남구 역삼동 783-18 4층',g:'서울 강남구 역삼동 783-18'},
+ {nm:'김현준',ph:'01023521051',svc:'두피문신',addr:'서울 송파구 위례송파로 40 호반써밋 1차 1205동 704호'},
+ {nm:'정재연',ph:'01067609772',svc:'두피문신',addr:'경기도 남양주시 호평로46번길 8 홍조프라자 811호 픽스칼프'},
+ {nm:'양윤호',ph:'01050387696',svc:'두피문신',addr:'부산 부산진구 가야대로703번길 15, 5층 킨크스칼프'},
+ {nm:'이정은',ph:'01068527025',svc:'두피문신',addr:'경남 진주시 충무공동 에나로 130 베네비앙 9층 907호 티안나도트'},
+ {nm:'정지혜',ph:'01080703195',svc:'피부관리, 두피관리, 속눈썹, 반영구문신',addr:'경기도 광주시 태전동2길 9 101호 하이글림'},
+ {nm:'최소연',ph:'01046464961',svc:'피부관리',addr:'경기도 고양시 덕양구 지정로 17, 618호 아크네스킨랩'},
+ {nm:'이설희',ph:'01092966707',svc:'피부관리, 반영구문신',addr:'서울시 송파구 백제고분로7길 49 311호 안나뷰띠끄'},
+ {nm:'공지온',ph:'01089475021',svc:'반영구문신, 두피문신',addr:'서울시 송파구 문정동 639-5 힐스테이트 에코송파 1층 134호 (세론)'},
+ {nm:'오영례',ph:'01067557334',svc:'두피관리',addr:'월드컵4강로28번길 17 아우라헤어살롱',g:'광주광역시 서구 월드컵4강로28번길 17'},
+ {nm:'최서하',ph:'01063742104',svc:'두피관리, 두피문신',addr:'전북 정읍시 정읍남로 1447-14'},
+ {nm:'공진서',ph:'01041528486',svc:'속눈썹, 반영구문신, 두피문신',addr:'광주광역시 첨단중앙로182번길 90 어썸시티 상가2층 205호',g:'광주광역시 광산구 첨단중앙로182번길 90'},
+ {nm:'이주미',ph:'01065241424',svc:'피부관리, 두피관리, 속눈썹, 반영구문신, 두피문신',addr:'광주광역시 동구 구성로152번길 20 아송빌딩 2층 더미인나라'},
+ {nm:'이서현',ph:'01063940477',svc:'두피문신, 기타 뷰티',addr:'인천 서구 청라에메랄드로 99 지젤엠 2층 252호 리브헤어'},
+ {nm:'김채원',ph:'01052024788',svc:'반영구문신, 두피문신',addr:'경기도 고양시 일산서구 킨텍스로 240 포레나킨텍스 105동 2804호'},
+ {nm:'김종규 (사업자 백현주)',ph:'01075631882',svc:'두피문신',addr:'서울시 금천구 시흥대로 315 지하1층 08호'},
+ {nm:'정지혜',ph:'01020038453',svc:'반영구문신, 두피문신',addr:'신사동 511-7 2층 도트앤라인',g:'서울 강남구 신사동 511-7'},
+ {nm:'장현진',ph:'01098949847',svc:'속눈썹, 반영구문신',addr:'대구 달서구 조암남로 85 1층 121호 이프먼트'},
+ {nm:'이명자',ph:'01067869163',svc:'반영구문신, 두피문신, 기타 뷰티',addr:'대구 남구 명덕로14길 17 (세니떼뷰티)'}
+];
+
+const fmt = n => n>=10000 ? (n/10000).toLocaleString('ko-KR',{maximumFractionDigits:0})+'만' : n.toLocaleString('ko-KR');
+const fmtWon = n => n.toLocaleString('ko-KR')+'원';
+const PROX_M = 1000;   // 근접 경고 반경(m)
+
+let sizeMode = 'value';                            // 'value' | 'uniform'
+let selP = new Set();                              // 선택된 제품 코드 (빈 집합 = 전체)
+
+let dormSel = 0;                                   // 0=OFF | 3 | 6 (개월)
+function monthsBefore(ymd, m){                     // 'YYYY.MM.DD' 기준 m개월 전
+  const [y,mo,d]=ymd.split('.').map(Number);
+  const dt=new Date(y,mo-1-m,d);
+  return `${dt.getFullYear()}.${String(dt.getMonth()+1).padStart(2,'0')}.${String(dt.getDate()).padStart(2,'0')}`;
+}
+const isDorm = (s,m) => s.last && DORM_CUT[m] && s.last < DORM_CUT[m];
+
+const prodOK = s => selP.size===0 || [...selP].some(c => s.p[c]);
+const dormOK = s => !dormSel || isDorm(s,dormSel);
+const INVIEW = s => prodOK(s) && dormOK(s) && pfOK(s);
+
+function VALUE(s){
+  if(selP.size) return [...selP].reduce((a,c)=> a + (s.p[c]?s.p[c][1]:0), 0);
+  return (s.y1||0)>0 ? s.y1 : s.total;
+}
+const blueShop = s => selP.has('MJ') && s.mjTotal>0;   // 마젝 선택 시 파란색
+
+let maxVal = 1;
+function recalcMax(){ maxVal = Math.max(1, ...SHOPS.filter(INVIEW).map(VALUE)); }
+
+/* ── 시도별 마커 색상 (색 = 지역, 크기 = 금액) ── */
+const SIDO_COLOR={
+  '서울특별시':'#E03131','경기도':'#2F9E44','인천광역시':'#1971C2',
+  '충청북도':'#364FC7','충청남도':'#74B816',
+  '전북특별자치도':'#AE3EC9','광주광역시':'#D6336C','전라남도':'#087F5B',
+  '대구광역시':'#7048E8','부산광역시':'#E8590C','울산광역시':'#15AABF','경상남도':'#A05A2C',
+  '제주특별자치도':'#FF922B',
+  '대전광역시':'#4DABF7','세종특별자치시':'#63E6BE','강원특별자치도':'#9775FA','경상북도':'#B197FC'
+};
+const sidoColor=s=>SIDO_COLOR[s.sido]||'#868E96';
+
+const RED=[[120,200,205],[43,62,158]], BLUE=[[168,199,228],[18,62,107]];  // (구버전 그라데이션, 미사용)
+function radius(v){ return 9 + 21*Math.sqrt(Math.max(v,1)/maxVal); }
+function mix(pal,t){ const c=pal[0].map((x,i)=>Math.round(x+(pal[1][i]-x)*t)); return `rgb(${c[0]},${c[1]},${c[2]})`; }
+function color(v,blue){ return mix(blue?BLUE:RED, Math.sqrt(Math.max(v,1)/maxVal)); }
+
+function valueLabel(){
+  if(selP.size===1) return PRODUCTS.find(p=>p.c===[...selP][0]).n;
+  if(selP.size>1)   return `선택 ${selP.size}종 합계`;
+  return '최근 1년 합계';
+}
+// Haversine: 구면 대원거리(m). 한반도 범위 오차 < 0.5%
+function haversine(lat1,lng1,lat2,lng2){
+  const R=6371008.8, rad=Math.PI/180;
+  const dLat=(lat2-lat1)*rad, dLng=(lng2-lng1)*rad;
+  const s=Math.sin(dLat/2)**2 + Math.cos(lat1*rad)*Math.cos(lat2*rad)*Math.sin(dLng/2)**2;
+  return 2*R*Math.asin(Math.sqrt(s));
+}
+const fmtDist = m => m<1000 ? Math.round(m)+' m' : (m/1000).toFixed(2)+' km';
+
+
+
+/* ---------- header stats ---------- */
+function updateStats(){
+  const arr=SHOPS.filter(INVIEW);
+  document.getElementById('s-shops').textContent=arr.length+'곳';
+  document.getElementById('s-regions').textContent=new Set(arr.map(s=>s.sido)).size+'개';
+  document.getElementById('s-orders').textContent=META.orders+'건';
+  document.getElementById('s-amount').textContent=fmt(arr.reduce((a,s)=>a+VALUE(s),0))+'원';
+  document.getElementById('lb-amount').textContent=valueLabel();
+  document.querySelector('.legend b').textContent=valueLabel()+' (원 크기)';
+  document.getElementById('pd-tag').textContent = selP.size ? `${selP.size}종 선택` : '전체';
+  document.getElementById('dm-tag').textContent = dormSel ? `${dormSel}개월` : 'OFF';
+  document.getElementById('lg-blue').style.display = selP.has('MJ') ? 'flex' : 'none';
+}
+
+/* ---------- side list ---------- */
+const listEl=document.getElementById('list');
+let shopEls={};
+
+function buildList(){
+  listEl.innerHTML=''; shopEls={};
+  const arr0=SHOPS.filter(INVIEW);
+  if(!arr0.length){ listEl.innerHTML=`<p style="padding:18px 12px;font-size:12.5px;color:var(--mute)">${SHOPS.length?'조건에 맞는 납품처가 없습니다.':'데이터를 업로드하면 표시됩니다.'}</p>`; return; }
+  const byRegion={};
+  arr0.forEach(s=>{ (byRegion[s.sido]=byRegion[s.sido]||[]).push(s); });
+  const order=Object.keys(byRegion).sort((a,b)=>
+    byRegion[b].reduce((x,s)=>x+VALUE(s),0)-byRegion[a].reduce((x,s)=>x+VALUE(s),0));
+  const maxR=Math.max(...order.map(r=>byRegion[r].reduce((x,s)=>x+VALUE(s),0)),1);
+
+  order.forEach(r=>{
+    const arr=byRegion[r].slice().sort((a,b)=>VALUE(b)-VALUE(a));
+    const rTotal=arr.reduce((x,s)=>x+VALUE(s),0);
+    const rc=SIDO_COLOR[r]||'#868E96';
+    const reg=document.createElement('div'); reg.className='region';
+    const head=document.createElement('button'); head.className='region-head';
+    head.innerHTML=`<span class="chev"></span><span class="rdot" style="background:${rc}"></span><span class="region-name">${r}</span>
+      <span class="region-count">${arr.length}</span>
+      <span class="region-bar"><i style="width:${Math.round(rTotal/maxR*100)}%;background:${rc}"></i></span>`;
+    head.onclick=()=>reg.classList.toggle('collapsed');
+    const shops=document.createElement('div'); shops.className='shops';
+    arr.forEach(s=>{
+      const v=VALUE(s);
+      const sub = dormSel ? `${s.sigungu} · 마지막 ${s.last}`
+                : (blueShop(s) && !selP.size ? `${s.sigungu} · 마젝 ${s.mjQty}박스` : s.sigungu);
+      const b=document.createElement('button'); b.className='shop'; b.dataset.i=s._i;
+      b.innerHTML=`<span class="dot" style="background:${sidoColor(s)}${blueShop(s)?';box-shadow:0 0 0 2px #E03131':''}"></span>
+        <span class="shop-txt"><span class="shop-name">${s.shop}${ptag(s)}</span>
+        <span class="shop-sub">${sub}</span></span>
+        <span class="shop-val">${v>0?fmt(v):'–'}</span>`;
+      b.onclick=()=>onShopClick(s._i,true);
+      shops.appendChild(b); shopEls[s._i]=b;
+    });
+    reg.appendChild(head); reg.appendChild(shops); listEl.appendChild(reg);
+  });
+}
+
+document.getElementById('q').addEventListener('input',e=>{
+  const q=e.target.value.trim().toLowerCase();
+  document.querySelectorAll('.region').forEach(reg=>{
+    let any=false;
+    reg.querySelectorAll('.shop').forEach(b=>{
+      const s=SHOPS[b.dataset.i];
+      const hit=!q||(s.shop+s.sido+s.sigungu+s.addr).toLowerCase().includes(q);
+      b.style.display=hit?'':'none'; if(hit)any=true;
+    });
+    reg.style.display=any?'':'none';
+    const sh=reg.querySelector('.shops'); if(any) sh.style.maxHeight=sh.scrollHeight+'px';
+  });
+});
+
+/* ---------- 지도 위 샵 검색 (사이드바 대체) ---------- */
+const msQ=document.getElementById('ms-q'), msR=document.getElementById('ms-results');
+function msClose(){ msR.classList.remove('open'); msR.innerHTML=''; }
+function msRender(){
+  const q=msQ.value.trim().toLowerCase();
+  if(!q){ msClose(); return; }
+  const hits=SHOPS.filter(s=>INVIEW(s)&&(s.shop+s.sido+s.sigungu+s.addr).toLowerCase().includes(q)).slice(0,15);
+  if(!hits.length){ msR.innerHTML='<div class="mse">검색 결과가 없습니다.</div>'; msR.classList.add('open'); return; }
+  msR.innerHTML=hits.map(s=>`<button class="msi" data-i="${s._i}">
+      <span class="nm">${s.shop}</span><span class="rg">${s.sido} ${s.sigungu}</span>
+      <span class="vv">${VALUE(s)>0?fmt(VALUE(s)):'–'}</span></button>`).join('');
+  msR.querySelectorAll('.msi').forEach(b=>b.onclick=()=>{
+    const i=+b.dataset.i;
+    msClose(); msQ.blur();
+    if(!overlays[i]){ toast('이 납품처는 지도에 표시되지 않았습니다'); return; }
+    onShopClick(i,true);            // 거리측정 모드에서는 A/B 선택으로 동작
+  });
+  msR.classList.add('open');
+}
+msQ.addEventListener('input',msRender);
+msQ.addEventListener('focus',msRender);
+msQ.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){ msQ.value=''; msClose(); msQ.blur(); }
+  if(e.key==='Enter'){ const b=msR.querySelector('.msi'); if(b) b.click(); }
+});
+document.addEventListener('click',e=>{ if(!document.getElementById('map-search').contains(e.target)) msClose(); });
+
+/* ================= KAKAO MAP ================= */
+let map, geocoder, places, overlays={}, infoOverlay=null, activeIdx=null;
+let mode=null;                       // null | 'measure' | 'new'
+let measurePick=[];                  // [idx,idx]
+let mLine=null, mLabel=null;         // 측정 선/라벨
+let newMarker=null, newCircle=null, newPos=null, nLine=null, nLabel=null;
+
+const toastEl=document.getElementById('toast');
+function toast(m){toastEl.textContent=m;toastEl.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>toastEl.classList.remove('show'),2800);}
+
+function sdkError(origin){
+  document.getElementById('banner').style.display='flex';
+  document.querySelector('.banner .card').innerHTML=
+    `<h2>지도를 불러오지 못했습니다</h2>
+     <p>키는 입력됐지만 카카오가 이 사이트를 거부했습니다.</p>
+     <p>콘솔 → 플랫폼 → Web → 사이트 도메인에 아래를 등록하세요:</p>
+     <p><code style="font-size:13px">${origin}</code></p>
+     <p style="font-size:12px">그리고 [제품 설정 → 카카오맵 → 사용 설정]이 ON인지 확인하세요.</p>`;
+}
+function bootstrap(){
+  const origin=location.origin;
+  const oel=document.getElementById('key-origin'); if(oel) oel.textContent=origin;
+  if(!KAKAO_KEY||KAKAO_KEY.length<30||KAKAO_KEY.indexOf("YOUR_")===0){ return; }
+  let ok=false;
+  const sc=document.createElement('script');
+  sc.src=`https://dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_KEY}&autoload=false&libraries=services`;
+  sc.onload=()=>{ if(window.kakao&&kakao.maps) kakao.maps.load(()=>{ ok=true; initMap(); }); };
+  sc.onerror=()=>sdkError(origin);
+  document.head.appendChild(sc);
+  setTimeout(()=>{ if(!ok) sdkError(origin); },5000);
+}
+
+let mapReady=false;
+function initMap(){
+  document.getElementById('banner').style.display='none';
+  document.getElementById('toolbar').style.display='flex';
+  map=new kakao.maps.Map(document.getElementById('map'),{center:new kakao.maps.LatLng(36.4,127.9),level:13});
+  geocoder=new kakao.maps.services.Geocoder();
+  places=new kakao.maps.services.Places();
+  mapReady=true;
+  if(SHOPS.length) geocodeAll();
+}
+
+let geoToken=0;
+function geocodeAll(){
+  const tok=++geoToken;
+  document.getElementById('legend').style.display='block';
+  const bounds=new kakao.maps.LatLngBounds(); let done=0, failed=[];
+  (function next(k){
+    if(tok!==geoToken) return;                       // 새 업로드로 무효화
+    if(k>=SHOPS.length){
+      refreshMarkers();
+      // 지도 탭이 숨겨진 상태(현황 탭 등)에서 setBounds하면 크기 0 기준으로 어긋남 → 탭 진입 시 적용
+      if(!bounds.isEmpty()){ if(curPage==='map') map.setBounds(bounds); else window.__pendingBounds=bounds; }
+      try{ localStorage.setItem('drbae_geo_v1', JSON.stringify(GEO)); }catch(e){}
+      toast(`${done}곳 표시 완료${failed.length?` · 미매칭 ${failed.length}곳`:''}`);
+      if(failed.length) console.warn('미매칭 주소:',failed);
+      return;
+    }
+    const s=SHOPS[k];
+    const step=()=>{ if((k+1)%25===0) toast(`위치 확인 중… ${k+1}/${SHOPS.length}`); setTimeout(()=>next(k+1),35); };
+    const place=(lat,lng,cache)=>{ s.lat=lat; s.lng=lng;
+      if(cache) GEO[s.addr]=[lat,lng];
+      addMarker(s,lat,lng); bounds.extend(new kakao.maps.LatLng(lat,lng)); done++; };
+    const fail=()=>{ failed.push(s.shop+' / '+s.addr); step(); };
+    const c=GEO[s.addr];
+    if(c){ place(c[0],c[1],false);                    // 캐시 히트: API 호출 없이 즉시
+      if((k+1)%50===0) setTimeout(()=>next(k+1),0); else next(k+1); return; }
+    geocoder.addressSearch(s.addr,(r,st)=>{
+      if(st===kakao.maps.services.Status.OK&&r[0]){ place(+r[0].y,+r[0].x,true); return step(); }
+      geocoder.addressSearch(s.road,(r2,st2)=>{
+        if(st2===kakao.maps.services.Status.OK&&r2[0]){ place(+r2[0].y,+r2[0].x,true); return step(); }
+        places.keywordSearch(s.sigungu+' '+s.shop,(r3,st3)=>{
+          if(st3===kakao.maps.services.Status.OK&&r3[0]){ place(+r3[0].y,+r3[0].x,true); return step(); }
+          fail();
+        });
+      });
+    });
+  })(0);
+}
+
+function addMarker(s,lat,lng){
+  const el=document.createElement('div'); el.className='pin';
+  el.innerHTML='<div class="circle"></div>';
+  el.onclick=()=>onShopClick(s._i,false);
+  // clickable:true — 지도 팬/클릭이 핀 클릭을 가로채지 않도록 (거리측정·정보창 클릭이 터치/실클릭에서 씹히는 문제 방지)
+  const ov=new kakao.maps.CustomOverlay({position:new kakao.maps.LatLng(lat,lng),content:el,yAnchor:.5,xAnchor:.5,clickable:true});
+  overlays[s._i]={ov,el,pos:new kakao.maps.LatLng(lat,lng)};
+  styleMarker(s);
+}
+function styleMarker(s){
+  const o=overlays[s._i]; if(!o) return;
+  if(!INVIEW(s)){ o.ov.setMap(null); return; }
+  const v=VALUE(s);
+  const d = sizeMode==='uniform' ? 11 : radius(v)*2;
+  const c=o.el.querySelector('.circle');
+  c.style.width=d+'px'; c.style.height=d+'px';
+  c.style.background = sidoColor(s);                 // 색 = 시·도
+  o.el.classList.toggle('mjr', blueShop(s));         // 마젝 선택 시 틸 링
+  o.ov.setZIndex(sizeMode==='uniform'?10:Math.round(v/1000)); o.ov.setMap(map);
+}
+function refreshMarkers(){ SHOPS.forEach(styleMarker); }
+
+/* ---------- click router ---------- */
+function onShopClick(i,fromList){
+  if(mode==='measure'){ pickForMeasure(i); if(fromList) closeSheet(); return; }
+  if(mode==='new' && newPos){ linkToNew(i); if(fromList) closeSheet(); return; }
+  focusShop(i,fromList);
+  if(fromList) closeSheet();
+}
+
+function focusShop(i,fromList){
+  const o=overlays[i]; if(!o){ toast('이 납품처는 지도에 표시되지 않았습니다'); return; }
+  if(activeIdx!=null&&overlays[activeIdx]) overlays[activeIdx].el.classList.remove('hot');
+  if(activeIdx!=null&&shopEls[activeIdx]) shopEls[activeIdx].classList.remove('active');
+  activeIdx=i; o.el.classList.add('hot');
+  if(shopEls[i]) shopEls[i].classList.add('active');
+  map.setLevel(6,{anchor:o.pos}); map.panTo(o.pos);
+  showInfo(SHOPS[i],o.pos);
+  if(fromList||!shopEls[i]) return;
+  const reg=shopEls[i].closest('.region'); reg.classList.remove('collapsed');
+  shopEls[i].scrollIntoView({block:'center',behavior:'smooth'});
+}
+
+function showInfo(s,pos){
+  if(infoOverlay) infoOverlay.setMap(null);
+  const el=document.createElement('div'); el.className='info';
+  el.innerHTML=`<button class="close">&times;</button>
+    <h3>${s.shop}</h3>
+    <div class="addr">${s.addr}</div>
+    <div class="row"><span>지역</span><b>${s.sido} ${s.sigungu}</b></div>
+    <div class="row"><span>누적 주문액 (${META.from.slice(2,7)}~)</span><b>${fmtWon(s.total)}</b></div>
+    <div class="row"><span>최근 1년 주문액</span><b>${(s.y1||0)>0?fmtWon(s.y1):'–'}</b></div>
+    <div class="row"><span>가장 최근 주문일</span><b>${s.last||'–'}</b></div>
+    <div class="info-actions">
+      <button class="ia" data-a="rep">📋 샵 리포트</button>
+    </div>`;
+  el.querySelector('.close').onclick=()=>{infoOverlay.setMap(null);infoOverlay=null;};
+  el.querySelector('[data-a="rep"]').onclick=()=>{ switchPage('report'); selectReport(s._i); };
+  infoOverlay=new kakao.maps.CustomOverlay({position:pos,content:el,yAnchor:1,xAnchor:.5,zIndex:9999,clickable:true});
+  infoOverlay.setMap(map);
+}
+
+/* ---------- drawing helpers ---------- */
+function drawLine(p1,p2,warn){
+  const line=new kakao.maps.Polyline({path:[p1,p2],strokeWeight:3,
+    strokeColor:warn?'#C0392B':'#1F1518',strokeOpacity:.85,strokeStyle:'shortdash'});
+  line.setMap(map);
+  const m=new kakao.maps.LatLng((p1.getLat()+p2.getLat())/2,(p1.getLng()+p2.getLng())/2);
+  const el=document.createElement('div'); el.className='dlabel'+(warn?' warn':'');
+  el.textContent=fmtDist(haversine(p1.getLat(),p1.getLng(),p2.getLat(),p2.getLng()));
+  const lab=new kakao.maps.CustomOverlay({position:m,content:el,yAnchor:.5,xAnchor:.5,zIndex:10000});
+  lab.setMap(map);
+  return {line,lab};
+}
+function clearMeasure(){
+  if(mLine){mLine.line.setMap(null);mLine.lab.setMap(null);mLine=null;}
+  measurePick.forEach(i=>overlays[i]&&overlays[i].el.classList.remove('sel'));
+  measurePick.forEach(i=>shopEls[i]&&shopEls[i].classList.remove('pick'));
+  document.querySelectorAll('.pin .badge').forEach(b=>b.remove());
+  measurePick=[];
+  document.getElementById('measure-result').innerHTML='';
+  document.getElementById('measure-hint').innerHTML='지도의 핀 또는 위 검색창에서 <b>샵 1</b>을 클릭하세요.';
+}
+function clearNew(){
+  if(newMarker){newMarker.setMap(null);newMarker=null;}
+  if(newCircle){newCircle.setMap(null);newCircle=null;}
+  if(nLine){nLine.line.setMap(null);nLine.lab.setMap(null);nLine=null;}
+  newPos=null;
+  document.getElementById('new-result').innerHTML='';
+}
+
+/* ---------- mode: measure ---------- */
+function pickForMeasure(i){
+  if(!overlays[i]){ toast('좌표가 없는 납품처입니다'); return; }
+  if(measurePick.includes(i)) return;
+  if(measurePick.length>=2){ clearMeasure(); }
+  measurePick.push(i);
+  const o=overlays[i]; o.el.classList.add('sel'); if(shopEls[i]) shopEls[i].classList.add('pick');
+  const badge=document.createElement('div'); badge.className='badge'; badge.textContent=measurePick.length===1?'A':'B';
+  o.el.appendChild(badge);
+
+  if(measurePick.length===1){
+    document.getElementById('measure-hint').innerHTML='이제 <b>샵 2</b>를 클릭하세요.';
+    toast('A: '+SHOPS[i].shop);
+  }else{
+    const [a,b]=measurePick, pa=overlays[a].pos, pb=overlays[b].pos;
+    const m=haversine(pa.getLat(),pa.getLng(),pb.getLat(),pb.getLng());
+    const warn=m<PROX_M;
+    mLine=drawLine(pa,pb,warn);
+    document.getElementById('measure-hint').innerHTML='다시 클릭하면 새로 측정합니다.';
+    document.getElementById('measure-result').innerHTML=
+      `<div class="verdict ${warn?'danger':'ok'}">
+         <b>${SHOPS[a].shop}</b> ↔ <b>${SHOPS[b].shop}</b><br>
+         직선거리 <b>${fmtDist(m)}</b> ${warn?'· 1km 이내 근접':''}
+       </div>`;
+    const bounds=new kakao.maps.LatLngBounds(); bounds.extend(pa); bounds.extend(pb); map.setBounds(bounds,80,80,80,380);
+  }
+}
+
+/* ---------- mode: new shop ---------- */
+function placeNew(lat,lng,label){
+  clearNew();
+  newPos=new kakao.maps.LatLng(lat,lng);
+  const el=document.createElement('div'); el.className='newpin';
+  el.innerHTML='<div class="body"><span>NEW</span></div>';
+  newMarker=new kakao.maps.CustomOverlay({position:newPos,content:el,yAnchor:1,xAnchor:.5,zIndex:10001});
+  newMarker.setMap(map);
+  newCircle=new kakao.maps.Circle({center:newPos,radius:PROX_M,strokeWeight:2,strokeColor:'var(--indigo)',
+    strokeOpacity:.8,strokeStyle:'dash',fillColor:'var(--indigo)',fillOpacity:.07});
+  newCircle.setMap(map);
+
+  const withCoord=SHOPS.filter(s=>s.lat!=null && INVIEW(s));
+  const ranked=withCoord.map(s=>({s,m:haversine(lat,lng,s.lat,s.lng)})).sort((a,b)=>a.m-b.m);
+  const inside=ranked.filter(r=>r.m<PROX_M);
+
+  const verdict = inside.length
+    ? `<div class="verdict danger">⚠ 반경 1km 내 기존 납품처 <b>${inside.length}곳</b> (현재 필터 기준)<br>신규 입점을 <b>신중히 검토</b>하세요.</div>`
+    : `<div class="verdict ok">✓ 반경 1km 내 기존 납품처 <b>없음</b><br>가장 가까운 곳까지 <b>${fmtDist(ranked[0].m)}</b></div>`;
+
+  const rows = ranked.slice(0,5).map(r=>
+    `<button class="near-item" data-i="${r.s._i}">
+       <span class="dot" style="background:${color(VALUE(r.s))}"></span>
+       <span class="nm">${r.s.shop}</span>
+       <span class="dm ${r.m<PROX_M?'close':'far'}">${fmtDist(r.m)}</span>
+     </button>`).join('');
+
+  const res=document.getElementById('new-result');
+  res.innerHTML = verdict + `<div class="near"><p class="hint" style="margin-bottom:4px">가까운 기존 샵 (클릭 시 연결선)</p>${rows}</div>`;
+  res.querySelectorAll('.near-item').forEach(b=>b.onclick=()=>linkToNew(+b.dataset.i));
+
+  map.setLevel(5,{anchor:newPos}); map.panTo(newPos);
+  toast(label?('후보 위치: '+label):'후보 위치 표시됨');
+}
+
+function linkToNew(i){
+  if(!newPos||!overlays[i]) return;
+  if(nLine){nLine.line.setMap(null);nLine.lab.setMap(null);}
+  const p=overlays[i].pos;
+  const m=haversine(newPos.getLat(),newPos.getLng(),p.getLat(),p.getLng());
+  nLine=drawLine(newPos,p,m<PROX_M);
+  const bounds=new kakao.maps.LatLngBounds(); bounds.extend(newPos); bounds.extend(p);
+  map.setBounds(bounds,80,80,80,380);
+}
+
+function geocodeNew(){
+  const q=document.getElementById('new-addr').value.trim();
+  if(!q){ toast('주소를 입력하세요'); return; }
+  geocoder.addressSearch(q,(r,st)=>{
+    if(st===kakao.maps.services.Status.OK&&r[0]) return placeNew(+r[0].y,+r[0].x,q);
+    places.keywordSearch(q,(r2,st2)=>{
+      if(st2===kakao.maps.services.Status.OK&&r2[0]) return placeNew(+r2[0].y,+r2[0].x,r2[0].place_name);
+      toast('주소를 찾지 못했습니다. 도로명 주소로 다시 시도하세요');
+    });
+  });
+}
+
+/* ---------- toolbar ---------- */
+const mapcol=document.getElementById('mapcol');
+function setMode(m){
+  mode = (mode===m) ? null : m;
+  if(mode!=='measure') clearMeasure();
+  if(mode!=='new') clearNew();
+  if(infoOverlay){infoOverlay.setMap(null);infoOverlay=null;}
+  document.getElementById('btn-measure').classList.toggle('on',mode==='measure');
+  document.getElementById('btn-new').classList.toggle('on',mode==='new');
+  document.getElementById('panel-measure').style.display = mode==='measure'?'block':'none';
+  document.getElementById('panel-new').style.display = mode==='new'?'block':'none';
+  mapcol.classList.toggle('measure',mode==='measure');
+  mapcol.classList.toggle('newshop',mode==='new');
+  if(mode==='new') setTimeout(()=>document.getElementById('new-addr').focus(),50);
+}
+/* ---------- product filter ---------- */
+const GROUPS=[['skin','피부 라인'],['scalp','두피 라인'],['common','공통'],['device','디바이스'],['etc','세트 · 기타']];
+function buildProducts(){
+  const box=document.getElementById('prodlist'); box.innerHTML='';
+  if(!PRODUCTS.length){ box.innerHTML='<p class="hint" style="padding:4px 16px 8px">데이터를 업로드하면 표시됩니다.</p>'; return; }
+  const maxA=Math.max(...PRODUCTS.map(p=>p.amt));
+  GROUPS.forEach(([g,label])=>{
+    const arr=PRODUCTS.filter(p=>p.g===g).sort((a,b)=>b.amt-a.amt);
+    if(!arr.length) return;
+    const t=document.createElement('div'); t.className='pgroup'; t.textContent=label; box.appendChild(t);
+    arr.forEach(p=>{
+      const b=document.createElement('button');
+      b.className='pchip'+(selP.has(p.c)?' on':''); b.dataset.c=p.c;
+      const pname=PNAME[p.c]||p.n, pc=PCOLOR[p.c]||'#868E96';
+      b.innerHTML=`<span class="box" style="border-color:${pc};--pc:${pc}"></span><span class="pn">${pname}</span>
+        <span class="pbar"><i style="width:${Math.round(p.amt/maxA*100)}%;background:${pc}"></i></span>
+        <span class="ps">${p.shops}곳</span>`;
+      b.title=`${pname} · ${p.shops}곳 · ${p.amt.toLocaleString('ko-KR')}원`;
+      b.onclick=()=>{ selP.has(p.c)?selP.delete(p.c):selP.add(p.c); applyFilters(); };
+      box.appendChild(b);
+    });
+  });
+}
+document.getElementById('pd-clear').onclick=()=>{ if(selP.size){ selP.clear(); applyFilters(); } };
+
+/* ---------- filters ---------- */
+function applyFilters(fit){
+  document.body.classList.toggle('mj', selP.size===1 && selP.has('MJ'));
+  recalcMax(); updateStats(); buildProducts(); buildList(); buildDormList();
+  document.getElementById('q').value='';
+  if(!map) return;
+  if(mode) setMode(mode);
+  if(infoOverlay){infoOverlay.setMap(null);infoOverlay=null;}
+  if(activeIdx!=null&&overlays[activeIdx]) overlays[activeIdx].el.classList.remove('hot');
+  activeIdx=null;
+  refreshMarkers();
+  const arr=SHOPS.filter(s=>s.lat!=null&&INVIEW(s));
+  if(arr.length && fit!==false){
+    const b=new kakao.maps.LatLngBounds();
+    arr.forEach(s=>b.extend(new kakao.maps.LatLng(s.lat,s.lng)));
+    map.setBounds(b,60,60,60,60);
+  }
+  toast(arr.length?`${arr.length}곳 표시`:'조건에 맞는 납품처가 없습니다');
+}
+
+/* ---------- dormant filter ---------- */
+function gapDays(last){
+  const [y,m,d]=last.split('.').map(Number), [Y,M,D]=META.to.split('.').map(Number);
+  return Math.round((new Date(Y,M-1,D)-new Date(y,m-1,d))/86400000);
+}
+function buildDormList(){
+  const box=document.getElementById('dormlist'); box.innerHTML='';
+  if(!dormSel) return;
+  const arr=SHOPS.filter(s=>isDorm(s,dormSel) && prodOK(s))
+                 .sort((a,b)=> a.last<b.last?-1 : a.last>b.last?1 : VALUE(b)-VALUE(a));
+  if(!arr.length){ box.innerHTML='<p class="hint" style="padding:6px 16px">해당 샵이 없습니다.</p>'; return; }
+  const t=document.createElement('div'); t.className='dorm-sort';
+  t.textContent=`공백 오래된 순 · ${arr.length}곳`; box.appendChild(t);
+  arr.forEach(s=>{
+    const b=document.createElement('button'); b.className='ditem';
+    b.innerHTML=`<span class="dd"></span>
+      <span class="dtx"><span class="dn">${s.shop}</span><span class="dr">${s.sido} ${s.sigungu}</span></span>
+      <span class="dl"><b>${s.last}</b><small>${gapDays(s.last)}일 경과</small></span>`;
+    b.onclick=()=>onShopClick(s._i,true);
+    box.appendChild(b);
+  });
+}
+document.querySelectorAll('.dbtn').forEach(b=>b.onclick=()=>{
+  const m=+b.dataset.m;
+  dormSel = (dormSel===m) ? 0 : m;
+  document.querySelectorAll('.dbtn').forEach(x=>x.classList.toggle('on', +x.dataset.m===dormSel));
+  applyFilters();
+});
+
+/* ---------- 현황 대시보드 (주간·월간 매출 인포그래픽) ---------- */
+let stMode='week';
+const ST_C={bar:'#3B5BDB', barHot:'#2C3E9E', barSoft:'#C7D2F5', teal:'#0C8599', grid:'#EEF1F6', axis:'#6B7480'};
+const parseYMD=s=>{ const [y,m,d]=s.split('.').map(Number); return new Date(y,m-1,d); };
+const monday=d=>{ const x=new Date(d.getFullYear(),d.getMonth(),d.getDate()); x.setDate(x.getDate()-((x.getDay()+6)%7)); return x; };
+const mdLabel=d=>(d.getMonth()+1)+'/'+d.getDate();
+
+function stBuckets(){
+  // DAYS(일자별 원장) → 주간 12개 · 월간 12개 연속 버킷 (빈 기간 0)
+  const today=new Date();
+  const wk=[], mo=[];
+  const w0=monday(today);
+  for(let i=11;i>=0;i--){ const s=new Date(w0); s.setDate(s.getDate()-7*i);
+    const e=new Date(s); e.setDate(e.getDate()+6);
+    wk.push({s,e,label:mdLabel(s),full:`${mdLabel(s)}~${mdLabel(e)}`,total:0,n:0}); }
+  for(let i=11;i>=0;i--){ const d=new Date(today.getFullYear(),today.getMonth()-i,1);
+    const k=d.getFullYear()+'.'+String(d.getMonth()+1).padStart(2,'0');
+    mo.push({k,label:String(d.getFullYear()).slice(2)+'.'+String(d.getMonth()+1).padStart(2,'0'),
+      full:d.getFullYear()+'년 '+(d.getMonth()+1)+'월',total:0,n:0}); }
+  DAYS.forEach(day=>{
+    const dt=parseYMD(day.d), t=dt.getTime();
+    const w=wk.find(b=>t>=b.s.getTime()&&t<=b.e.getTime()+86399999);
+    if(w){ w.total+=day.total; w.n+=day.n; }
+    const mk=day.d.slice(0,7);
+    const m=mo.find(b=>b.k===mk);
+    if(m){ m.total+=day.total; m.n+=day.n; }
+  });
+  return {wk,mo};
+}
+function niceStep(max){ const raw=max/4, p=Math.pow(10,Math.floor(Math.log10(raw||1)));
+  for(const m of [1,2,2.5,5,10]) if(m*p>=raw) return m*p; return 10*p; }
+function stTip(host){
+  let t=host.querySelector('.ttip');
+  if(!t){ t=document.createElement('div'); t.className='ttip'; host.appendChild(t); }
+  return t;
+}
+/* 세로 막대 차트 (SVG) — 상단만 4px 라운드, 호버 툴팁, 최댓값·마지막 값만 직접 라벨 */
+function renderCols(host, buckets, opt){
+  const color=opt.color||ST_C.bar, hot=opt.hot||ST_C.barHot;
+  const counts=!!opt.counts;                                   // 하단 주문 건수 밴드
+  const W=960,L=52,R=12,T=20,B=32;
+  const bandH=counts?58:0, bandGap=counts?26:0;                // 밴드 높이·캡션 여백
+  const H=250+bandH+bandGap;
+  const pw=W-L-R, ph=H-T-B-bandH-bandGap;
+  const max=Math.max(...buckets.map(b=>b.total),1);
+  const step=niceStep(max), top=Math.ceil(max/step)*step;
+  const y=v=>T+ph-(v/top)*ph;
+  const slot=pw/buckets.length, bw=Math.min(slot*0.62,54);
+  const bandBase=T+ph+bandGap+bandH;                           // 건수 밴드 기준선
+  const maxN=Math.max(...buckets.map(b=>b.n),1);
+  let g='';
+  for(let v=step;v<=top;v+=step)
+    g+=`<line x1="${L}" y1="${y(v)}" x2="${W-R}" y2="${y(v)}" stroke="${ST_C.grid}"/>`
+      +`<text x="${L-7}" y="${y(v)+3.5}" text-anchor="end" font-size="10.5" fill="${ST_C.axis}">${fmt(v)}</text>`;
+  const maxI=buckets.reduce((mi,b,i)=>b.total>buckets[mi].total?i:mi,0);
+  let bars='',labels='',band='';
+  buckets.forEach((b,i)=>{
+    const cx=L+slot*i+slot/2, x=cx-bw/2, yy=y(b.total), h=T+ph-yy, r=Math.min(4,h);
+    if(b.total>0)
+      bars+=`<path class="stb" data-i="${i}" d="M${x} ${T+ph} V${yy+r} Q${x} ${yy} ${x+r} ${yy} H${x+bw-r} Q${x+bw} ${yy} ${x+bw} ${yy+r} V${T+ph} Z" fill="${color}"/>`;
+    else
+      bars+=`<rect class="stb" data-i="${i}" x="${x}" y="${T+ph-1.5}" width="${bw}" height="1.5" fill="${ST_C.grid}"/>`;
+    if((i===maxI&&b.total>0)||i===buckets.length-1)
+      labels+=`<text x="${cx}" y="${yy-6}" text-anchor="middle" font-size="10.5" font-weight="700" fill="var(--ink)">${b.total>0?fmt(b.total):''}</text>`;
+    if(counts){                                                // 같은 시간축 아래 건수 미니 막대 + 값
+      const chh=b.n>0?Math.max(b.n/maxN*(bandH-16),2):0;
+      if(b.n>0)
+        band+=`<rect class="stc" data-i="${i}" x="${x}" y="${bandBase-chh}" width="${bw}" height="${chh}" rx="2" fill="${ST_C.teal}"/>`
+            +`<text x="${cx}" y="${bandBase-chh-4}" text-anchor="middle" font-size="9.5" font-weight="600" fill="${ST_C.axis}">${b.n}</text>`;
+      else
+        band+=`<rect x="${x}" y="${bandBase-1.5}" width="${bw}" height="1.5" fill="${ST_C.grid}"/>`
+            +`<text x="${cx}" y="${bandBase-6}" text-anchor="middle" font-size="9.5" fill="${ST_C.axis}">0</text>`;
+    }
+    bars+=`<rect class="sth" data-i="${i}" x="${L+slot*i}" y="${T}" width="${slot}" height="${(counts?bandBase:T+ph)-T}" fill="transparent"/>`;
+    const every=buckets.length>12?2:1;
+    if(i%every===0||i===buckets.length-1)
+      labels+=`<text x="${cx}" y="${H-10}" text-anchor="middle" font-size="10.5" fill="${ST_C.axis}">${b.label}</text>`;
+  });
+  const bandChrome=counts
+    ? `<text x="${L}" y="${T+ph+bandGap-9}" font-size="10" font-weight="700" fill="${ST_C.axis}">주문 건수 (건)</text>`
+      +`<line x1="${L}" y1="${bandBase}" x2="${W-R}" y2="${bandBase}" stroke="#C9CFDB"/>`
+    : '';
+  host.innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${opt.aria||'막대 차트'}">
+    <line x1="${L}" y1="${T+ph}" x2="${W-R}" y2="${T+ph}" stroke="#C9CFDB"/>${g}${bandChrome}${band}${bars}${labels}</svg>`;
+  const tip=stTip(host), svg=host.querySelector('svg');
+  host.querySelectorAll('.sth').forEach(hz=>{
+    const i=+hz.dataset.i, b=buckets[i];
+    const mark=host.querySelector(`.stb[data-i="${i}"]`);
+    hz.addEventListener('mouseenter',()=>{
+      if(mark&&b.total>0) mark.setAttribute('fill',hot);
+      tip.innerHTML=`<span class="td">${b.full}</span><br><b>${b.total.toLocaleString('ko-KR')}원</b>${(opt.unit||opt.hideN)?'':' · '+b.n+'건'}${opt.unit?('<br>'+b.n+opt.unit):''}`;
+      tip.style.display='block';
+      const rr=svg.getBoundingClientRect(), hr=host.getBoundingClientRect();
+      const px=rr.left-hr.left+(L+ (pw/buckets.length)*i + (pw/buckets.length)/2)/W*rr.width;
+      tip.style.left=Math.max(4,Math.min(px-tip.offsetWidth/2, hr.width-tip.offsetWidth-4))+'px';
+      tip.style.top=(rr.top-hr.top+ (y(b.total))/H*rr.height - tip.offsetHeight - 8)+'px';
+    });
+    hz.addEventListener('mouseleave',()=>{ if(mark&&b.total>0) mark.setAttribute('fill',color); tip.style.display='none'; });
+  });
+}
+function renderSpark(host, buckets, color){
+  const W=120,Hh=38,max=Math.max(...buckets.map(b=>b.total),1), n=buckets.length, sw=W/n;
+  let s='';
+  buckets.forEach((b,i)=>{ const h=Math.max(b.total/max*(Hh-4),1.5), x=sw*i+1.5, bw=sw-3;
+    s+=`<rect x="${x}" y="${Hh-h}" width="${bw}" height="${h}" rx="1.5" fill="${i===n-1?color:ST_C.barSoft}"/>`; });
+  host.innerHTML=`<svg viewBox="0 0 ${W} ${Hh}" aria-hidden="true">${s}</svg>`;
+}
+function stDelta(el, cur, prev, word){
+  if(prev>0){
+    const p=(cur-prev)/prev*100, up=p>=0.05, dn=p<=-0.05;
+    el.className='delta '+(up?'up':dn?'dn':'flat');
+    el.textContent=(up?'▲ ':dn?'▼ ':'— ')+Math.abs(p).toFixed(1)+'% '+word;
+  }else{ el.className='delta flat'; el.textContent='— '+word+' 데이터 없음'; }
+}
+function renderHBars(host, rows){
+  const max=Math.max(...rows.map(r=>r.v),1);
+  host.innerHTML=rows.map(r=>`<div class="hbar" title="${r.l} · ${r.v.toLocaleString('ko-KR')}원">
+    <span class="hl">${r.l}</span>
+    <span class="ht"><i style="width:${Math.max(r.v/max*100,1)}%"></i></span>
+    <span class="hv">${fmt(r.v)}</span></div>`).join('');
+}
+/* 연도별 공식 매출 (홈택스 부가세 과세매출금액 월별 내역 — 2026-09-07 입력) */
+const YEARLY_SALES={
+  2019:[0,0,0,2063900,2230200,1455800,1387400,1732400,960400,1259200,604800,412800],           // 4월 개시
+  2020:[412800,195200,2387200,1757600,2049300,1309700,1191900,1524500,1923800,456000,569300,180550],
+  2021:[473600,4297300,4283650,2844850,8892900,5211650,4717250,3060000,2270000,2066750,2810000,4690000],
+  2022:[2907000,11162400,4120500,7955000,4662100,4671500,4720000,6480500,6725000,8651500,4277500,13202500],
+  2023:[14512500,13948000,15180000,6385000,10310000,8630000,10065000,11035000,13650000,18330000,15560000,9190000],
+  2024:[4900000,33633000,11094000,15189000,11750000,15266100,8721000,11064750,13565250,14162000,13479750,28941750],
+  2025:[8662000,16490000,13173000,11615000,12985500,23541960,22878710,11702100,19172300,21619880,17857360,46669800],
+};
+let yrSel=2025, yrDone=false;
+function renderYrChart(){
+  const yy=String(yrSel).slice(2);
+  renderCols(document.getElementById('yr-chart'),
+    YEARLY_SALES[yrSel].map((v,i)=>({label:yy+'.'+String(i+1).padStart(2,'0'),
+      full:yrSel+'년 '+(i+1)+'월 (신고 기준)', total:v, n:0})),
+    {aria:yrSel+'년 월별 신고 매출', hideN:true});
+}
+function renderYearly(){
+  if(yrDone){ return; } yrDone=true;
+  const years=Object.keys(YEARLY_SALES).map(Number).sort();
+  const rows=[];
+  for(let y=years[0]; y<=2025; y++){
+    if(YEARLY_SALES[y]) rows.push({l:y+'년'+(y===2019?' (4월~)':''), v:YEARLY_SALES[y].reduce((a,b)=>a+b,0)});
+    else rows.push({l:y+'년', v:null});                       // 2024 — 자료 없음
+  }
+  const max=Math.max(...rows.map(r=>r.v||0),1);
+  document.getElementById('yr-bars').innerHTML=rows.map(r=> r.v==null
+    ? `<div class="hbar"><span class="hl" style="color:var(--mute)">${r.l}</span>
+         <span class="ht"></span><span class="hv">자료 없음</span></div>`
+    : `<div class="hbar" title="${r.l} · ${r.v.toLocaleString('ko-KR')}원">
+         <span class="hl">${r.l}</span>
+         <span class="ht"><i style="width:${Math.max(r.v/max*100,1)}%"></i></span>
+         <span class="hv">${fmt(r.v)}</span></div>`).join('');
+  const seg=document.getElementById('yr-seg');
+  seg.innerHTML=years.map(y=>`<button data-y="${y}" class="${y===yrSel?'on':''}">${y}</button>`).join('');
+  seg.querySelectorAll('button').forEach(b=>b.onclick=()=>{
+    yrSel=+b.dataset.y;
+    seg.querySelectorAll('button').forEach(x=>x.classList.toggle('on',+x.dataset.y===yrSel));
+    renderYrChart();
+  });
+  renderYrChart();
+}
+function renderStatus(){
+  renderYearly();
+  const tc=document.getElementById('trend-chart');
+  if(!DAYS.length){ tc.innerHTML='<p class="hint" style="padding:20px">데이터를 불러오면 표시됩니다.</p>'; return; }
+  const {wk,mo}=stBuckets();
+  // KPI: 이번 주 / 이번 달 (전기 대비)
+  const cw=wk[wk.length-1], pw2=wk[wk.length-2], cm=mo[mo.length-1], pm=mo[mo.length-2];
+  document.getElementById('kw-sub').textContent='('+cw.full+' · 진행 중)';
+  document.getElementById('km-sub').textContent='('+cm.full+' · 진행 중)';
+  document.getElementById('kw-amt').textContent=fmt(cw.total)+'원';
+  document.getElementById('km-amt').textContent=fmt(cm.total)+'원';
+  stDelta(document.getElementById('kw-delta'), cw.total, pw2.total, '전주 대비');
+  stDelta(document.getElementById('km-delta'), cm.total, pm.total, '전월 대비');
+  // 올해(현재 연도) 매출 누적 — 발송일 기준
+  const yNow=new Date().getFullYear();
+  const ySum=DAYS.filter(d=>d.d.startsWith(yNow+'.')).reduce((a,d)=>a+d.total,0);
+  document.getElementById('lb-year').textContent=yNow+'년 매출 (1/1~)';
+  document.getElementById('s-year').textContent=fmt(ySum)+'원';
+  renderSpark(document.getElementById('kw-spark'), wk, ST_C.bar);
+  renderSpark(document.getElementById('km-spark'), mo, ST_C.bar);
+  // 매출 추이 (주간/월간 토글)
+  renderCols(tc, stMode==='week'?wk:mo, {aria:stMode==='week'?'주간 매출 추이':'월간 매출 추이', counts:true});
+  // 시·도별 / 제품별 TOP 8
+  const bySido={};
+  SHOPS.forEach(s=>{ bySido[s.sido]=(bySido[s.sido]||0)+s.total; });
+  renderHBars(document.getElementById('rg-bars'),
+    Object.entries(bySido).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([l,v])=>({l:l.replace(/(특별자치|특별|광역)시?도?$/,''),v})));
+  renderHBars(document.getElementById('pd-bars'),
+    PRODUCTS.filter(p=>p.c!=='BASE').sort((a,b)=>b.amt-a.amt).slice(0,8).map(p=>({l:p.n,v:p.amt})));
+  // 월별 신규 납품처 (첫 주문 월 기준)
+  const nb=mo.map(m=>({...m,total:0,n:0}));
+  SHOPS.forEach(s=>{ if(!s.first) return; const k=s.first.slice(0,7);
+    const b=nb.find(x=>x.k===k); if(b){ b.total+=1; b.n+=1; } });
+  const nc=document.getElementById('new-chart');
+  renderCols(nc, nb, {color:ST_C.teal, hot:'#0A6E80', unit:'곳 신규', aria:'월별 신규 납품처'});
+  // 신규 차트 툴팁은 '원' 표기가 어색하므로 곳 수로 교체
+  nc.querySelectorAll('.sth').forEach(hz=>{
+    const b=nb[+hz.dataset.i];
+    hz.addEventListener('mouseenter',()=>{ const t=nc.querySelector('.ttip');
+      t.innerHTML=`<span class="td">${b.full}</span><br><b>${b.total}곳</b> 신규`; });
+  });
+}
+document.getElementById('tg-week').onclick=()=>{ stMode='week';
+  document.getElementById('tg-week').classList.add('on'); document.getElementById('tg-month').classList.remove('on'); renderStatus(); };
+document.getElementById('tg-month').onclick=()=>{ stMode='month';
+  document.getElementById('tg-month').classList.add('on'); document.getElementById('tg-week').classList.remove('on'); renderStatus(); };
+
+/* ---------- pages ---------- */
+const PNAME={}; CATALOG.forEach(([c,n])=>PNAME[c]=n);
+let curPage='status', rankSort='annual', recentDesc=true, reportIdx=null;
+
+function switchPage(pg){
+  curPage=pg;
+  document.body.classList.remove('pg-rank','pg-report','pg-newshop','pg-mb');
+  if(pg==='mb') document.body.classList.add('pg-mb');
+  if(pg==='rank') document.body.classList.add('pg-rank');
+  else if(pg==='report') document.body.classList.add('pg-report');
+  else if(pg==='newshop') document.body.classList.add('pg-newshop');
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.pg===pg));
+  document.querySelectorAll('.page-el').forEach(el=>el.classList.toggle('on',el.id==='page-'+pg));
+  if(pg==='map'&&map) setTimeout(()=>{ map.relayout();
+    if(window.__pendingBounds){ map.setBounds(window.__pendingBounds); window.__pendingBounds=null; } },60);
+  if(pg==='newshop'){
+    requestAnimationFrame(()=>{ ensureNMap();
+      setTimeout(()=>{ if(nmap){ nmap.relayout(); if(nsPos) nmap.setCenter(nsPos); } },120);
+      setTimeout(()=>{ if(nmap){ nmap.relayout(); if(nsPos) nmap.setCenter(nsPos); } },500);
+    });
+  }
+}
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>switchPage(t.dataset.pg));
+function gotoRank(i){
+  switchPage('rank');
+  document.getElementById('rk-q').value=''; buildRank();
+  setTimeout(()=>{
+    const el=document.querySelector(`.rkrow[data-i="${i}"]`);
+    if(el){ el.scrollIntoView({block:'center',behavior:'smooth'});
+      el.classList.add('flash'); setTimeout(()=>el.classList.remove('flash'),1800); }
+  },100);
+}
+
+/* ---- 순위 분석 ---- */
+function recencyBand(ymd){ if(!ymd) return 2;
+  if(DORM_CUT[3] && ymd>=DORM_CUT[3]) return 0;      // 활성
+  if(DORM_CUT[6] && ymd>=DORM_CUT[6]) return 1;      // 3~6개월
+  return 2;                                          // 6개월+
+}
+const BAND=[['활성','ok'],['3개월+','warn'],['6개월+','danger']];
+const MNAME=['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+function monLabel(ym){ const [y,m]=ym.split('.'); return `${y}년 ${MNAME[+m-1]}`; }
+
+function buildRank(){
+  const box=document.getElementById('ranklist');
+  const cards=document.getElementById('rk-cards');
+  if(!SHOPS.length){ box.innerHTML='<p class="hint" style="padding:20px">데이터를 업로드하면 표시됩니다.</p>'; cards.innerHTML=''; return; }
+  const rq=(document.getElementById('rk-q').value||'').trim().toLowerCase();
+  const arr=SHOPS.filter(s=>!rq||(s.shop+s.sido+s.sigungu).toLowerCase().includes(rq));
+  if(!arr.length){ box.innerHTML='<p class="hint" style="padding:20px">검색 결과가 없습니다.</p>'; cards.innerHTML=''; return; }
+  if(rankSort==='annual')      arr.sort((a,b)=>(b.y1||0)-(a.y1||0)||b.total-a.total);
+  else if(rankSort==='total')  arr.sort((a,b)=>b.total-a.total);
+  else {                       // recent (방향 토글)
+    arr.sort((a,b)=> a.last>b.last?-1:a.last<b.last?1:b.total-a.total);
+    if(!recentDesc) arr.reverse();
+  }
+  const moneyKey = rankSort==='annual' ? 'y1' : 'total';
+  const byDate = (rankSort==='recent');
+  const maxM=Math.max(1,...arr.map(s=>s[moneyKey]));
+  const maxTotal=Math.max(1,...arr.map(s=>s.total));
+  const grand=SHOPS.reduce((a,s)=>a+s.total,0);
+  const top10=arr.slice().sort((a,b)=>b.total-a.total).slice(0,10).reduce((a,s)=>a+s.total,0);
+  const active=SHOPS.filter(s=>!isDorm(s,3)).length;
+  cards.innerHTML=`
+    <div class="rkcard"><small>납품처</small><b>${SHOPS.length}곳</b></div>
+    <div class="rkcard"><small>기간 누적 총액</small><b>${fmt(grand)}원</b></div>
+    <div class="rkcard"><small>TOP10 매출 비중</small><b>${Math.round(top10/grand*100)}%</b></div>
+    <div class="rkcard c-ok"><small>활성 샵 (3개월 내 주문)</small><b>${active}곳</b></div>`;
+
+  box.innerHTML='';
+  let curMon=null, rank=0;
+  arr.forEach((s)=>{
+    // 날짜 정렬: 월 그룹 헤더(소계 포함) 삽입
+    if(byDate){
+      const ym=s.last.slice(0,7);
+      if(ym!==curMon){
+        curMon=ym;
+        const inMon=arr.filter(x=>x.last.slice(0,7)===ym);
+        const cnt=inMon.length, sub=inMon.reduce((a,x)=>a+x.total,0);
+        const band=BAND[recencyBand(s.last)];
+        const hd=document.createElement('div');
+        hd.className='rkmon band-'+band[1];
+        hd.innerHTML=`<span class="rkmon-dot b-${band[1]}"></span>
+          <span class="rkmon-t">${monLabel(ym)}</span>
+          <span class="rkmon-badge b-${band[1]}">${band[0]}</span>
+          <span class="rkmon-c"><b>${cnt}</b>곳 · ${fmt(sub)}원</span>`;
+        box.appendChild(hd);
+      }
+    }
+    rank++;
+    const b=document.createElement('button'); b.className='rkrow'+(rank<=3&&!byDate?' top3':'')+(byDate?' dated':''); b.dataset.i=s._i;
+    const money = s[moneyKey];
+    const bd=BAND[recencyBand(s.last)];
+    const pill=`<span class="rkpill b-${bd[1]}">${bd[0]}</span>`;
+    let barHtml, val;
+    if(byDate){
+      // 막대 = 누적 주문금액(상대), 막대 안/옆에 금액 라벨
+      const w=Math.round(s.total/maxTotal*100);
+      const inbar = w>=32;
+      barHtml=`<span class="rkbar money" style="--w:${w}%"><i class="b-${bd[1]}" style="width:${w}%">${inbar?`<span class="rkbl in">${fmt(s.total)}원</span>`:''}</i>${inbar?'':`<span class="rkbl out">${fmt(s.total)}원</span>`}</span>`;
+      val=`<b>${s.last}</b><small>${gapDays(s.last)}일 경과</small>`;
+    }else{
+      barHtml=`<span class="rkbar"><i style="width:${Math.round(money/maxM*100)}%"></i></span>`;
+      val=`<b>${money>0?fmt(money)+'원':'–'}</b><small>${pill}</small>`;
+    }
+    b.innerHTML=`<span class="rknum">${rank}</span>
+      <span class="rkinfo"><span class="rkname">${s.shop}</span><span class="rkreg">${s.sido} ${s.sigungu}</span></span>
+      ${barHtml}
+      <span class="rkval">${val}</span>`;
+    b.onclick=()=>{ switchPage('report'); selectReport(s._i); };
+    box.appendChild(b);
+  });
+}
+
+document.getElementById('rk-q').addEventListener('input',buildRank);
+document.querySelectorAll('.rksort').forEach(b=>b.onclick=()=>{
+  const s=b.dataset.s;
+  if(s==='recent' && rankSort==='recent') recentDesc=!recentDesc;   // 재클릭 → 방향 전환
+  else if(s==='recent') recentDesc=true;
+  rankSort=s;
+  const dir=document.getElementById('rkdir'); if(dir) dir.textContent=recentDesc?'↓':'↑';
+  document.querySelectorAll('.rksort').forEach(x=>x.classList.toggle('on',x===b));
+  buildRank();
+});
+
+/* ---- 샵 리포트 ---- */
+function buildReportList(){
+  const sel=document.getElementById('rp-select');
+  if(!SHOPS.length){ sel.innerHTML='<option value="">데이터를 업로드하세요</option>'; return; }
+  const q=(document.getElementById('rp-q').value||'').trim().toLowerCase();
+  // 검색 대상: 상호명 · 지역 · 주소 · 수취인(원장님) 이름
+  const hay=s=>(s.shop+s.sido+s.sigungu+(s.addr||'')+[...(s.recvs||[])].join('')).toLowerCase().replace(/\s+/g,'');
+  const nq=q.replace(/\s+/g,'');
+  const arr=SHOPS.filter(s=>!nq||hay(s).includes(nq))
+                 .sort((a,b)=>(b.y1||0)-(a.y1||0)||b.total-a.total);
+  sel.innerHTML=(arr.length?'<option value="">샵을 선택하세요'+(q?` (검색 ${arr.length}곳)`:'')+'</option>':'<option value="">검색 결과 없음</option>')
+    + arr.map(s=>`<option value="${s._i}"${s._i===reportIdx?' selected':''}>${s.shop} — ${s.sigungu||s.sido}${(s.y1||0)>0?' · '+fmt(s.y1)+'원':''}</option>`).join('');
+  if(q && arr.length===1) selectReport(arr[0]._i);   // 검색 결과 1곳이면 바로 열기
+}
+document.getElementById('rp-q').addEventListener('input',buildReportList);
+document.getElementById('rp-select').addEventListener('change',e=>{
+  const v=e.target.value; if(v!=='') selectReport(+v);
+});
+
+function monthRange(from,to){
+  const out=[]; let [y,m]=from.slice(0,7).split('.').map(Number);
+  const [Y,M]=to.slice(0,7).split('.').map(Number);
+  while(y<Y||(y===Y&&m<=M)){ out.push(`${y}.${String(m).padStart(2,'0')}`); m++; if(m>12){m=1;y++;} }
+  return out;
+}
+const GENERIC=new Set(['BASE','DEMO','BANNER','TEST_SKIN','TEST_SCALP']);
+/* ── 닥터배 제품 컬러 팔레트 (브랜드 공식 고정색) ── */
+const PCOLOR = SKU_COLOR;   // 공유 규칙의 팔레트 사용 (명세서와 동일)
+CATALOG.forEach(e=>{ if(!PCOLOR[e[0]]) PCOLOR[e[0]]='#868E96'; });
+const linesOf=s=>Object.keys(s.p).filter(c=>!GENERIC.has(c));
+const getLL=s=> (s.lat!=null)?[s.lat,s.lng]:(GEO[s.addr]||null);
+const todayStr=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
+const chip2=c=>`<span class="pchip2" style="border-color:${PCOLOR[c]};color:${PCOLOR[c]}">${PNAME[c]||c}</span>`;
+
+function stackedChart(s){
+  const months=monthRange(META.from,META.to);
+  const codeTot={};
+  months.forEach(m=>{ const pm=s.ph&&s.ph[m]||{}; for(const c in pm) codeTot[c]=(codeTot[c]||0)+pm[c]; });
+  const codes=Object.keys(codeTot).sort((a,b)=>codeTot[b]-codeTot[a]);
+  const mTot=months.map(m=>{ const pm=s.ph&&s.ph[m]||{}; return Object.values(pm).reduce((a,v)=>a+v,0); });
+  const mx=Math.max(1,...mTot);
+  const colW=44, x0=44, W=x0+months.length*colW, plotH=112, base=126;
+  let g='';
+  [0,.5,1].forEach(t=>{ const y=base-plotH*t;
+    g+=`<line x1="${x0}" y1="${y}" x2="${W}" y2="${y}" stroke="#EFE4E4" stroke-width="1"/>`;
+    g+=`<text x="${x0-5}" y="${y+3}" text-anchor="end" font-size="8.5" font-family="monospace" fill="#B4A09C">${fmt(Math.round(mx*t))}</text>`;
+  });
+  const bw=28;
+  months.forEach((m,k)=>{
+    const cx=x0+k*colW+(colW-bw)/2;
+    let y=base;
+    codes.forEach(c=>{
+      const v=(s.ph&&s.ph[m]||{})[c]||0; if(!v) return;
+      const bh=v/mx*plotH; y-=bh;
+      g+=`<rect x="${cx}" y="${y}" width="${bw}" height="${Math.max(bh,.6)}" fill="${PCOLOR[c]}"><title>${m} · ${PNAME[c]||c} · ${v.toLocaleString('ko-KR')}원</title></rect>`;
+    });
+    const lb=(m.endsWith('.01')||k===0);
+    g+=`<text x="${cx+bw/2}" y="140" text-anchor="middle" font-size="8.5" font-family="monospace" fill="${lb?'#1F1518':'#B4A09C'}">${lb?m:m.slice(5)}</text>`;
+  });
+  const legend=codes.map(c=>`<span class="lgi"><i style="background:${PCOLOR[c]}"></i>${PNAME[c]||c}</span>`).join('');
+  return {svg:`<svg viewBox="0 0 ${W} 150" style="width:100%;max-width:${W*1.4}px;height:auto" xmlns="http://www.w3.org/2000/svg">${g}</svg>`, legend};
+}
+
+function neighborsOf(s){
+  const me=getLL(s); if(!me) return null;
+  return SHOPS.filter(o=>o._i!==s._i)
+    .map(o=>{ const ll=getLL(o); return ll?{o,m:haversine(me[0],me[1],ll[0],ll[1])}:null; })
+    .filter(Boolean).sort((a,b)=>a.m-b.m).slice(0,5);
+}
+function recommendFor(s){
+  const mine=new Set(linesOf(s));
+  if(!mine.size) return {sim:0,recos:[]};
+  const sims=SHOPS.filter(o=>o._i!==s._i && linesOf(o).some(c=>mine.has(c)));
+  const cnt={};
+  sims.forEach(o=>linesOf(o).forEach(c=>{ if(!mine.has(c)) cnt[c]=(cnt[c]||0)+1; }));
+  const recos=Object.entries(cnt).sort((a,b)=>b[1]-a[1]).slice(0,4).map(e=>({c:e[0],n:e[1]}));
+  return {sim:sims.length,recos};
+}
+
+function selectReport(i){
+  reportIdx=i;
+  const sel=document.getElementById('rp-select'); if(sel && sel.value!==String(i)) sel.value=String(i);
+  const s=SHOPS[i], main=document.getElementById('rpmain');
+  const dormant = isDorm(s,6)?['danger','6개월+ 무주문'] : isDorm(s,3)?['warn','3개월+ 무주문'] : ['ok','활성'];
+  const avg = s.n?Math.round(s.total/s.n):0;
+  const myLines=linesOf(s);
+
+  const ch=stackedChart(s);
+
+  // ② 인근 파트너 (익명)
+  const nb=neighborsOf(s);
+  let nbHtml;
+  if(!nb) nbHtml=`<div class="rp-note">📍 위치 좌표가 아직 없습니다. <b>지도 탭</b>을 한 번 열어 위치 확인이 끝난 뒤 다시 선택하면 거리 분석이 표시됩니다.</div>`;
+  else if(!nb.length) nbHtml=`<div class="rp-note">비교할 다른 파트너가 없습니다.</div>`;
+  else nbHtml=nb.map((x,k)=>{
+    const ls=linesOf(x.o);
+    return `<div class="nb-row">
+      <span class="nb-name">${String.fromCharCode(65+k)}샵</span>
+      <span class="nb-dist ${x.m<1000?'close':''}">${fmtDist(x.m)}</span>
+      <span class="nb-prods">${ls.length?ls.sort((a,b)=>x.o.p[b][1]-x.o.p[a][1]).map(chip2).join(''):'<span class="hint">주요 제품 라인 없음</span>'}</span>
+    </div>`;
+  }).join('');
+
+  // ③ 미사용 라인 제안
+  const rec=recommendFor(s);
+  const recoHtml = rec.recos.length
+    ? rec.recos.map(r=>`<div class="reco-row">${chip2(r.c)}<span class="reco-n">유사 구성 파트너 ${r.n}곳 사용 중</span></div>`).join('')
+    : `<p class="hint" style="padding:6px 0">추천할 미사용 라인이 없습니다.</p>`;
+
+  // 제품 구성 (기존)
+  const prods=Object.entries(s.p).map(([c,e])=>({c,q:e[0],a:e[1]})).sort((a,b)=>b.a-a.a);
+  const pmax=Math.max(1,...prods.map(p=>p.a));
+  const prodRows=prods.map(p=>`<div class="rprod">
+      <span class="pn2">${PNAME[p.c]||p.c}</span>
+      <span class="pb2"><i style="width:${Math.round(p.a/pmax*100)}%;background:${PCOLOR[p.c]}"></i></span>
+      <span class="pv2"><b>${p.a.toLocaleString('ko-KR')}원</b><small>${p.q}개 · ${Math.round(p.a/s.total*100)}%</small></span>
+    </div>`).join('');
+
+  main.innerHTML=`
+    <div class="rp-head">
+      <h2>Dr.BAE 파트너 리포트 — ${s.shop}</h2>
+      <span class="badge ${dormant[0]}">${dormant[1]}</span>
+      <div class="rp-actions">
+        <button id="rp-map">📍 지도에서 보기</button>
+        <button id="rp-print">🖨 인쇄 / PDF 저장</button>
+      </div>
+    </div>
+    <div class="rp-addr">${s.addr}<br>
+      분석 기간 ${META.from} ~ ${META.to} · 작성일 ${todayStr()} · 배랩(BAE Lab)</div>
+    <div class="rp-metrics">
+      <div class="rpm"><small>누적 주문</small><b>${s.n}건</b><span class="sub">평균 ${fmtWon(avg)}</span></div>
+      <div class="rpm"><small>사용 제품 라인</small><b>${myLines.length}종</b></div>
+      <div class="rpm"><small>전체 누적 주문액</small><b>${fmtWon(s.total)}</b><span class="sub">${META.from} ~ ${META.to}</span></div>
+      <div class="rpm"><small>최근 1년 주문액</small><b>${(s.y1||0)>0?fmtWon(s.y1):'–'}</b><span class="sub">최근 12개월</span></div>
+      <div class="rpm"><small>가장 최근 주문</small><b>${s.last}</b><span class="sub">${gapDays(s.last)}일 경과</span></div>
+    </div>
+    <div class="rp-sec">① 월별 제품군별 주문 현황 <span style="font-weight:500;color:var(--mute);font-size:11px">색상 = 제품 라인</span></div>
+    <div class="rp-chart">${ch.svg}<div>${ch.legend}</div></div>
+    <div class="rp-sec">② 인근 Dr.BAE 파트너 현황 <span style="font-weight:500;color:var(--mute);font-size:11px">개인정보 보호를 위해 익명(A·B·C샵) 표기 · 직선거리순</span></div>
+    <div class="rp-prods">${nbHtml}</div>
+    <div class="rp-sec">③ 제품 제안 — 현재 미사용 라인 <span style="font-weight:500;color:var(--mute);font-size:11px">유사 제품 구성 파트너 ${rec.sim}곳의 실사용 데이터 기반</span></div>
+    <div class="rp-prods" style="padding:12px 16px">
+      <p class="hint" style="margin-bottom:6px">현재 사용 중: ${myLines.length?myLines.map(chip2).join(''):'–'}</p>
+      ${recoHtml}
+    </div>
+    <div class="rp-sec">④ 제품별 납품 구성 (전체 기간)</div>
+    <div class="rp-prods">${prodRows}</div>
+    <div class="rp-sec">⑤ 메모</div>
+    <div class="rp-memo" id="rp-memo" contenteditable="true" data-ph="상담 내용, 특이사항, 다음 액션 등을 자유롭게 기입하세요. (자동 저장 · 인쇄 시 포함)"></div>`;
+  document.getElementById('rp-map').onclick=()=>{
+    switchPage('map');
+    setTimeout(()=>{ if(map){ map.relayout(); focusShop(i,true); } },100);
+  };
+  document.getElementById('rp-print').onclick=()=>window.print();
+  // 메모: 샵별 자동 저장/복원
+  const memoEl=document.getElementById('rp-memo');
+  let memos={}; try{ memos=JSON.parse(localStorage.getItem('drbae_memo_v1')||'{}'); }catch(e){}
+  memoEl.innerText = memos[s.shop]||'';
+  memoEl.addEventListener('input',()=>{
+    memos[s.shop]=memoEl.innerText;
+    try{ localStorage.setItem('drbae_memo_v1', JSON.stringify(memos)); }catch(e){}
+  });
+  main.scrollTop=0;
+}
+
+/* ---------- 신규샵 위치 리포트 ---------- */
+const MJ_RADIUS=2000;
+const MJ_ACTIVE_MIN=380000;                 // 3개월 내 발주 유지 기준액
+let nmap=null, nsPos=null, nsObjs=[], nsMjMode=false, nsLast=null;
+/* 최근 3개월 내 마이크로젝션 발주 내역 (일자별 원장 기반, 일 단위 정확) */
+function mjRecent(name){
+  if(!DAYS.length||META.to==='–') return {sum:0,entries:[]};
+  const cut=monthsBefore(META.to,3);
+  const entries=[];
+  DAYS.forEach(day=>{
+    if(day.d<cut) return;
+    day.orders.forEach(o=>{
+      if(o.shop!==name) return;
+      const amt=o.items.filter(it=>it.c.includes('MJ')).reduce((a,it)=>a+it.a,0);
+      if(amt>0) entries.push({d:day.d,a:amt});
+    });
+  });
+  entries.sort((a,b)=> a.d<b.d?1:-1);
+  return {sum:entries.reduce((a,e)=>a+e.a,0), entries};
+}
+function ensureNMap(){
+  if(nmap || !window.kakao || !kakao.maps || !mapReady) return;
+  nmap=new kakao.maps.Map(document.getElementById('nmap'),{center:new kakao.maps.LatLng(36.4,127.9),level:13});
+  // 컨테이너 크기 변화 시 자동 재배치 (숨김→표시, 창 크기 변경, 모바일 회전 등)
+  const wrap=document.querySelector('.ns-map-wrap');
+  if(window.ResizeObserver && wrap){
+    new ResizeObserver(()=>{ if(nmap){ nmap.relayout(); if(nsPos) nmap.setCenter(nsPos); } }).observe(wrap);
+  }
+  setTimeout(()=>{ nmap.relayout(); },120);
+  setTimeout(()=>{ nmap.relayout(); if(nsPos) nmap.setCenter(nsPos); },500);
+}
+function nsClear(){
+  nsObjs.forEach(o=>o.setMap(null)); nsObjs=[]; nsPos=null;
+  document.getElementById('ns-print').style.display='none';
+}
+function nsReset(){
+  nsClear(); nsLast=null;
+  document.getElementById('ns-addr').value='';
+  document.getElementById('ns-results').innerHTML='<div class="rp-note">상단에 주소를 입력하고 <b>위치 검토</b>를 누르면<br>반경 1·2·3km 분석과 마이크로젝션 입점 판정이 표시됩니다.</div>';
+}
+function nsAnalyze(){
+  const q=document.getElementById('ns-addr').value.trim();
+  if(!q){ toast('주소를 입력하세요'); return; }
+  if(!geocoder){ 
+    document.getElementById('ns-results').innerHTML='<div class="rp-note">📍 지도 서비스가 아직 준비되지 않았습니다.<br>배포 주소(GitHub Pages)에서 열면 작동합니다.</div>';
+    return;
+  }
+  geocoder.addressSearch(q,(r,st)=>{
+    if(st===kakao.maps.services.Status.OK&&r[0]) return nsPlace(+r[0].y,+r[0].x,q);
+    places.keywordSearch(q,(r2,st2)=>{
+      if(st2===kakao.maps.services.Status.OK&&r2[0]) return nsPlace(+r2[0].y,+r2[0].x,r2[0].place_name);
+      toast('주소를 찾지 못했습니다. 도로명 주소로 다시 시도하세요');
+    });
+  });
+}
+function nsPlace(lat,lng,label){
+  ensureNMap(); if(!nmap){ toast('지도 준비 중'); return; }
+  nsClear();
+  nsLast={lat,lng,label};
+  nsPos=new kakao.maps.LatLng(lat,lng);
+  // NEW 핀
+  const pe=document.createElement('div'); pe.className='newpin';
+  pe.innerHTML='<div class="body"><span>NEW</span></div>';
+  const pin=new kakao.maps.CustomOverlay({position:nsPos,content:pe,yAnchor:1,xAnchor:.5,zIndex:10001});
+  pin.setMap(nmap); nsObjs.push(pin);
+  // 반경 원 1/2/3km — 반투명 면 (3km→1km 순서로 그려 중심부가 진하게 겹침)
+  [[3000,'#9AA4B5',.07],[2000,'#E8863B',.09],[1000,'#74B816',.13]].forEach(([rad,col,fo])=>{
+    const c=new kakao.maps.Circle({center:nsPos,radius:rad,strokeWeight:rad===2000?3:2,
+      strokeColor:col,strokeOpacity:.9,strokeStyle:'dash',fillColor:col,fillOpacity:fo});
+    c.setMap(nmap); nsObjs.push(c);
+  });
+  // 인근 샵 (좌표 보유분)
+  const withLL=SHOPS.map(s=>{const ll=getLL(s); return ll?{s,ll,m:haversine(lat,lng,ll[0],ll[1])}:null;}).filter(Boolean);
+  const noLL=SHOPS.length - withLL.length;
+  const near5=withLL.slice().sort((a,b)=>a.m-b.m).slice(0,5);
+  near5.forEach((x,k)=>{
+    const le=document.createElement('div'); le.className='nletter'; le.textContent=String.fromCharCode(65+k);
+    const ov=new kakao.maps.CustomOverlay({position:new kakao.maps.LatLng(x.ll[0],x.ll[1]),content:le,yAnchor:.5,xAnchor:.5,zIndex:9000});
+    ov.setMap(nmap); nsObjs.push(ov);
+  });
+  // 3km 원이 다 보이게
+  const b=new kakao.maps.LatLngBounds();
+  const dLat=3000/111320, dLng=3000/(111320*Math.cos(lat*Math.PI/180));
+  b.extend(new kakao.maps.LatLng(lat-dLat,lng-dLng)); b.extend(new kakao.maps.LatLng(lat+dLat,lng+dLng));
+  nmap.setBounds(b,30,30,30,30);
+  // ── 마이크로젝션 2km 판정 (토글: 전체 이력 vs 3개월 활성 발주) ──
+  const mjNear=withLL.filter(x=>x.s.mjTotal>0).sort((a,b)=>a.m-b.m);
+  const mjIn=mjNear.filter(x=>x.m<MJ_RADIUS);
+  let verdict;
+  const seminar=`<div class="ns-seminar"><b>📋 입점 절차 안내</b><br>마이크로젝션 입점을 원하실 경우, <b>배교수님 오프라인 세미나</b> 참석 후 입점이 가능합니다.<br>세미나 구성: <b>의료법 · 의료광고법 · 공중위생관리법 · 화장품법</b> 이론 강의</div>`;
+  if(!nsMjMode){
+    const ok=mjIn.length===0;
+    verdict = ok
+      ? `<div class="ns-verdict ok">✅ <b>마이크로젝션 입점 가능</b> <small style="font-weight:600">· 기준: 마젝 구매 이력 전체</small><br>반경 2km 내 마이크로젝션 운영 파트너가 없습니다.${mjNear.length?` (최근접 마이크로젝션 파트너: ${fmtDist(mjNear[0].m)})`:''}</div>${seminar}`
+      : `<div class="ns-verdict no">⛔ <b>마이크로젝션 입점 불가</b> <small style="font-weight:600">· 기준: 마젝 구매 이력 전체</small><br>반경 2km 내 마이크로젝션 운영 파트너 <b>${mjIn.length}곳</b>이 있습니다 (최근접 ${fmtDist(mjIn[0].m)}).</div>`;
+  }else{
+    const info=mjIn.map(x=>({...x, r:mjRecent(x.s.shop)}));
+    const active=info.filter(x=>x.r.sum>=MJ_ACTIVE_MIN);
+    const inactive=info.filter(x=>x.r.sum<MJ_ACTIVE_MIN);
+    const entLines=r=>r.entries.slice(0,4).map(e=>`<span class="ent">${e.d} · ${e.a.toLocaleString('ko-KR')}원</span>`).join('')
+                     +(r.entries.length>4?`<span class="ent">외 ${r.entries.length-4}건</span>`:'')
+                     ||'<span class="ent">3개월 내 발주 없음</span>';
+    if(active.length){
+      const rowsB=active.map((x,k)=>`<div class="mjrow"><span class="mn">마젝샵 ${k+1}</span>
+        <span class="md">${fmtDist(x.m)}</span>
+        <span class="ml">${entLines(x.r)}</span>
+        <span class="ms">${x.r.sum.toLocaleString('ko-KR')}원</span></div>`).join('');
+      verdict=`<div class="ns-verdict no">⛔ <b>마이크로젝션 입점 불가</b> <small style="font-weight:600">· 기준: 최근 3개월 발주 ${(MJ_ACTIVE_MIN/10000)}만원 이상 유지</small><br>
+        반경 2km 내 <b>활성 발주 유지 샵 ${active.length}곳</b>이 있습니다.<br><br>
+        <b>활성 마젝샵 발주 내역 (최근 3개월)</b>${rowsB}</div>`;
+    }else{
+      verdict=`<div class="ns-verdict ok">✅ <b>마이크로젝션 입점 가능</b> <small style="font-weight:600">· 기준: 최근 3개월 발주 ${(MJ_ACTIVE_MIN/10000)}만원 이상 유지</small><br>
+        반경 2km 내 활성 발주 유지 샵이 없습니다.${inactive.length?`<br><br><b>참고 — 2km 내 마젝 이력 샵 ${inactive.length}곳 (기준 미충족)</b>${inactive.map((x,k)=>`<div class="mjrow"><span class="mn">이력샵 ${k+1}</span><span class="md">${fmtDist(x.m)}</span><span class="ml">${entLines(x.r)}</span><span class="ms">${x.r.sum.toLocaleString('ko-KR')}원</span></div>`).join('')}`:''}</div>${seminar}`;
+    }
+  }
+  // ── 인근 5곳 (익명) ──
+  const rows=near5.map((x,k)=>{
+    const ls=linesOf(x.s);
+    return `<div class="nb-row">
+      <span class="nb-name">${String.fromCharCode(65+k)}샵</span>
+      <span class="nb-dist ${x.m<1000?'close':''}">${fmtDist(x.m)}</span>
+      <span class="nb-prods">${ls.length?ls.sort((a,b2)=>x.s.p[b2][1]-x.s.p[a][1]).map(chip2).join(''):'<span class="hint">주요 제품 라인 없음</span>'}</span>
+    </div>`;
+  }).join('');
+  document.getElementById('ns-results').innerHTML=`
+    <div class="ns-h">Dr.BAE 신규 입점 위치 리포트</div>
+    <div class="ns-meta">검토 위치: ${label}<br>작성일 ${todayStr()} · 배랩(BAE Lab) · 직선거리 기준</div>
+    ${verdict}
+    <div class="rp-sec">인근 Dr.BAE 파트너 현황 <span style="font-weight:500;color:var(--mute);font-size:11px">개인정보 보호를 위해 익명(A~E샵) 표기 · 거리순</span></div>
+    <div class="rp-prods">${rows||'<p class="hint" style="padding:8px 0">주변에 표시할 파트너가 없습니다.</p>'}</div>
+    <div class="ns-foot">※ 파트너 샵의 상호·주소·매출 정보는 표시되지 않습니다. · 거리는 직선거리 기준입니다.${noLL?` · 위치 미확인 파트너 ${noLL}곳은 분석에서 제외되었습니다.`:''}</div>`;
+  document.getElementById('ns-print').style.display='inline-block';
+  toast('위치 검토 완료');
+}
+document.getElementById('ns-mj').onclick=()=>{
+  nsMjMode=!nsMjMode;
+  document.getElementById('ns-mj').classList.toggle('on',nsMjMode);
+  document.getElementById('ns-mj-state').textContent=nsMjMode?'ON':'OFF';
+  if(nsLast) nsPlace(nsLast.lat,nsLast.lng,nsLast.label);   // 즉시 재판정
+};
+document.getElementById('ns-go').onclick=nsAnalyze;
+document.getElementById('ns-addr').addEventListener('keydown',e=>{ if(e.key==='Enter') nsAnalyze(); });
+document.getElementById('ns-print').onclick=()=>{
+  if(nmap && nsPos){
+    document.body.classList.add('nsprint');            // 지도를 인쇄 높이로 미리 전환
+    nmap.relayout(); nmap.setCenter(nsPos);            // 타일 재배치 + 원 중심 고정
+    setTimeout(()=>{
+      nmap.setCenter(nsPos);                           // 타일 로드 후 재고정
+      window.print();
+      setTimeout(()=>{ document.body.classList.remove('nsprint'); nmap.relayout(); nmap.setCenter(nsPos); },400);
+    },450);
+  } else window.print();
+};
+window.addEventListener('beforeprint',()=>{ if(nmap&&nsPos&&curPage==='newshop'){ nmap.relayout(); nmap.setCenter(nsPos); } });
+window.addEventListener('afterprint', ()=>{ if(nmap&&nsPos){ nmap.relayout(); nmap.setCenter(nsPos); } });
+
+/* ---------- 일자별 주문 ---------- */
+let DAYS=[], shipSel=null;
+const WD=['일','월','화','수','목','금','토'];
+function wdOf(ymd){ const [y,m,d]=ymd.split('.').map(Number); return new Date(y,m-1,d).getDay(); }
+function buildShipList(){
+  const box=document.getElementById('sp-days');
+  if(!DAYS.length){ box.innerHTML='<p class="hint" style="padding:12px 16px">데이터를 업로드하면 표시됩니다.</p>'; return; }
+  box.innerHTML=''; let curM=null;
+  DAYS.forEach(day=>{
+    const m=day.d.slice(0,7);
+    if(m!==curM){ curM=m;
+      const t=document.createElement('div'); t.className='sp-mon'; t.textContent=monLabel(m); box.appendChild(t); }
+    const w=wdOf(day.d);
+    const b=document.createElement('button');
+    b.className='sp-day'+(day.d===shipSel?' active':''); b.dataset.d=day.d;
+    b.innerHTML=`<span class="dd2">${day.d.slice(5)}</span>
+      <span class="dw ${w===0?'sun':w===6?'sat':''}">${WD[w]}</span>
+      <span class="dv"><b>${fmt(day.total)}원</b><small>${day.n}건</small></span>`;
+    b.onclick=()=>selectShip(day.d);
+    box.appendChild(b);
+  });
+}
+function selectShip(d){
+  shipSel=d;
+  document.querySelectorAll('.sp-day').forEach(x=>x.classList.toggle('active',x.dataset.d===d));
+  const day=DAYS.find(x=>x.d===d), main=document.getElementById('sp-detail');
+  if(!day){ main.innerHTML='<div class="rp-empty">해당일 데이터가 없습니다.</div>'; return; }
+  const w=wdOf(d);
+  const cards=day.orders.map(o=>{
+    const items=o.items.map(it=>{
+      const names=it.c.map(c=>PNAME[c]||c).join(' + ');
+      return `<div class="sp-item"><span class="pn3">${names}</span>
+        <span class="q3">×${it.q}</span><span class="a3">${it.a.toLocaleString('ko-KR')}</span></div>`;
+    }).join('');
+    return `<div class="sp-order">
+      <div class="sp-oh"><span class="nm">${o.shop}</span><span class="rg">${o.sido} ${o.sigungu}</span>${o.nd?'<span class="ndtag">발송일 미기재</span>':''}
+        <span class="amt">${o.total.toLocaleString('ko-KR')}원</span></div>
+      ${items}</div>`;
+  }).join('');
+  main.innerHTML=`
+    <div class="sp-dh"><h2>${d} (${WD[w]})</h2>
+      <span class="sum">주문 <b>${day.n}건</b> · 합계 <b>${day.total.toLocaleString('ko-KR')}원</b></span></div>
+    ${cards}`;
+  main.scrollTop=0;
+}
+
+/* ---------- 마이크로 블랙 레이어/탭 ---------- */
+let mbOn=false, mbGeo=false, mbMarks=[], mbInfoOv=null;
+function mbSvcChips(svc){
+  return svc.split(',').map(s=>s.trim()).filter(Boolean)
+    .map(s=>`<span class="svcchip${s==='두피문신'?' tattoo':''}">${s}</span>`).join('');
+}
+function buildMbList(){
+  const box=document.getElementById('mb-list'); box.innerHTML='';
+  MB_SHOPS.forEach((m,i)=>{
+    const r=document.createElement('div'); r.className='mb-row';
+    r.innerHTML=`<span class="no">${i+1}</span>
+      <span class="who"><b>${m.nm}</b><a href="tel:${m.ph}">${m.ph.replace(/(\d{3})(\d{3,4})(\d{4})/,'$1-$2-$3')}</a></span>
+      <span class="svcs">${mbSvcChips(m.svc)}</span>
+      <span class="maddr">${m.addr}</span>
+      <button class="mgo">📍 지도</button>`;
+    r.querySelector('.mgo').onclick=()=>mbLocate(i);
+    box.appendChild(r);
+  });
+}
+function mbCloseInfo(){ if(mbInfoOv){ mbInfoOv.setMap(null); mbInfoOv=null; } }
+function mbShowInfo(m){
+  mbCloseInfo();
+  const el=document.createElement('div'); el.className='mbinfo';
+  el.innerHTML=`<button class="x">&times;</button><h4>⚫ ${m.nm}</h4>
+    <div class="sv">${m.svc}</div><div class="ad">${m.addr}</div>
+    <a href="tel:${m.ph}">${m.ph}</a>`;
+  el.querySelector('.x').onclick=mbCloseInfo;
+  mbInfoOv=new kakao.maps.CustomOverlay({position:new kakao.maps.LatLng(m.lat,m.lng),content:el,yAnchor:0,xAnchor:0,zIndex:30001,clickable:true});
+  mbInfoOv.setMap(map);
+}
+function mbGeocodeAll(cb){
+  if(mbGeo){ if(cb)cb(); return; }
+  if(!geocoder){ toast('지도 준비 중 — 잠시 후 다시 시도하세요'); return; }
+  let done=0, failed=[];
+  (function next(k){
+    if(k>=MB_SHOPS.length){
+      mbGeo=true;
+      try{ localStorage.setItem('drbae_geo_v1', JSON.stringify(GEO)); }catch(e){}
+      if(failed.length){ toast(`블랙 전문점 ${done}곳 표시 · 위치 미확인 ${failed.length}곳`); console.warn('블랙 미매칭:',failed); }
+      if(cb)cb(); return;
+    }
+    const m=MB_SHOPS[k], q=m.g||m.addr;
+    const c=GEO['MB:'+m.addr];
+    const place=(lat,lng,save)=>{ m.lat=lat; m.lng=lng; if(save) GEO['MB:'+m.addr]=[lat,lng];
+      mbAddMark(m); done++; };
+    if(c){ place(c[0],c[1],false); next(k+1); return; }
+    geocoder.addressSearch(q,(r,st)=>{
+      if(st===kakao.maps.services.Status.OK&&r[0]){ place(+r[0].y,+r[0].x,true); return setTimeout(()=>next(k+1),35); }
+      places.keywordSearch(q,(r2,st2)=>{
+        if(st2===kakao.maps.services.Status.OK&&r2[0]){ place(+r2[0].y,+r2[0].x,true); }
+        else failed.push(m.nm+' / '+m.addr);
+        setTimeout(()=>next(k+1),35);
+      });
+    });
+  })(0);
+}
+function mbAddMark(m){
+  const el=document.createElement('div'); el.className='mbdot'; el.title='⚫ '+m.nm;
+  el.onclick=e=>{ e.stopPropagation(); mbShowInfo(m); };
+  const ov=new kakao.maps.CustomOverlay({position:new kakao.maps.LatLng(m.lat,m.lng),content:el,yAnchor:.5,xAnchor:.5,zIndex:25000,clickable:true});
+  if(mbOn) ov.setMap(map);
+  mbMarks.push(ov);
+}
+function mbToggle(force){
+  mbOn = force!==undefined?force:!mbOn;
+  document.getElementById('btn-mb').classList.toggle('on',mbOn);
+  if(mbOn){
+    mbGeocodeAll(()=>{ mbMarks.forEach(o=>o.setMap(map)); });
+    mbMarks.forEach(o=>o.setMap(map));
+    toast('⚫ 마이크로 블랙 전문점 표시 ON');
+  }else{
+    mbMarks.forEach(o=>o.setMap(null)); mbCloseInfo();
+    toast('블랙 전문점 표시 OFF');
+  }
+}
+document.getElementById('btn-mb').onclick=()=>{ if(!map){toast('지도 로딩 중');return;} mbToggle(); };
+function mbLocate(i){
+  const m=MB_SHOPS[i];
+  switchPage('map');
+  setTimeout(()=>{
+    if(!map){ toast('지도는 배포 주소에서 표시됩니다'); return; }
+    map.relayout();
+    if(!mbOn) mbToggle(true);
+    const go=()=>{ if(m.lat){ map.setLevel(4); map.setCenter(new kakao.maps.LatLng(m.lat,m.lng)); mbShowInfo(m); }
+                   else setTimeout(go,300); };
+    go();
+  },80);
+}
+buildMbList();
+
+/* ---------- accordions ---------- */
+document.querySelectorAll('.sec-h').forEach(hd=>hd.onclick=()=>hd.parentElement.classList.toggle('collapsed'));
+
+/* ---------- mobile bottom sheet ---------- */
+const isMobile = () => window.matchMedia('(max-width:820px)').matches;
+const sheetBtn = document.getElementById('sheet-handle');
+sheetBtn.onclick = ()=> document.body.classList.toggle('sheet-open');
+function closeSheet(){ if(isMobile()) document.body.classList.remove('sheet-open'); }
+
+// 모바일 첫 진입: 지도 위주 (시트 닫힘 + 라인업/지역 섹션 접힘)
+if(isMobile()){
+  document.getElementById('sec-shops').classList.add('collapsed');
+}
+
+document.getElementById('btn-size').onclick=()=>{
+  sizeMode = sizeMode==='value' ? 'uniform' : 'value';
+  document.getElementById('btn-size-label').textContent = sizeMode==='value' ? '크기: 금액' : '크기: 동일';
+  document.getElementById('btn-size').classList.toggle('on', sizeMode==='uniform');
+  document.getElementById('legend').style.opacity = sizeMode==='uniform' ? .45 : 1;
+  refreshMarkers();
+  toast(sizeMode==='value' ? '원 크기 = 주문금액' : '모든 지점 동일 크기 표시');
+};
+document.getElementById('btn-measure').onclick=()=>{ closeSheet(); setMode('measure'); };
+document.getElementById('btn-new').onclick=()=>{ closeSheet(); setMode('new'); };
+document.getElementById('btn-geo').onclick=geocodeNew;
+document.getElementById('new-addr').addEventListener('keydown',e=>{ if(e.key==='Enter') geocodeNew(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&mode) setMode(mode); });
+
+/* ================== UPLOAD & BOOT ================== */
+function setData(shops, products, meta, label, diag, days){
+  SHOPS=shops; PRODUCTS=products; META=meta;
+  SHOPS.forEach((s,i)=>s._i=i);
+  try{ if(typeof computeAssign==="function" && PSHOPS.length) computeAssign(); }catch(e){}
+  DORM_CUT={3:monthsBefore(META.to,3), 6:monthsBefore(META.to,6)};
+
+  // 필터/도구 상태 초기화
+  selP=new Set(); dormSel=0; activeIdx=null;
+  if(mode) setMode(mode);
+  if(infoOverlay){ infoOverlay.setMap(null); infoOverlay=null; }
+  Object.values(overlays).forEach(o=>o.ov.setMap(null)); overlays={};
+  document.querySelectorAll('.dbtn').forEach(x=>x.classList.remove('on'));
+  document.body.classList.remove('mj');
+
+  // 금액 컬럼이 없는 파일(포장 프로그램 CSV 등)은 크기=금액 표현이 불가 → 동일 크기로 전환
+  if(META.noAmt && sizeMode==='value'){
+    sizeMode='uniform';
+    document.getElementById('btn-size-label').textContent='크기: 동일';
+    document.getElementById('btn-size').classList.add('on');
+    document.getElementById('legend').style.opacity=.45;
+    toast('금액 컬럼이 없는 파일 — 마커를 동일 크기로 표시합니다');
+  }
+
+  // 표시 갱신
+  document.getElementById('dr-from').textContent=META.from;
+  document.getElementById('dr-to').textContent=META.to;
+  document.getElementById('st-from').textContent=META.from;
+  document.getElementById('st-to').textContent=META.to;
+  document.getElementById('st-file').textContent=label||'';
+  document.getElementById('sheet-date').textContent=`${META.from} ~ ${META.to}`;
+  document.getElementById('dorm-ref').textContent=META.to;
+  document.getElementById('dorm-c3').textContent=SHOPS.filter(s=>isDorm(s,3)).length+'곳';
+  document.getElementById('dorm-c6').textContent=SHOPS.filter(s=>isDorm(s,6)).length+'곳';
+  document.getElementById('hdr-file').textContent=label||'';
+  window.__lastLabel=label||''; window.__lastDiag=diag||null;
+  const q=document.getElementById('qual'), qb=document.getElementById('qual-body');
+  if(diag){
+    const rate=Math.round((diag.opt+diag.name)/(diag.opt+diag.name+diag.base||1)*100);
+    qb.innerHTML=`
+      <div class="qrow"><span>제품 분류율 (옵션 ${diag.opt} · 상품명 ${diag.name}행)</span><b>${rate}%</b></div>
+      <div class="qrow ${diag.base?'warnq':''}"><span>기타 분류 (브로셔·세미나 등)</span><b>${diag.base}행 · ${diag.baseAmt.toLocaleString('ko-KR')}원</b></div>
+      ${diag.hasRep?'<div class="qrow"><span>샵 병합 기준</span><b>대표샵명 컬럼 (원본에서 병합 완료)</b></div>':''}
+      <div class="qrow"><span>동일 상호 병합</span><b>${diag.merged}건</b></div>
+      <div class="qrow ${diag.recvShops?'warnq':''}"><span>상호 미기재 (수취인명 표시)</span><b>${diag.recvShops}곳</b></div>
+      ${diag.excluded?`<div class="qrow warnq"><span>배송지 없음 제외</span><b>${diag.excluded}행</b></div>`:''}`;
+    q.style.display='block';
+  } else q.style.display='none';
+  reportIdx=null; DAYS=days||[]; shipSel=null;
+  document.getElementById('sp-detail').innerHTML='<div class="rp-empty">← 날짜를 선택하면 해당일 주문 내역이 표시됩니다.</div>';
+  if(typeof nsReset==='function') nsReset();
+  document.getElementById('rpmain').innerHTML='<div class="rp-empty">위에서 샵을 선택하면 납품 분석 리포트가 표시됩니다.</div>';
+  recalcMax(); updateStats(); buildProducts(); buildList(); buildDormList(); buildRank(); buildReportList(); buildShipList();
+  renderStatus();
+  document.getElementById('q').value='';
+  document.getElementById('ms-q').value='';
+  document.getElementById('rk-q').value='';
+  document.getElementById('rp-q').value='';
+  document.getElementById('upov').style.display='none';
+
+  try{ void('drbae_data_v5', JSON.stringify({shops,products,meta,label,diag,days})); }catch(e){}
+  if(mapReady) geocodeAll();
+}
+
+async function handleFile(file){
+  const err=document.getElementById('uperr'); err.textContent='';
+  try{
+    toast('파일 분석 중…');
+    const __buf=await file.arrayBuffer();
+    const rows=parseBuf(file.name,__buf);
+    window.__lastRaw={name:file.name, buf:__buf};
+    if(!rows.length) throw new Error('읽을 수 있는 데이터 행이 없습니다');
+    const res=buildShops(rows);
+    setData(res.shops,res.products,res.meta,
+            file.name+' · '+res.meta.from+'~'+res.meta.to, res.diag, res.days);
+    const rate=Math.round((res.diag.opt+res.diag.name)/(res.diag.opt+res.diag.name+res.diag.base||1)*100);
+    let msg=`${res.rows}행 → 납품처 ${res.shops.length}곳 · 분류율 ${rate}%`;
+    if(res.excluded) msg+=` · 배송지없음 ${res.excluded}행 제외`;
+    if(res.mergedNames.length) msg+=` · 동일상호 병합 ${res.mergedNames.length}건`;
+    toast(msg);
+    if(res.mergedNames.length) console.info('동일 상호 병합:', res.mergedNames);
+    publishToFirestore(rows, file.name);              // 로그인된 본사 계정으로 Firestore에 게시
+  }catch(e){
+    document.getElementById('upov').style.display='flex';
+    err.textContent='⚠ '+(e.message||'파일을 읽지 못했습니다');
+    console.error(e);
+  }
+}
+
+/* GitHub 게시 기능은 제거됨 — 데이터는 Firestore(private/mapdata)에만 존재 */
+
+const upov=document.getElementById('upov'), dz=document.getElementById('dropzone');
+document.getElementById('btn-upload').onclick=()=>{ upov.style.display='flex'; };
+document.getElementById('btn-pick').onclick=()=>document.getElementById('file-in').click();
+document.getElementById('file-in').addEventListener('change',e=>{ if(e.target.files[0]) handleFile(e.target.files[0]); e.target.value=''; });
+upov.addEventListener('click',e=>{ if(e.target===upov && SHOPS.length) upov.style.display='none'; });
+['dragover','dragenter'].forEach(ev=>upov.addEventListener(ev,e=>{ e.preventDefault(); dz.classList.add('drag'); }));
+['dragleave','drop'].forEach(ev=>upov.addEventListener(ev,e=>{ e.preventDefault(); dz.classList.remove('drag'); }));
+upov.addEventListener('drop',e=>{ const f=e.dataTransfer.files[0]; if(f) handleFile(f); });
+// 지도 위로 바로 떨어뜨려도 받기
+document.addEventListener('dragover',e=>{ e.preventDefault(); if(upov.style.display==='none') upov.style.display='flex'; });
+document.addEventListener('drop',e=>{ e.preventDefault(); });
+document.getElementById('up-clear').onclick=()=>{
+  try{ localStorage.removeItem('drbae_data_v5'); localStorage.removeItem('drbae_geo_v1'); GEO={}; }catch(e){}
+  toast('저장된 데이터와 좌표 캐시를 삭제했습니다');
+};
+
+// 초기 화면 + 저장 데이터 자동 복원
+recalcMax(); updateStats(); buildProducts(); buildList();
+const EMBED = /*__EMBED__*/null/*__EMBED_END__*/;
+bootstrap();
+
+/* ================= 로그인 + Firestore 데이터 ================= */
+const C=window.LedgerCore;
+firebase.initializeApp(C.FIREBASE_CONFIG);
+const fdb=firebase.firestore(), fauth=firebase.auth();
+let USER=null, PARTNERS=[], PSHOPS=[];       // PSHOPS: 모든 파트너 거래처 (ledgerKey 포함)
+let pfMode='';                                // ''=전체, '__direct'=본사 직거래, 그 외=파트너 ledgerKey
+let ASSIGN={};                                // 대시보드 샵 인덱스 → {key, partner, shop, state}
+window.__rows=null;
+
+document.getElementById('gate-login').onclick=()=>{
+  const p=new firebase.auth.GoogleAuthProvider(); p.setCustomParameters({prompt:'select_account'});
+  document.getElementById('gate-msg').textContent='';
+  fauth.signInWithPopup(p).catch(e=>{ document.getElementById('gate-msg').textContent='로그인 실패: '+(e&&e.message||e); });
+};
+document.getElementById('btn-logout').onclick=()=>fauth.signOut().then(()=>location.reload());
+fauth.onAuthStateChanged(u=>{
+  if(u && C.OWNER_EMAILS.indexOf((u.email||'').toLowerCase())>=0){ USER=u; document.getElementById('gate').style.display='none'; initData(); }
+  else if(u){ document.getElementById('gate-msg').textContent='이 계정('+u.email+')은 본사 계정이 아닙니다.'; fauth.signOut(); }
+  else { document.getElementById('gate').style.display='flex'; }
+});
+
+async function loadMapCSV(){
+  const meta=await fdb.collection('private').doc('mapdata').get();
+  if(!meta.exists) return null;
+  const n=meta.data().chunks||0; let text='';
+  for(let i=0;i<n;i++){ const c=await fdb.collection('private').doc('mapdata').collection('chunks').doc(String(i)).get(); text+=(c.exists?c.data().t:''); }
+  return {text, at:meta.data().at||'', name:meta.data().name||'data.csv'};
+}
+async function publishToFirestore(rows, name){
+  try{
+    toast('Firestore에 게시 중…');
+    const cols=Object.keys(rows[0]);
+    const csv=C.toCSV([cols].concat(rows.map(r=>cols.map(k=>r[k]))));
+    const CH=700000, n=Math.ceil(csv.length/CH);
+    const ref=fdb.collection('private').doc('mapdata');
+    for(let i=0;i<n;i++) await ref.collection('chunks').doc(String(i)).set({t:csv.slice(i*CH,(i+1)*CH)});
+    const old=await ref.collection('chunks').get(); for(const d of old.docs){ if(+d.id>=n) await d.ref.delete(); }
+    await ref.set({chunks:n, size:csv.length, at:C.nowStamp(), name:name||'upload.csv', by:'대시보드 업로드'});
+    toast('✓ 게시 완료 — 로그인한 모든 기기에서 최신 데이터가 보입니다');
+  }catch(e){ console.error(e); toast('게시 실패: '+(e.message||e)); }
+}
+async function loadPartners(){
+  const ps=await fdb.collection('partners').get();
+  PARTNERS=ps.docs.map(d=>({id:d.id,...d.data()})).filter(p=>p.key);
+  const ORD=['스킨노블랩','로하나코스킨','미송','마이온스킨','클뷰티','블랙&레드 (청담)','블랙&레드 (대구)','블랙&레드 (광주)'];
+  const ia=n=>{ const i=ORD.findIndex(k=>(n||'').includes(k)); return i<0?99:i; };
+  PARTNERS.sort((a,b)=>ia(a.name)-ia(b.name));
+  PSHOPS=[];
+  for(const p of PARTNERS){
+    const sh=await fdb.collection('ledgers').doc(p.key).collection('shops').get();
+    sh.docs.forEach(d=>{ const o=d.data(); if(o.status==='제외') return; PSHOPS.push({id:d.id, ledgerKey:p.key, partner:p.name, name:o.name, addr:o.addr||'', aliases:o.aliases||[], pending:!!(o.pendingTransfer&&!o.transferOk)}); });
+  }
+  const sel=document.getElementById('pf-partner');
+  sel.innerHTML='<option value="">파트너 선택…</option>'+PARTNERS.map(p=>`<option value="${p.key}">${p.name}</option>`).join('');
+}
+function computeAssign(){
+  ASSIGN={};
+  const byName={}; PSHOPS.forEach(ps=>{ [ps.name].concat(ps.aliases).forEach(n=>{ const k=C.nameKey(n); if(k) (byName[k]=byName[k]||[]).push(ps); }); });
+  const addrs=PSHOPS.map(ps=>({k:C.addrKey(ps.addr), ps})).filter(x=>x.k);
+  SHOPS.forEach(s=>{
+    let c=byName[C.nameKey(s.shop)]||[];
+    if(!c.length){ const ak=C.addrKey(s.addr); c=addrs.filter(x=>C.addrMatch(x.k,ak)).map(x=>x.ps); }
+    if(c.length) ASSIGN[s._i]={key:c[0].ledgerKey, partner:c[0].partner, shop:c[0], state:c[0].pending?'확인 중':'관리'};
+  });
+  updatePfCount();
+}
+function pfOK(s){
+  if(!pfMode) return true;
+  const a=ASSIGN[s._i];
+  if(pfMode==='__direct') return !a;
+  return !!a && a.key===pfMode;
+}
+function ptag(s){
+  const a=ASSIGN[s._i];
+  if(!a) return `<span class="ptag d" data-asg="${s._i}" title="본사 직거래 — 눌러서 파트너 거래처에 연결">직거래</span>`;
+  const short=a.partner.replace(/\s*\(.*\)$/,'');
+  return `<span class="ptag ${a.state==='확인 중'?'h':'p'}" data-asg="${s._i}" title="${a.partner} 관리${a.state==='확인 중'?' (본사 확인 중)':''}">${short}${a.state==='확인 중'?' · 확인중':''}</span>`;
+}
+function updatePfCount(){
+  const el=document.getElementById('pf-cnt'); if(!el) return;
+  const all=SHOPS.length, direct=SHOPS.filter(s=>!ASSIGN[s._i]).length;
+  el.textContent=`직거래 ${direct} · 파트너 ${all-direct} · 전체 ${all}`;
+}
+document.getElementById('pf-bar').addEventListener('click',e=>{
+  const b=e.target.closest('button.pf'); if(!b) return;
+  pfMode=b.dataset.pf; document.querySelectorAll('.pf').forEach(x=>x.classList.toggle('on',x===b));
+  const sel=document.getElementById('pf-partner'); sel.value=''; sel.classList.remove('on');
+  applyPf();
+});
+document.getElementById('pf-partner').addEventListener('change',e=>{
+  pfMode=e.target.value; document.querySelectorAll('.pf').forEach(x=>x.classList.remove('on'));
+  e.target.classList.toggle('on',!!pfMode); if(!pfMode) document.querySelector('.pf[data-pf=""]').classList.add('on');
+  applyPf();
+});
+function applyPf(){ try{ applyFilters(false); }catch(e){ buildList(); } }
+// 배지 클릭 → 파트너 거래처에 연결(별칭) 팝오버
+document.addEventListener('click',e=>{
+  const t=e.target.closest('.ptag'); const pop=document.getElementById('asg');
+  if(!t){ if(pop && !e.target.closest('#asg')) pop.remove(); return; }
+  e.stopPropagation(); e.preventDefault();
+  if(pop) pop.remove();
+  const s=SHOPS[+t.dataset.asg], a=ASSIGN[s._i];
+  const d=document.createElement('div'); d.id='asg'; d.className='asg';
+  const r=t.getBoundingClientRect(); d.style.left=Math.max(8,Math.min(r.left, window.innerWidth-320))+'px'; d.style.top=(r.bottom+6)+'px';
+  const opts=PARTNERS.map(p=>`<optgroup label="${p.name}">`+PSHOPS.filter(x=>x.ledgerKey===p.key).map(x=>`<option value="${x.ledgerKey}|${x.id}">${x.name}</option>`).join('')+`</optgroup>`).join('');
+  d.innerHTML=`<h5>${s.shop}</h5><div class="cur">현재: ${a?a.partner+' 관리'+(a.state==='확인 중'?' (본사 확인 중)':''):'본사 직거래'}</div>
+    <div style="font-size:11.5px;color:#7A8B93;margin-bottom:4px">파트너가 등록한 거래처 중 이 발송처에 해당하는 것을 고르면, 발송처 이름이 그 거래처의 별칭으로 등록되어 주문이 연결됩니다.</div>
+    <select id="asg-sel"><option value="">연결할 파트너 거래처…</option>${opts}</select>
+    <div class="row">${a&&a.shop.aliases.includes(s.shop)?'<button id="asg-un">별칭 해제</button>':''}<button id="asg-x">닫기</button><button class="k" id="asg-ok">연결</button></div>`;
+  document.body.appendChild(d);
+  d.querySelector('#asg-x').onclick=()=>d.remove();
+  d.querySelector('#asg-ok').onclick=async()=>{
+    const v=d.querySelector('#asg-sel').value; if(!v){ toast('연결할 거래처를 고르세요'); return; }
+    const [k,id]=v.split('|');
+    try{ await fdb.collection('ledgers').doc(k).collection('shops').doc(id).update({aliases:firebase.firestore.FieldValue.arrayUnion(s.shop)});
+      toast('연결했습니다. 다음 동기화부터 주문이 그 거래처에 들어갑니다'); d.remove(); await loadPartners(); computeAssign(); buildList(); }
+    catch(err){ toast('실패: '+err.message); }
+  };
+  const un=d.querySelector('#asg-un'); if(un) un.onclick=async()=>{
+    try{ await fdb.collection('ledgers').doc(a.key).collection('shops').doc(a.shop.id).update({aliases:firebase.firestore.FieldValue.arrayRemove(s.shop)});
+      toast('별칭을 해제했습니다'); d.remove(); await loadPartners(); computeAssign(); buildList(); }
+    catch(err){ toast('실패: '+err.message); }
+  };
+});
+
+async function initData(){
+  let remote=null;
+  try{
+    toast('데이터 불러오는 중…');
+    const m=await loadMapCSV();
+    if(m && m.text){
+      const rows=parseBuf('data.csv', new TextEncoder().encode(m.text).buffer);
+      if(rows&&rows.length){
+        window.__rows=rows;
+        const r=buildShops(rows);
+        remote={shops:r.shops,products:r.products,meta:r.meta,diag:r.diag,days:r.days,
+                label:'게시 데이터 '+m.at+' · '+r.meta.from+'~'+r.meta.to, __tag:'remote'};
+      }
+    }
+  }catch(e){ console.error(e); toast('게시 데이터를 불러오지 못했습니다: '+(e.message||e)); }
+  try{ await loadPartners(); }catch(e){ console.error(e); toast('파트너 목록을 불러오지 못했습니다'); }
+  if(!remote){ document.getElementById('upov').style.display='flex'; return; }
+  setData(remote.shops,remote.products,remote.meta,remote.label,remote.diag,remote.days);
+  computeAssign(); buildList();
+  toast('게시 데이터를 불러왔습니다 ('+remote.label.split(' · ')[0].replace('게시 데이터 ','')+')');
+}
+
+</script>
+</body>
+</html>
