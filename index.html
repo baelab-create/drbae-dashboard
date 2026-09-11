@@ -3031,7 +3031,7 @@ async function publishToFirestore(rows, name){
 }
 async function loadPartners(){
   const ps=await fdb.collection('partners').get();
-  PARTNERS=ps.docs.map(d=>({id:d.id,...d.data()})).filter(p=>p.key);
+  PARTNERS=ps.docs.map(d=>({id:d.id,...d.data()})).filter(p=>p.key&&!p.demo);
   const ORD=['스킨노블랩','로하나코스킨','미송','마이온스킨','클뷰티','블랙&레드 (청담)','블랙&레드 (대구)','블랙&레드 (광주)'];
   const ia=n=>{ const i=ORD.findIndex(k=>(n||'').includes(k)); return i<0?99:i; };
   PARTNERS.sort((a,b)=>ia(a.name)-ia(b.name));
