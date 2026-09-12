@@ -421,6 +421,46 @@ body.sheet-open .sheet-handle .hc{transform:rotate(45deg)}
 .ptag.d{background:#EAE8E1;color:#41565F}
 .ptag.p{background:#EEE8F7;color:#6b4fa1}
 .ptag.h{background:#F6EEDC;color:#8A6520}
+.tabn{display:inline-block;min-width:16px;padding:0 5px;border-radius:9px;background:#B3261E;color:#fff;font-size:10px;line-height:16px;text-align:center;margin-left:4px;vertical-align:1px}
+body.pg-master .page-el.mspage{display:block}
+.ms-wrap{max-width:1100px;margin:0 auto;padding:18px 16px 60px}
+.ms-sec{background:#fff;border:1px solid #DFDCD2;border-radius:8px;padding:14px 16px;margin-bottom:16px}
+.ms-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.ms-head h3{margin:0;font-size:15px}
+.ms-sub{font-size:12px;color:#7A8B93}
+.ms-chk{font-size:12px;color:#41565F;margin-left:auto;display:flex;align-items:center;gap:4px}
+.rv{border:1px solid #F1D7C4;background:#FFF8F2;border-radius:6px;padding:10px 12px;margin-bottom:8px;font-size:13px}
+.rv .rv-t{font-weight:800;margin-bottom:4px}
+.rv .rv-type{display:inline-block;font-size:10.5px;font-weight:800;padding:1px 7px;border-radius:8px;background:#B3261E;color:#fff;margin-right:6px;vertical-align:1px}
+.rv .rv-ev{font-size:11.5px;color:#7A8B93;margin:2px 0 6px}
+.rv .rv-c{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:4px}
+.rv button,.msr button,.asg button{font-family:inherit;font-size:12px;border:1px solid #DFDCD2;background:#fff;border-radius:4px;padding:4px 9px;cursor:pointer;color:#16262E}
+.rv button.k,.msr button.k,.asg button.k{background:#16262E;color:#fff;border-color:#16262E}
+.rv button:hover,.msr button:hover{border-color:#9AA7AE}
+.msr{display:grid;grid-template-columns:64px 1fr 130px 90px 110px;gap:8px;align-items:center;padding:7px 6px;border-bottom:1px solid #EFEDE6;font-size:12.5px}
+.msr:hover{background:#FBFAF6}
+.msr .id{font-family:monospace;font-size:11.5px;color:#7A8B93}
+.msr .nm{font-weight:700}
+.msr .al{font-size:11px;color:#7A8B93;font-weight:400;display:block;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.msr .st{font-size:11.5px;color:#41565F}
+.msr .pt{font-size:11px}
+.msr.merged{opacity:.55}
+.msr .acts{display:flex;gap:4px;justify-content:flex-end}
+.ms-log div{font-size:11.5px;color:#41565F;padding:3px 0;border-bottom:1px dashed #EFEDE6}
+.ms-log b{color:#16262E}
+.ms-edit{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:100001;display:flex;align-items:center;justify-content:center}
+.ms-edit .box{background:#fff;border-radius:8px;padding:16px 18px;width:min(520px,94vw);max-height:86vh;overflow:auto;font-size:13px}
+.ms-edit h4{margin:0 0 8px;font-size:15px}
+.ms-edit label{display:block;font-size:11.5px;color:#7A8B93;margin:8px 0 3px}
+.ms-edit input[type=text],.ms-edit select{width:100%;box-sizing:border-box;font-family:inherit;font-size:13px;padding:6px 8px;border:1px solid #DFDCD2;border-radius:4px}
+.ms-edit .chips{display:flex;flex-wrap:wrap;gap:5px}
+.ms-edit .chip{background:#F3F1EA;border-radius:10px;padding:2px 8px;font-size:12px}
+.ms-edit .chip i{cursor:pointer;color:#9A3B33;font-style:normal;margin-left:4px}
+.ms-edit .row{display:flex;gap:6px;justify-content:flex-end;margin-top:12px}
+.ms-edit .row button{font-family:inherit;font-size:12.5px;border:1px solid #DFDCD2;background:#fff;border-radius:4px;padding:6px 12px;cursor:pointer}
+.ms-edit .row button.k{background:#16262E;color:#fff;border-color:#16262E}
+.ms-edit .row button.danger{color:#9A3B33;border-color:#E6C4BF}
+@media(max-width:700px){.msr{grid-template-columns:52px 1fr 90px;grid-auto-rows:auto}.msr .pt,.msr .st{grid-column:2/span 2}}
 .asg{position:fixed;z-index:100000;background:#fff;border:1px solid #DFDCD2;border-radius:6px;box-shadow:0 8px 28px rgba(0,0,0,.18);padding:12px 14px;width:300px;max-height:70vh;overflow:auto;font-size:12.5px}
 .asg h5{margin:0 0 6px;font-size:13px}
 .asg .cur{color:#41565F;margin-bottom:8px}
@@ -818,6 +858,7 @@ body.pg-mb{--accent:#1B2333;--accent-deep:#0F1420;--accent-soft:#E7E9EF}
     <button class="tab" data-pg="report">샵 리포트</button>
     <button class="tab" data-pg="newshop">신규샵 위치 리포트</button>
     <button class="tab" data-pg="mb">마이크로 블랙</button>
+    <button class="tab" data-pg="master">거래처 관리 <span class="tabn" id="ms-n" hidden>0</span></button>
   </nav>
   <div class="hdr-actions">
     <span class="hdr-file" id="hdr-file"></span>
@@ -1091,6 +1132,25 @@ body.pg-mb{--accent:#1B2333;--accent-deep:#0F1420;--accent-soft:#E7E9EF}
   </div>
 </div>
 
+<div class="page-el mspage" id="page-master">
+  <div class="ms-wrap">
+    <section class="ms-sec" id="ms-review-sec">
+      <div class="ms-head"><h3>확인 대기</h3><span class="ms-sub" id="ms-review-sub"></span></div>
+      <div id="ms-review"></div>
+    </section>
+    <section class="ms-sec">
+      <div class="ms-head"><h3>거래처 마스터</h3><span class="ms-sub" id="ms-list-sub"></span>
+        <input id="ms-q" class="rk-search" type="text" placeholder="🔍 이름·별칭·ID 검색">
+        <label class="ms-chk"><input type="checkbox" id="ms-merged"> 합쳐진 것도 보기</label>
+      </div>
+      <div id="ms-list"></div>
+    </section>
+    <section class="ms-sec">
+      <div class="ms-head"><h3>최근 변경 이력</h3></div>
+      <div id="ms-log" class="ms-log"></div>
+    </section>
+  </div>
+</div>
 <div class="page-el mbpage" id="page-mb">
   <div class="mb-top">
     <div class="mb-title">⚫ 마이크로 블랙 전문점 <b>27곳</b></div>
@@ -1331,15 +1391,20 @@ function buildShops(rows){
   if(missing.length) throw new Error('필수 컬럼 누락: '+missing.join(', '));
   const hasAmt=('최종 상품별 총 주문금액' in rows[0]);      // 포장 프로그램 CSV엔 금액 없음 → 0 처리
   const hasRep=('대표샵명' in rows[0]);                     // 병합 완료 CSV → 대표샵명을 샵 키로 사용
+  const hasSid=('거래처ID' in rows[0]) && rows.some(r=>r['거래처ID']);   // 컨트롤 타워가 붙인 거래처ID → 그것이 곧 샵 키
   const data=rows.filter(r=>r['통합배송지']!=null&&String(r['통합배송지']).trim()!=='');
   const excluded=rows.length-data.length;
   if(!data.length) throw new Error('배송지가 있는 데이터 행이 없습니다');
 
-  const byAddr={}, repCnt={};
+  const byAddr={}, repCnt={}, sidCnt={};
   data.forEach(r=>{ const a=r['통합배송지'];
     (byAddr[a]=byAddr[a]||{opts:[],recv:r['수취인명']}).opts.push(r['옵션정보']);
     if(hasRep){ const rp=String(r['대표샵명']||'').trim();
-      if(rp){ const ra=normAddr(a); (repCnt[ra]=repCnt[ra]||{})[rp]=(repCnt[ra][rp]||0)+1; } } });
+      if(rp){ const ra=normAddr(a); (repCnt[ra]=repCnt[ra]||{})[rp]=(repCnt[ra][rp]||0)+1; } }
+    if(hasSid){ const sid=String(r['거래처ID']||'').trim();
+      if(sid){ const ra=normAddr(a); (sidCnt[ra]=sidCnt[ra]||{})[sid]=(sidCnt[ra][sid]||0)+1; } } });
+  const sidOf={};   // normAddr → 거래처ID (주소별 최빈값)
+  for(const ra in sidCnt){ let best='',bc=0; for(const k in sidCnt[ra]) if(sidCnt[ra][k]>bc){ bc=sidCnt[ra][k]; best=k; } sidOf[ra]=best; }
   const repOf={};   // normAddr → 대표샵명 (주소별 최빈값 — 행 간 표기가 흔들려도 안정)
   for(const ra in repCnt){ let best='',bc=0;
     for(const n in repCnt[ra]) if(repCnt[ra][n]>bc){ bc=repCnt[ra][n]; best=n; }
@@ -1437,7 +1502,7 @@ function buildShops(rows){
   // 대표샵명 컬럼이 있으면(포장 프로그램·자동 게시 CSV) 그 값이 곧 병합 키 —
   // 원본에서 병합이 끝난 상태이므로 자체 union-find 신호는 쓰지 않는다.
   recsArr.forEach(r=>{ const ra=normAddr(r.addr);
-    const g = hasRep ? (repOf[ra] ? 'R:'+repOf[ra] : 'A:'+ra) : find('A:'+ra);
+    const g = (hasSid && sidOf[ra]) ? 'S:'+sidOf[ra] : hasRep ? (repOf[ra] ? 'R:'+repOf[ra] : 'A:'+ra) : find('A:'+ra);
     (clusters[g]=clusters[g]||[]).push(r); });
   const shops=[], mergedNames=[], addrRep={};
   for(const g in clusters){
@@ -1445,6 +1510,7 @@ function buildShops(rows){
     arr.sort((a,b)=> a.last>b.last?-1:1);
     const m=arr[0];
     if(hasRep && g.charAt(0)==='R') m.shop=g.slice(2);   // 표시명도 대표샵명으로 통일
+    if(g.charAt(0)==='S'){ m.sid=g.slice(2); const mm=(window.MASTER||{})[m.sid]; if(mm&&mm.name) m.shop=mm.name; else if(hasRep&&repOf[normAddr(m.addr)]) m.shop=repOf[normAddr(m.addr)]; }
     if(arr.length>1){
       const names=[...new Set(arr.map(x=>x.shop))];
       names.forEach(n=>m.recvs.add(n));   // 병합 전 옛 표기명도 검색되게 (예: '아크네스킨랩')
@@ -2272,8 +2338,9 @@ let curPage='status', rankSort='annual', recentDesc=true, reportIdx=null;
 
 function switchPage(pg){
   curPage=pg;
-  document.body.classList.remove('pg-rank','pg-report','pg-newshop','pg-mb');
+  document.body.classList.remove('pg-rank','pg-report','pg-newshop','pg-mb','pg-master');
   if(pg==='mb') document.body.classList.add('pg-mb');
+  if(pg==='master'){ document.body.classList.add('pg-master'); try{ renderMaster(); }catch(e){ console.error(e); } }
   if(pg==='rank') document.body.classList.add('pg-rank');
   else if(pg==='report') document.body.classList.add('pg-report');
   else if(pg==='newshop') document.body.classList.add('pg-newshop');
@@ -2993,6 +3060,8 @@ const C=window.LedgerCore;
 firebase.initializeApp(C.FIREBASE_CONFIG);
 const fdb=firebase.firestore(), fauth=firebase.auth();
 let USER=null, PARTNERS=[], PSHOPS=[];       // PSHOPS: 모든 파트너 거래처 (ledgerKey 포함)
+window.MASTER={};                             // 거래처 마스터 shop_master {id: doc}
+let MASTER_REVIEWS=[], MASTER_LOGS=[];
 let pfMode='';                                // ''=전체, '__direct'=본사 직거래, 그 외=파트너 ledgerKey
 let ASSIGN={};                                // 대시보드 샵 인덱스 → {key, partner, shop, state}
 window.__rows=null;
@@ -3029,6 +3098,14 @@ async function publishToFirestore(rows, name){
     toast('✓ 게시 완료 — 로그인한 모든 기기에서 최신 데이터가 보입니다');
   }catch(e){ console.error(e); toast('게시 실패: '+(e.message||e)); }
 }
+async function loadMaster(){
+  const ms=await fdb.collection('shop_master').get();
+  const M={}; ms.docs.forEach(d=>{ M[d.id]=Object.assign({id:d.id}, d.data()); }); window.MASTER=M;
+  const rv=await fdb.collection('shop_review').where('status','==','pending').get();
+  MASTER_REVIEWS=rv.docs.map(d=>Object.assign({id:d.id}, d.data())).sort((a,b)=>(a.createdAt||'')<(b.createdAt||'')?1:-1);
+  try{ const lg=await fdb.collection('shop_log').orderBy('at','desc').limit(40).get(); MASTER_LOGS=lg.docs.map(d=>d.data()); }catch(e){ MASTER_LOGS=[]; }
+  const n=document.getElementById('ms-n'); if(n){ n.textContent=MASTER_REVIEWS.length; n.hidden=!MASTER_REVIEWS.length; }
+}
 async function loadPartners(){
   const ps=await fdb.collection('partners').get();
   PARTNERS=ps.docs.map(d=>({id:d.id,...d.data()})).filter(p=>p.key&&!p.demo);
@@ -3047,8 +3124,13 @@ function computeAssign(){
   ASSIGN={};
   const byName={}; PSHOPS.forEach(ps=>{ [ps.name].concat(ps.aliases).forEach(n=>{ const k=C.nameKey(n); if(k) (byName[k]=byName[k]||[]).push(ps); }); });
   const addrs=PSHOPS.map(ps=>({k:C.addrKey(ps.addr), ps})).filter(x=>x.k);
+  const byKey={}; PSHOPS.forEach(ps=>{ byKey[ps.ledgerKey+'/'+ps.id]=ps; });
   SHOPS.forEach(s=>{
-    let c=byName[C.nameKey(s.shop)]||[];
+    let c=[];
+    // 1순위: 거래처 마스터의 파트너 연결 (컨트롤 타워·거래처 관리 탭에서 정한 것)
+    const mm=s.sid && window.MASTER[s.sid]; const pt=mm && mm.partner;
+    if(pt && byKey[pt.ledgerKey+'/'+pt.shopId]) c=[byKey[pt.ledgerKey+'/'+pt.shopId]];
+    if(!c.length) c=byName[C.nameKey(s.shop)]||[];
     if(!c.length){ const ak=C.addrKey(s.addr); c=addrs.filter(x=>C.addrMatch(x.k,ak)).map(x=>x.ps); }
     if(c.length) ASSIGN[s._i]={key:c[0].ledgerKey, partner:c[0].partner, shop:c[0], state:c[0].pending?'확인 중':'관리'};
   });
@@ -3096,19 +3178,23 @@ document.addEventListener('click',e=>{
   d.innerHTML=`<h5>${s.shop}</h5><div class="cur">현재: ${a?a.partner+' 관리'+(a.state==='확인 중'?' (본사 확인 중)':''):'본사 직거래'}</div>
     <div style="font-size:11.5px;color:#7A8B93;margin-bottom:4px">파트너가 등록한 거래처 중 이 발송처에 해당하는 것을 고르면, 발송처 이름이 그 거래처의 별칭으로 등록되어 주문이 연결됩니다.</div>
     <select id="asg-sel"><option value="">연결할 파트너 거래처…</option>${opts}</select>
-    <div class="row">${a&&a.shop.aliases.includes(s.shop)?'<button id="asg-un">별칭 해제</button>':''}<button id="asg-x">닫기</button><button class="k" id="asg-ok">연결</button></div>`;
+    <div class="row">${(a&&a.shop.aliases.includes(s.shop))||(s.sid&&window.MASTER[s.sid]&&window.MASTER[s.sid].partner)?'<button id="asg-un">연결 해제</button>':''}<button id="asg-x">닫기</button><button class="k" id="asg-ok">연결</button></div>`;
   document.body.appendChild(d);
   d.querySelector('#asg-x').onclick=()=>d.remove();
   d.querySelector('#asg-ok').onclick=async()=>{
     const v=d.querySelector('#asg-sel').value; if(!v){ toast('연결할 거래처를 고르세요'); return; }
     const [k,id]=v.split('|');
-    try{ await fdb.collection('ledgers').doc(k).collection('shops').doc(id).update({aliases:firebase.firestore.FieldValue.arrayUnion(s.shop)});
-      toast('연결했습니다. 다음 동기화부터 주문이 그 거래처에 들어갑니다'); d.remove(); await loadPartners(); computeAssign(); buildList(); }
+    try{
+      if(s.sid && window.MASTER[s.sid]){ const ps=PSHOPS.find(x=>x.ledgerKey===k&&x.id===id); await masterWrite(s.sid,{partner:{ledgerKey:k, shopId:id, partnerName:ps?ps.partner:'', shopName:ps?ps.name:''}}, 'partner_link', (ps?ps.partner+' · '+ps.name:'')+' 연결'); }
+      else await fdb.collection('ledgers').doc(k).collection('shops').doc(id).update({aliases:firebase.firestore.FieldValue.arrayUnion(s.shop)});
+      toast('연결했습니다. 다음 동기화부터 주문이 그 거래처에 들어갑니다'); d.remove(); await loadMaster(); await loadPartners(); computeAssign(); buildList(); }
     catch(err){ toast('실패: '+err.message); }
   };
   const un=d.querySelector('#asg-un'); if(un) un.onclick=async()=>{
-    try{ await fdb.collection('ledgers').doc(a.key).collection('shops').doc(a.shop.id).update({aliases:firebase.firestore.FieldValue.arrayRemove(s.shop)});
-      toast('별칭을 해제했습니다'); d.remove(); await loadPartners(); computeAssign(); buildList(); }
+    try{
+      if(s.sid && window.MASTER[s.sid] && window.MASTER[s.sid].partner) await masterWrite(s.sid,{partner:null},'partner_unlink','파트너 연결 해제');
+      else await fdb.collection('ledgers').doc(a.key).collection('shops').doc(a.shop.id).update({aliases:firebase.firestore.FieldValue.arrayRemove(s.shop)});
+      toast('연결을 해제했습니다'); d.remove(); await loadMaster(); await loadPartners(); computeAssign(); buildList(); }
     catch(err){ toast('실패: '+err.message); }
   };
 });
@@ -3117,6 +3203,7 @@ async function initData(){
   let remote=null;
   try{
     toast('데이터 불러오는 중…');
+    try{ await loadMaster(); }catch(e){ console.error(e); toast('거래처 마스터를 불러오지 못했습니다'); }
     const m=await loadMapCSV();
     if(m && m.text){
       const rows=parseBuf('data.csv', new TextEncoder().encode(m.text).buffer);
@@ -3132,9 +3219,140 @@ async function initData(){
   if(!remote){ document.getElementById('upov').style.display='flex'; return; }
   setData(remote.shops,remote.products,remote.meta,remote.label,remote.diag,remote.days);
   computeAssign(); buildList(); try{ buildRank(); }catch(e){}
+  if(location.hash==='#master') switchPage('master');
   toast('게시 데이터를 불러왔습니다 ('+remote.label.split(' · ')[0].replace('게시 데이터 ','')+')');
 }
 
+/* ================= 거래처 관리 (shop_master 컨트롤 타워 UI) =================
+   모든 수정은 shop_master 한 곳에만 쓰고 shop_log 에 이력을 남긴다. 나머지 화면·명세서·관리대장은 다음 실행에서 따라온다. */
+function msEsc(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function masterName(id){ const m=window.MASTER[id]; return m?m.name:id; }
+async function masterWrite(id, patch, action, detail){
+  const at=C.nowStamp();
+  await fdb.collection('shop_master').doc(id).set(Object.assign({}, patch, {updatedAt:at, by:'본사'}), {merge:true});
+  await fdb.collection('shop_log').add({at, by:'본사', action, ids:[id], detail:detail||''});
+}
+async function reviewDone(rid, action){
+  await fdb.collection('shop_review').doc(rid).set({status:'done', action, resolvedAt:C.nowStamp()}, {merge:true});
+}
+/* A 를 B 로 합치기: A.mergedInto=B. A 의 표기를 B 별칭에 더한다 (컨트롤 타워도 다음 실행에 흡수) */
+async function mergeInto(a, b){
+  const A=window.MASTER[a], B=window.MASTER[b]; if(!A||!B) throw new Error('거래처를 찾을 수 없습니다');
+  if(a===b) throw new Error('같은 거래처입니다');
+  const aliases=(B.aliases||[]).slice(); [A.name].concat(A.aliases||[]).forEach(n=>{ if(n && n!==B.name && !aliases.includes(n)) aliases.push(n); });
+  const patchB={aliases};
+  if(!B.partner && A.partner) patchB.partner=A.partner;
+  await masterWrite(b, patchB, 'merge', A.name+' ('+a+') 을(를) 흡수');
+  await masterWrite(a, {mergedInto:b, status:'merged', partner:null}, 'merge', B.name+' ('+b+') 에 합쳐짐');
+}
+async function unmerge(a){
+  const A=window.MASTER[a]; if(!A||!A.mergedInto) return;
+  await masterWrite(a, {mergedInto:null, status:'active'}, 'unmerge', masterName(A.mergedInto)+' 에서 분리 (다음 게시부터 원래대로)');
+}
+function msWon(n){ return (Math.round(+n||0)).toLocaleString('ko-KR'); }
+function renderMaster(){
+  const M=window.MASTER;
+  const T={similar:'유사 거래처', merge_candidate:'병합 후보', partner_conflict:'파트너 연결 충돌'};
+  const rvBox=document.getElementById('ms-review');
+  document.getElementById('ms-review-sub').textContent=MASTER_REVIEWS.length?MASTER_REVIEWS.length+'건 — 처리하면 다음 게시(12:10·18:00)부터 모든 화면에 반영됩니다':'없음';
+  if(!MASTER_REVIEWS.length) rvBox.innerHTML='<div style="font-size:12.5px;color:#7A8B93;padding:6px 2px">확인할 항목이 없습니다.</div>';
+  else rvBox.innerHTML=MASTER_REVIEWS.map(rv=>{
+    const ev=rv.evidence||{}; const sub=rv.subject||{};
+    const evs=[ev.rows?'주문 '+ev.rows+'행':'', ev.amount?msWon(ev.amount)+'원':'', ev.first?(ev.first+'~'+(ev.last||'')):'', (ev.names||[]).length?'표기: '+ev.names.join(', '):'', (ev.addrs||[]).length?'주소: '+ev.addrs.map(a=>a.slice(0,18)+'…').join(' | '):''].filter(Boolean).join(' · ');
+    const cands=(rv.candidates||[]).map(c=>{
+      if(rv.type==='partner_conflict') return `<button data-act="plink" data-rv="${rv.id}" data-a="${sub.id}" data-c="${c.id}">${msEsc(c.name)} 에 연결</button>`;
+      return `<button class="k" data-act="merge" data-rv="${rv.id}" data-a="${sub.id}" data-b="${c.id}" title="${msEsc(c.reason||'')}">${msEsc(masterName(c.id))} (${c.id}) 와 같은 샵 → 합치기</button>`;
+    }).join('');
+    return `<div class="rv" data-id="${rv.id}">
+      <div class="rv-t"><span class="rv-type">${T[rv.type]||rv.type}</span>${msEsc(masterName(sub.id))} <span style="font-family:monospace;font-size:11px;color:#7A8B93">${sub.id}</span></div>
+      <div class="rv-ev">${msEsc(evs)}${(rv.candidates||[])[0]&&(rv.candidates||[])[0].reason?' · 근거: '+msEsc(rv.candidates[0].reason):''}</div>
+      <div class="rv-c">${cands}<button data-act="keep" data-rv="${rv.id}">다른 거래처 (그대로 둠)</button><button data-act="edit" data-a="${sub.id}">이름·별칭 수정</button></div>
+    </div>`;
+  }).join('');
+  const q=(document.getElementById('ms-q').value||'').trim().toLowerCase();
+  const showMerged=document.getElementById('ms-merged').checked;
+  let arr=Object.values(M).filter(m=>showMerged||(!m.mergedInto&&m.status!=='excluded'));
+  if(q) arr=arr.filter(m=>(m.id+' '+m.name+' '+(m.aliases||[]).join(' ')).toLowerCase().includes(q));
+  arr.sort((a,b)=>((b.stats||{}).amount||0)-((a.stats||{}).amount||0));
+  document.getElementById('ms-list-sub').textContent=Object.values(M).filter(m=>!m.mergedInto&&m.status!=='excluded').length+'곳 (표시 '+arr.length+')';
+  document.getElementById('ms-list').innerHTML=arr.slice(0,400).map(m=>{
+    const st=m.stats||{}; const pt=m.partner;
+    return `<div class="msr${m.mergedInto?' merged':''}" data-id="${m.id}">
+      <span class="id">${m.id}</span>
+      <span class="nm">${msEsc(m.name)}${m.mergedInto?' <span style="color:#9A3B33;font-weight:400;font-size:11px">→ '+msEsc(masterName(m.mergedInto))+' 에 합쳐짐</span>':''}<span class="al">${(m.aliases||[]).length?msEsc((m.aliases||[]).join(' · ')):'<span style="color:#C4CBCF">별칭 없음</span>'}</span></span>
+      <span class="st">${st.rows?st.rows+'행 · '+msWon(st.amount)+'원':''}<br><span style="color:#9AA7AE">${st.last||''}</span></span>
+      <span class="pt">${pt?'<span class="ptag p">'+msEsc(String(pt.partnerName||'').replace(/\s*\(.*\)$/,''))+'</span>':'<span class="ptag d">직거래</span>'}</span>
+      <span class="acts">${m.mergedInto?`<button data-act="unmerge" data-a="${m.id}">분리</button>`:`<button data-act="edit" data-a="${m.id}">수정</button><button data-act="mergepick" data-a="${m.id}">합치기</button>`}</span>
+    </div>`;
+  }).join('')+(arr.length>400?'<div style="font-size:12px;color:#7A8B93;padding:8px">… 검색으로 좁혀 주세요 ('+arr.length+'곳)</div>':'');
+  document.getElementById('ms-log').innerHTML=MASTER_LOGS.map(l=>`<div><b>${msEsc(l.at||'')}</b> · ${msEsc(l.by||'')} · ${msEsc(l.action||'')} ${(l.ids||[]).map(i=>'<span style="font-family:monospace">'+msEsc(i)+'</span>').join(' ')} — ${msEsc(l.detail||'')}</div>`).join('')||'<div>이력이 없습니다.</div>';
+}
+document.getElementById('ms-q').addEventListener('input',()=>renderMaster());
+document.getElementById('ms-merged').addEventListener('change',()=>renderMaster());
+document.getElementById('page-master').addEventListener('click', async e=>{
+  const b=e.target.closest('button[data-act]'); if(!b) return;
+  const act=b.dataset.act, a=b.dataset.a;
+  try{
+    if(act==='merge'){ const bId=b.dataset.b; if(!confirm(masterName(a)+' ('+a+') 을(를) '+masterName(bId)+' ('+bId+') 에 합칩니다. 주문·금액이 하나로 묶입니다. 계속할까요?')) return;
+      await mergeInto(a,bId); if(b.dataset.rv) await reviewDone(b.dataset.rv,'merge:'+bId); toast('합쳤습니다. 다음 게시부터 반영됩니다'); }
+    else if(act==='keep'){ await reviewDone(b.dataset.rv,'keep'); toast('다른 거래처로 두었습니다'); }
+    else if(act==='plink'){ const [lk,sid]=b.dataset.c.split('/'); const ps=PSHOPS.find(x=>x.ledgerKey===lk&&x.id===sid);
+      await masterWrite(a,{partner:{ledgerKey:lk, shopId:sid, partnerName:ps?ps.partner:'', shopName:ps?ps.name:''}},'partner_link',(ps?ps.partner+' · '+ps.name:'')+' 연결'); await reviewDone(b.dataset.rv,'plink:'+b.dataset.c); toast('연결했습니다'); }
+    else if(act==='unmerge'){ if(!confirm(masterName(a)+' ('+a+') 을(를) 다시 분리할까요? 다음 게시부터 원래 주소·주문으로 돌아갑니다.')) return; await unmerge(a); toast('분리했습니다'); }
+    else if(act==='edit'){ openMasterEdit(a); return; }
+    else if(act==='mergepick'){ openMergePick(a); return; }
+    await loadMaster(); renderMaster(); computeAssign(); try{ buildList(); buildRank(); }catch(err){}
+  }catch(err){ console.error(err); toast('실패: '+(err.message||err)); }
+});
+function openMasterEdit(id){
+  const m=window.MASTER[id]; if(!m) return;
+  const aliases=(m.aliases||[]).slice();
+  const d=document.createElement('div'); d.className='ms-edit';
+  const draw=()=>{ d.innerHTML=`<div class="box"><h4>${msEsc(m.name)} <span style="font-family:monospace;font-size:11px;color:#7A8B93">${id}</span></h4>
+    <label>표시 이름 (모든 화면·명세서·관리대장에 쓰이는 이름)</label><input type="text" id="me-name" value="${msEsc(m.name)}">
+    <label>별칭 — 이 거래처가 주문할 때 실제로 적은 표기들. 오타를 알게 되면 여기 추가하세요</label>
+    <div class="chips" id="me-chips">${aliases.map((a,i)=>`<span class="chip">${msEsc(a)}<i data-i="${i}">✕</i></span>`).join('')||'<span style="font-size:12px;color:#9AA7AE">없음</span>'}</div>
+    <div style="display:flex;gap:6px;margin-top:6px"><input type="text" id="me-new" placeholder="새 별칭 (예: 스킨노블렙)"><button id="me-add" style="font-family:inherit;border:1px solid #DFDCD2;background:#fff;border-radius:4px;padding:0 10px;cursor:pointer">추가</button></div>
+    <label>파트너 연결</label><select id="me-partner"><option value="">본사 직거래</option>${PARTNERS.map(p=>`<optgroup label="${msEsc(p.name)}">`+PSHOPS.filter(x=>x.ledgerKey===p.key).map(x=>`<option value="${x.ledgerKey}|${x.id}" ${m.partner&&m.partner.ledgerKey===x.ledgerKey&&m.partner.shopId===x.id?'selected':''}>${msEsc(x.name)}</option>`).join('')+'</optgroup>').join('')}</select>
+    <label>주소 ${(m.addrKeys||[]).length}곳 · 주문 ${(m.stats||{}).rows||0}행 · ${msWon((m.stats||{}).amount)}원</label>
+    <div style="font-size:11.5px;color:#7A8B93">${(m.addrKeys||[]).slice(0,4).map(a=>msEsc(a)).join('<br>')}${(m.addrKeys||[]).length>4?'<br>…':''}</div>
+    <div class="row"><button class="danger" id="me-excl">${m.status==='excluded'?'제외 해제':'집계 제외'}</button><span style="flex:1"></span><button id="me-x">닫기</button><button class="k" id="me-ok">저장</button></div></div>`;
+    d.querySelector('#me-chips').onclick=ev=>{ const i=ev.target.closest('i'); if(!i) return; aliases.splice(+i.dataset.i,1); draw(); };
+    d.querySelector('#me-add').onclick=()=>{ const v=d.querySelector('#me-new').value.trim(); if(!v) return; if(!aliases.includes(v)) aliases.push(v); draw(); };
+    d.querySelector('#me-new').onkeydown=ev=>{ if(ev.key==='Enter'){ ev.preventDefault(); d.querySelector('#me-add').click(); } };
+    d.querySelector('#me-x').onclick=()=>d.remove();
+    d.querySelector('#me-excl').onclick=async()=>{ try{ const ex=m.status==='excluded'; await masterWrite(id,{status:ex?'active':'excluded'},ex?'include':'exclude',ex?'집계 제외 해제':'집계 제외'); d.remove(); await loadMaster(); renderMaster(); toast(ex?'다시 포함했습니다':'집계에서 제외했습니다'); }catch(err){ toast('실패: '+err.message); } };
+    d.querySelector('#me-ok').onclick=async()=>{
+      const name=d.querySelector('#me-name').value.trim(); if(!name){ toast('이름을 입력하세요'); return; }
+      const pv=d.querySelector('#me-partner').value; let partner=null;
+      if(pv){ const [lk,sid]=pv.split('|'); const ps=PSHOPS.find(x=>x.ledgerKey===lk&&x.id===sid); partner={ledgerKey:lk, shopId:sid, partnerName:ps?ps.partner:'', shopName:ps?ps.name:''}; }
+      const changes=[]; if(name!==m.name) changes.push('이름 '+m.name+' → '+name);
+      const added=aliases.filter(a=>!(m.aliases||[]).includes(a)), removed=(m.aliases||[]).filter(a=>!aliases.includes(a));
+      if(added.length) changes.push('별칭 추가 '+added.join(', ')); if(removed.length) changes.push('별칭 삭제 '+removed.join(', '));
+      const p0=m.partner?m.partner.ledgerKey+'|'+m.partner.shopId:''; if(p0!==pv) changes.push(pv?'파트너 연결 '+(partner.partnerName+' · '+partner.shopName):'파트너 연결 해제');
+      if(!changes.length){ d.remove(); return; }
+      try{ await masterWrite(id,{name, aliases, partner},'edit',changes.join(' / ')); d.remove(); await loadMaster(); renderMaster(); computeAssign(); try{ buildList(); buildRank(); }catch(e){} toast('저장했습니다. 다음 게시부터 모든 화면에 반영됩니다'); }
+      catch(err){ toast('실패: '+err.message); }
+    };
+  };
+  draw(); document.body.appendChild(d);
+}
+function openMergePick(a){
+  const A=window.MASTER[a]; if(!A) return;
+  const d=document.createElement('div'); d.className='ms-edit';
+  const list=()=>{ const q=(d.querySelector('#mp-q').value||'').trim().toLowerCase();
+    const arr=Object.values(window.MASTER).filter(m=>m.id!==a&&!m.mergedInto&&m.status!=='excluded'&&(!q||(m.id+' '+m.name+' '+(m.aliases||[]).join(' ')).toLowerCase().includes(q))).slice(0,30);
+    d.querySelector('#mp-list').innerHTML=arr.map(m=>`<div class="msr" style="grid-template-columns:64px 1fr 90px"><span class="id">${m.id}</span><span class="nm">${msEsc(m.name)}<span class="al">${msEsc((m.aliases||[]).join(' · '))}</span></span><span class="acts"><button class="k" data-b="${m.id}">여기에 합치기</button></span></div>`).join('')||'<div style="font-size:12px;color:#9AA7AE;padding:6px">검색 결과 없음</div>'; };
+  d.innerHTML=`<div class="box"><h4>${msEsc(A.name)} (${a}) 을(를) 어느 거래처에 합칠까요?</h4>
+    <div style="font-size:12px;color:#7A8B93;margin-bottom:6px">합치면 이 거래처의 주문·주소·표기가 선택한 거래처로 흡수됩니다. 되돌리려면 목록에서 '분리'.</div>
+    <input type="text" id="mp-q" placeholder="🔍 합칠 대상 검색"><div id="mp-list" style="margin-top:8px;max-height:50vh;overflow:auto"></div>
+    <div class="row"><button id="mp-x">닫기</button></div></div>`;
+  d.querySelector('#mp-q').oninput=list; d.querySelector('#mp-x').onclick=()=>d.remove(); list();
+  d.querySelector('#mp-list').onclick=async ev=>{ const b=ev.target.closest('button[data-b]'); if(!b) return; const bId=b.dataset.b;
+    if(!confirm(A.name+' ('+a+') → '+masterName(bId)+' ('+bId+') 로 합칩니다. 계속할까요?')) return;
+    try{ await mergeInto(a,bId); d.remove(); await loadMaster(); renderMaster(); computeAssign(); try{ buildList(); buildRank(); }catch(e){} toast('합쳤습니다. 다음 게시부터 반영됩니다'); }catch(err){ toast('실패: '+err.message); } };
+  document.body.appendChild(d);
+}
 </script>
 </body>
 </html>
