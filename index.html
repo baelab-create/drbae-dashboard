@@ -434,18 +434,18 @@ body.pg-master .page-el.mspage{display:block}
 .rv .rv-type{display:inline-block;font-size:10.5px;font-weight:800;padding:1px 7px;border-radius:8px;background:#B3261E;color:#fff;margin-right:6px;vertical-align:1px}
 .rv .rv-ev{font-size:11.5px;color:#7A8B93;margin:2px 0 6px}
 .rv .rv-c{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:4px}
-.rv button,.msr button,.asg button{font-family:inherit;font-size:12px;border:1px solid #DFDCD2;background:#fff;border-radius:4px;padding:4px 9px;cursor:pointer;color:#16262E}
-.rv button.k,.msr button.k,.asg button.k{background:#16262E;color:#fff;border-color:#16262E}
-.rv button:hover,.msr button:hover{border-color:#9AA7AE}
-.msr{display:grid;grid-template-columns:64px 1fr 130px 90px 110px;gap:8px;align-items:center;padding:7px 6px;border-bottom:1px solid #EFEDE6;font-size:12.5px}
-.msr:hover{background:#FBFAF6}
-.msr .id{font-family:monospace;font-size:11.5px;color:#7A8B93}
-.msr .nm{font-weight:700}
-.msr .al{font-size:11px;color:#7A8B93;font-weight:400;display:block;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.msr .st{font-size:11.5px;color:#41565F}
-.msr .pt{font-size:11px}
-.msr.merged{opacity:.55}
-.msr .acts{display:flex;gap:4px;justify-content:flex-end}
+.rv button,.mrow button,.asg button{font-family:inherit;font-size:12px;border:1px solid #DFDCD2;background:#fff;border-radius:4px;padding:4px 9px;cursor:pointer;color:#16262E}
+.rv button.k,.mrow button.k,.asg button.k{background:#16262E;color:#fff;border-color:#16262E}
+.rv button:hover,.mrow button:hover{border-color:#9AA7AE}
+.mrow{display:grid;grid-template-columns:64px 1fr 130px 90px 110px;gap:8px;align-items:center;padding:7px 6px;border-bottom:1px solid #EFEDE6;font-size:12.5px}
+.mrow:hover{background:#FBFAF6}
+.mrow .id{font-family:monospace;font-size:11.5px;color:#7A8B93}
+.mrow .nm{font-weight:700}
+.mrow .al{font-size:11px;color:#7A8B93;font-weight:400;display:block;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mrow .st{font-size:11.5px;color:#41565F}
+.mrow .pt{font-size:11px}
+.mrow.merged{opacity:.55}
+.mrow .acts{display:flex;gap:4px;justify-content:flex-end}
 .ms-log div{font-size:11.5px;color:#41565F;padding:3px 0;border-bottom:1px dashed #EFEDE6}
 .ms-log b{color:#16262E}
 .ms-edit{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:100001;display:flex;align-items:center;justify-content:center}
@@ -460,7 +460,7 @@ body.pg-master .page-el.mspage{display:block}
 .ms-edit .row button{font-family:inherit;font-size:12.5px;border:1px solid #DFDCD2;background:#fff;border-radius:4px;padding:6px 12px;cursor:pointer}
 .ms-edit .row button.k{background:#16262E;color:#fff;border-color:#16262E}
 .ms-edit .row button.danger{color:#9A3B33;border-color:#E6C4BF}
-@media(max-width:700px){.msr{grid-template-columns:52px 1fr 90px;grid-auto-rows:auto}.msr .pt,.msr .st{grid-column:2/span 2}}
+@media(max-width:700px){.mrow{grid-template-columns:52px 1fr 90px;grid-auto-rows:auto}.mrow .pt,.mrow .st{grid-column:2/span 2}}
 .asg{position:fixed;z-index:100000;background:#fff;border:1px solid #DFDCD2;border-radius:6px;box-shadow:0 8px 28px rgba(0,0,0,.18);padding:12px 14px;width:300px;max-height:70vh;overflow:auto;font-size:12.5px}
 .asg h5{margin:0 0 6px;font-size:13px}
 .asg .cur{color:#41565F;margin-bottom:8px}
@@ -3277,7 +3277,7 @@ function renderMaster(){
   document.getElementById('ms-list-sub').textContent=Object.values(M).filter(m=>!m.mergedInto&&m.status!=='excluded').length+'곳 (표시 '+arr.length+')';
   document.getElementById('ms-list').innerHTML=arr.slice(0,400).map(m=>{
     const st=m.stats||{}; const pt=m.partner;
-    return `<div class="msr${m.mergedInto?' merged':''}" data-id="${m.id}">
+    return `<div class="mrow${m.mergedInto?' merged':''}" data-id="${m.id}">
       <span class="id">${m.id}</span>
       <span class="nm">${msEsc(m.name)}${m.mergedInto?' <span style="color:#9A3B33;font-weight:400;font-size:11px">→ '+msEsc(masterName(m.mergedInto))+' 에 합쳐짐</span>':''}<span class="al">${(m.aliases||[]).length?msEsc((m.aliases||[]).join(' · ')):'<span style="color:#C4CBCF">별칭 없음</span>'}</span></span>
       <span class="st">${st.rows?st.rows+'행 · '+msWon(st.amount)+'원':''}<br><span style="color:#9AA7AE">${st.last||''}</span></span>
@@ -3342,7 +3342,7 @@ function openMergePick(a){
   const d=document.createElement('div'); d.className='ms-edit';
   const list=()=>{ const q=(d.querySelector('#mp-q').value||'').trim().toLowerCase();
     const arr=Object.values(window.MASTER).filter(m=>m.id!==a&&!m.mergedInto&&m.status!=='excluded'&&(!q||(m.id+' '+m.name+' '+(m.aliases||[]).join(' ')).toLowerCase().includes(q))).slice(0,30);
-    d.querySelector('#mp-list').innerHTML=arr.map(m=>`<div class="msr" style="grid-template-columns:64px 1fr 90px"><span class="id">${m.id}</span><span class="nm">${msEsc(m.name)}<span class="al">${msEsc((m.aliases||[]).join(' · '))}</span></span><span class="acts"><button class="k" data-b="${m.id}">여기에 합치기</button></span></div>`).join('')||'<div style="font-size:12px;color:#9AA7AE;padding:6px">검색 결과 없음</div>'; };
+    d.querySelector('#mp-list').innerHTML=arr.map(m=>`<div class="mrow" style="grid-template-columns:64px 1fr 90px"><span class="id">${m.id}</span><span class="nm">${msEsc(m.name)}<span class="al">${msEsc((m.aliases||[]).join(' · '))}</span></span><span class="acts"><button class="k" data-b="${m.id}">여기에 합치기</button></span></div>`).join('')||'<div style="font-size:12px;color:#9AA7AE;padding:6px">검색 결과 없음</div>'; };
   d.innerHTML=`<div class="box"><h4>${msEsc(A.name)} (${a}) 을(를) 어느 거래처에 합칠까요?</h4>
     <div style="font-size:12px;color:#7A8B93;margin-bottom:6px">합치면 이 거래처의 주문·주소·표기가 선택한 거래처로 흡수됩니다. 되돌리려면 목록에서 '분리'.</div>
     <input type="text" id="mp-q" placeholder="🔍 합칠 대상 검색"><div id="mp-list" style="margin-top:8px;max-height:50vh;overflow:auto"></div>
