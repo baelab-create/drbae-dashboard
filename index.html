@@ -426,6 +426,10 @@ body.sheet-open .sheet-handle .hc{transform:rotate(45deg)}
 .tabn[hidden]{display:none}
 .tabn{display:inline-block;min-width:16px;padding:0 5px;border-radius:9px;background:#B3261E;color:#fff;font-size:10px;line-height:16px;text-align:center;margin-left:4px;vertical-align:1px}
 /* body 가 100vh·overflow:hidden 이라 페이지가 스스로 스크롤해야 한다 (stpage 와 같은 방식) */
+.certpage{flex:1 1 auto;min-height:0;flex-direction:column;background:var(--paper)}
+.cert-bar{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:8px 16px;font-size:12px;color:#7A8B93;border-bottom:1px solid #DFDCD2;background:#fff}
+.cert-bar a{color:#16262E;font-weight:700;white-space:nowrap}
+#certFrame{flex:1 1 auto;width:100%;border:0;background:#fff}
 .mspage{flex:1 1 auto;min-height:0;flex-direction:column;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--paper)}
 .mst-wrap{width:100%;max-width:1100px;margin:0 auto;padding:18px 16px 60px;box-sizing:border-box}
 .mst-sec{background:#fff;border:1px solid #DFDCD2;border-radius:8px;padding:14px 16px;margin-bottom:16px}
@@ -868,6 +872,7 @@ body.pg-mb{--accent:#1B2333;--accent-deep:#0F1420;--accent-soft:#E7E9EF}
     <button class="tab" data-pg="newshop">신규샵 위치 리포트</button>
     <button class="tab" data-pg="mb">마이크로 블랙</button>
     <button class="tab" data-pg="master">거래처 관리 <span class="tabn" id="mst-n" hidden>0</span></button>
+    <button class="tab" data-pg="cert">수료증 발급</button>
   </nav>
   <div class="hdr-actions">
     <span class="hdr-file" id="hdr-file"></span>
@@ -1177,6 +1182,13 @@ body.pg-mb{--accent:#1B2333;--accent-deep:#0F1420;--accent-soft:#E7E9EF}
       <div id="mst-log" class="mst-log"></div>
     </section>
   </div>
+</div>
+<div class="page-el certpage" id="page-cert">
+  <div class="cert-bar">
+    <span>닥터배 수료증 발급 시스템 — 명부(records.json)는 발급 사이트 저장소에 저장되고, 컨트롤 타워가 매 게시마다 거래처 관리에 연결합니다.</span>
+    <a href="https://baelab-create.github.io/drbae-certificate/" target="_blank" rel="noopener">새 창에서 열기 ↗</a>
+  </div>
+  <iframe id="certFrame" title="닥터배 수료증 발급" loading="lazy"></iframe>
 </div>
 <div class="page-el mbpage" id="page-mb">
   <div class="mb-top">
@@ -2381,6 +2393,7 @@ function switchPage(pg){
   document.body.classList.remove('pg-rank','pg-report','pg-newshop','pg-mb','pg-master');
   if(pg==='mb') document.body.classList.add('pg-mb');
   if(pg==='master'){ document.body.classList.add('pg-master'); try{ renderMaster(); }catch(e){ console.error(e); } }
+  if(pg==='cert'){ const f=document.getElementById('certFrame'); if(!f.src) f.src='https://baelab-create.github.io/drbae-certificate/'; }   // 처음 열 때만 로드
   if(pg==='rank') document.body.classList.add('pg-rank');
   else if(pg==='report') document.body.classList.add('pg-report');
   else if(pg==='newshop') document.body.classList.add('pg-newshop');
@@ -3261,6 +3274,7 @@ async function initData(){
   setData(remote.shops,remote.products,remote.meta,remote.label,remote.diag,remote.days);
   computeAssign(); buildList(); try{ buildRank(); }catch(e){}
   if(location.hash==='#master') switchPage('master');
+  if(location.hash==='#cert') switchPage('cert');
   toast('게시 데이터를 불러왔습니다 ('+remote.label.split(' · ')[0].replace('게시 데이터 ','')+')');
 }
 
