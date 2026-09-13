@@ -2203,8 +2203,8 @@ function renderCols(host, buckets, opt){
       bars+=`<path class="stb" data-i="${i}" d="M${x} ${T+ph} V${yy+r} Q${x} ${yy} ${x+r} ${yy} H${x+bw-r} Q${x+bw} ${yy} ${x+bw} ${yy+r} V${T+ph} Z" fill="${color}"/>`;
     else
       bars+=`<rect class="stb" data-i="${i}" x="${x}" y="${T+ph-1.5}" width="${bw}" height="1.5" fill="${ST_C.grid}"/>`;
-    if((i===maxI&&b.total>0)||i===buckets.length-1)
-      labels+=`<text x="${cx}" y="${yy-6}" text-anchor="middle" font-size="10.5" font-weight="700" fill="var(--ink)">${b.total>0?fmt(b.total):''}</text>`;
+    if(opt.labelAll ? b.total>0 : ((i===maxI&&b.total>0)||i===buckets.length-1))   // labelAll: 모든 막대에 금액 표시
+      labels+=`<text x="${cx}" y="${yy-6}" text-anchor="middle" font-size="${opt.labelAll&&buckets.length>14?9:10.5}" font-weight="${i===maxI?700:600}" fill="${i===maxI?'var(--ink)':ST_C.axis}">${b.total>0?fmt(b.total):''}</text>`;
     if(counts){                                                // 같은 시간축 아래 건수 미니 막대 + 값
       const chh=b.n>0?Math.max(b.n/maxN*(bandH-16),2):0;
       if(b.n>0)
@@ -2326,7 +2326,7 @@ function renderStatus(){
   renderSpark(document.getElementById('kw-spark'), wk, ST_C.bar);
   renderSpark(document.getElementById('km-spark'), mo, ST_C.bar);
   // 매출 추이 (주간/월간 토글)
-  renderCols(tc, stMode==='week'?wk:mo, {aria:stMode==='week'?'주간 매출 추이':'월간 매출 추이', counts:true});
+  renderCols(tc, stMode==='week'?wk:mo, {aria:stMode==='week'?'주간 매출 추이':'월간 매출 추이', counts:true, labelAll:true});
   // 시·도별 / 제품별 TOP 8
   const bySido={};
   SHOPS.forEach(s=>{ bySido[s.sido]=(bySido[s.sido]||0)+s.total; });
