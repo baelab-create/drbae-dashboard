@@ -429,7 +429,7 @@ body.sheet-open .sheet-handle .hc{transform:rotate(45deg)}
 .certpage{flex:1 1 auto;min-height:0;flex-direction:column;background:var(--paper)}
 .cert-bar{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:8px 16px;font-size:12px;color:#7A8B93;border-bottom:1px solid #DFDCD2;background:#fff}
 .cert-bar a{color:#16262E;font-weight:700;white-space:nowrap}
-#certFrame{flex:1 1 auto;width:100%;border:0;background:#fff}
+#certFrame,#linksFrame{flex:1 1 auto;width:100%;border:0;background:#fff}
 .mspage{flex:1 1 auto;min-height:0;flex-direction:column;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--paper)}
 .mst-wrap{width:100%;max-width:1100px;margin:0 auto;padding:18px 16px 60px;box-sizing:border-box}
 .mst-sec{background:#fff;border:1px solid #DFDCD2;border-radius:8px;padding:14px 16px;margin-bottom:16px}
@@ -873,6 +873,7 @@ body.pg-mb{--accent:#1B2333;--accent-deep:#0F1420;--accent-soft:#E7E9EF}
     <button class="tab" data-pg="mb">마이크로 블랙</button>
     <button class="tab" data-pg="master">거래처 관리 <span class="tabn" id="mst-n" hidden>0</span></button>
     <button class="tab" data-pg="cert">수료증 발급</button>
+    <button class="tab" data-pg="links">파트너 포털</button>
   </nav>
   <div class="hdr-actions">
     <span class="hdr-file" id="hdr-file"></span>
@@ -1189,6 +1190,13 @@ body.pg-mb{--accent:#1B2333;--accent-deep:#0F1420;--accent-soft:#E7E9EF}
     <a href="https://baelab-create.github.io/drbae-certificate/" target="_blank" rel="noopener">새 창에서 열기 ↗</a>
   </div>
   <iframe id="certFrame" title="닥터배 수료증 발급" loading="lazy"></iframe>
+</div>
+<div class="page-el certpage" id="page-links">
+  <div class="cert-bar">
+    <span>닥터배 프로페셔널 파트너 포털 — 원장님 전용 링크 허브(파트너 자료실·교육·안내 페이지 모음). 파트너 화면의 "파트너 자료실" 탭이 여는 것과 같은 페이지입니다.</span>
+    <a href="https://baelab-create.github.io/drbae-links/" target="_blank" rel="noopener">새 창에서 열기 ↗</a>
+  </div>
+  <iframe id="linksFrame" title="닥터배 파트너 포털" loading="lazy"></iframe>
 </div>
 <div class="page-el mbpage" id="page-mb">
   <div class="mb-top">
@@ -2394,6 +2402,7 @@ function switchPage(pg){
   if(pg==='mb') document.body.classList.add('pg-mb');
   if(pg==='master'){ document.body.classList.add('pg-master'); try{ renderMaster(); }catch(e){ console.error(e); } }
   if(pg==='cert'){ const f=document.getElementById('certFrame'); if(!f.src) f.src='https://baelab-create.github.io/drbae-certificate/'; }   // 처음 열 때만 로드
+  if(pg==='links'){ const f=document.getElementById('linksFrame'); if(!f.src) f.src='https://baelab-create.github.io/drbae-links/'; }
   if(pg==='rank') document.body.classList.add('pg-rank');
   else if(pg==='report') document.body.classList.add('pg-report');
   else if(pg==='newshop') document.body.classList.add('pg-newshop');
@@ -3275,6 +3284,7 @@ async function initData(){
   computeAssign(); buildList(); try{ buildRank(); }catch(e){}
   if(location.hash==='#master') switchPage('master');
   if(location.hash==='#cert') switchPage('cert');
+  if(location.hash==='#links') switchPage('links');
   toast('게시 데이터를 불러왔습니다 ('+remote.label.split(' · ')[0].replace('게시 데이터 ','')+')');
 }
 
