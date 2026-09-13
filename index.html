@@ -447,6 +447,7 @@ body.sheet-open .sheet-handle .hc{transform:rotate(45deg)}
 .mrow .bar .rkbar i{display:block;height:100%;background:linear-gradient(90deg,#63C7D6,var(--accent-deep));border-radius:4px}
 .mrow .st b{font-family:var(--mono);font-size:12.5px}
 .mrow .nm .ptag{margin-left:6px}
+.ptag.cert{background:#0E7C86;color:#fff;cursor:default}
 .mrow:hover{background:#FBFAF6}
 .mrow .id{font-family:monospace;font-size:11.5px;color:#7A8B93}
 .mrow .nm{font-weight:700}
@@ -1161,9 +1162,15 @@ body.pg-mb{--accent:#1B2333;--accent-deep:#0F1420;--accent-soft:#E7E9EF}
         <button class="pf mst-pf on" data-pf="">전체</button>
         <button class="pf mst-pf" data-pf="__direct">본사 직거래</button>
         <select id="mst-partner"><option value="">파트너 선택…</option></select>
+        <label class="mst-chk" style="margin-left:6px"><input type="checkbox" id="mst-cert"> 마이크로젝션 수료 샵만</label>
         <label class="mst-chk"><input type="checkbox" id="mst-merged"> 합쳐진 것도 보기</label>
       </div>
       <div id="mst-list"></div>
+    </section>
+    <section class="mst-sec" id="mst-unlinked-sec" hidden>
+      <div class="mst-head"><h3>수료증은 있는데 발송 데이터에 없는 샵</h3><span class="mst-sub" id="mst-unlinked-sub"></span>
+        <button id="mst-unlinked-toggle" style="font-family:inherit;font-size:12px;border:1px solid #DFDCD2;background:#fff;border-radius:4px;padding:4px 9px;cursor:pointer;margin-left:auto">펼치기</button></div>
+      <div id="mst-unlinked" hidden></div>
     </section>
     <section class="mst-sec">
       <div class="mst-head"><h3>최근 변경 이력</h3></div>
@@ -3081,7 +3088,7 @@ firebase.initializeApp(C.FIREBASE_CONFIG);
 const fdb=firebase.firestore(), fauth=firebase.auth();
 let USER=null, PARTNERS=[], PSHOPS=[];       // PSHOPS: 모든 파트너 거래처 (ledgerKey 포함)
 window.MASTER={};                             // 거래처 마스터 shop_master {id: doc}
-let MASTER_REVIEWS=[], MASTER_LOGS=[];
+let MASTER_REVIEWS=[], MASTER_LOGS=[], MASTER_SUMMARY={};
 let pfMode='';                                // ''=전체, '__direct'=본사 직거래, 그 외=파트너 ledgerKey
 let ASSIGN={};                                // 대시보드 샵 인덱스 → {key, partner, shop, state}
 window.__rows=null;
@@ -3124,6 +3131,7 @@ async function loadMaster(){
   const rv=await fdb.collection('shop_review').where('status','==','pending').get();
   MASTER_REVIEWS=rv.docs.map(d=>Object.assign({id:d.id}, d.data())).sort((a,b)=>(a.createdAt||'')<(b.createdAt||'')?1:-1);
   try{ const lg=await fdb.collection('shop_log').orderBy('at','desc').limit(40).get(); MASTER_LOGS=lg.docs.map(d=>d.data()); }catch(e){ MASTER_LOGS=[]; }
+  try{ const sm=await fdb.collection('private').doc('shopmaster').get(); MASTER_SUMMARY=sm.exists?sm.data():{}; }catch(e){ MASTER_SUMMARY={}; }
   const n=document.getElementById('ms-n'); if(n){ n.textContent=MASTER_REVIEWS.length; n.hidden=!MASTER_REVIEWS.length; }
 }
 async function loadPartners(){
@@ -3272,24 +3280,39 @@ async function unmerge(a){
 function msWon(n){ return (Math.round(+n||0)).toLocaleString('ko-KR'); }
 function renderMaster(){
   const M=window.MASTER;
-  const T={similar:'유사 거래처', merge_candidate:'병합 후보', partner_conflict:'파트너 연결 충돌'};
+  const T={similar:'유사 거래처', merge_candidate:'병합 후보', partner_conflict:'파트너 연결 충돌', cert_unmatched:'수료 기록 미연결', cert_missing:'수료 기록 없음'};
   const rvBox=document.getElementById('mst-review');
   document.getElementById('mst-review-sub').textContent=MASTER_REVIEWS.length?MASTER_REVIEWS.length+'건 — 처리하면 다음 게시(12:10·18:00)부터 모든 화면에 반영됩니다':'없음';
   if(!MASTER_REVIEWS.length) rvBox.innerHTML='<div style="font-size:12.5px;color:#7A8B93;padding:6px 2px">확인할 항목이 없습니다.</div>';
   else rvBox.innerHTML=MASTER_REVIEWS.map(rv=>{
     const ev=rv.evidence||{}; const sub=rv.subject||{};
     const evs=[ev.rows?'주문 '+ev.rows+'행':'', ev.amount?msWon(ev.amount)+'원':'', ev.first?(ev.first+'~'+(ev.last||'')):'', (ev.names||[]).length?'표기: '+ev.names.join(', '):'', (ev.addrs||[]).length?'주소: '+ev.addrs.map(a=>a.slice(0,18)+'…').join(' | '):''].filter(Boolean).join(' · ');
+    const isCert=String(sub.id||'').startsWith('CERT:');
     const cands=(rv.candidates||[]).map(c=>{
       if(rv.type==='partner_conflict') return `<button data-act="plink" data-rv="${rv.id}" data-a="${sub.id}" data-c="${c.id}">${msEsc(c.name)} 에 연결</button>`;
+      if(rv.type==='cert_unmatched') return `<button class="k" data-act="certlink" data-rv="${rv.id}" data-b="${c.id}" data-shop="${msEsc(ev.certShop||sub.name)}" title="${msEsc(c.reason||'')}">${msEsc(masterName(c.id))} (${c.id}) 의 수료 기록 → 연결</button>`;
       return `<button class="k" data-act="merge" data-rv="${rv.id}" data-a="${sub.id}" data-b="${c.id}" title="${msEsc(c.reason||'')}">${msEsc(masterName(c.id))} (${c.id}) 와 같은 샵 → 합치기</button>`;
     }).join('');
+    let evLine=evs;
+    if(rv.type==='cert_unmatched') evLine='수료증 명부: '+(ev.certShop||'')+(ev.certName?' · '+ev.certName+' 원장님':'')+' · 수료일 '+(ev.certDate||'')+' — 발송 데이터의 어느 거래처인지 찾지 못했습니다';
+    if(rv.type==='cert_missing') evLine=(ev.partner?ev.partner+' 파트너가 ':'')+'"마이크로젝션 사용 가능"으로 등록했지만 수료증 발급 기록이 없습니다'+(ev.shopName?' (파트너 등록명: '+ev.shopName+')':'');
+    const tail = rv.type==='cert_unmatched'
+      ? `<button data-act="certpick" data-rv="${rv.id}" data-shop="${msEsc(ev.certShop||sub.name)}">다른 거래처 찾아 연결</button><button data-act="keep" data-rv="${rv.id}">해당 거래처 없음 (그대로 둠)</button>`
+      : rv.type==='cert_missing'
+      ? `<button data-act="keep" data-rv="${rv.id}">확인함</button><button data-act="edit" data-a="${sub.id}">거래처 수정</button>`
+      : `<button data-act="keep" data-rv="${rv.id}">다른 거래처 (그대로 둠)</button><button data-act="edit" data-a="${sub.id}">이름·별칭 수정</button>`;
     return `<div class="rv" data-id="${rv.id}">
-      <div class="rv-t"><span class="rv-type">${T[rv.type]||rv.type}</span>${msEsc(masterName(sub.id))} <span style="font-family:monospace;font-size:11px;color:#7A8B93">${sub.id}</span></div>
-      <div class="rv-ev">${msEsc(evs)}${(rv.candidates||[])[0]&&(rv.candidates||[])[0].reason?' · 근거: '+msEsc(rv.candidates[0].reason):''}</div>
-      <div class="rv-c">${cands}<button data-act="keep" data-rv="${rv.id}">다른 거래처 (그대로 둠)</button><button data-act="edit" data-a="${sub.id}">이름·별칭 수정</button></div>
+      <div class="rv-t"><span class="rv-type">${T[rv.type]||rv.type}</span>${msEsc(isCert?sub.name:masterName(sub.id))} <span style="font-family:monospace;font-size:11px;color:#7A8B93">${isCert?'':sub.id}</span></div>
+      <div class="rv-ev">${msEsc(evLine)}${!isCert&&(rv.candidates||[])[0]&&(rv.candidates||[])[0].reason?' · 근거: '+msEsc(rv.candidates[0].reason):''}</div>
+      <div class="rv-c">${cands}${tail}</div>
     </div>`;
   }).join('');
   renderMasterList();
+  // 미연결 수료 기록 (주문 이력이 없어 자동으로 못 찾은 것) — 언제든 찾아 연결
+  const ul=((MASTER_SUMMARY.cert||{}).unlinkedList||[]);
+  const sec=document.getElementById('mst-unlinked-sec'); sec.hidden=!ul.length;
+  document.getElementById('mst-unlinked-sub').textContent=ul.length+'건 — 대부분 발송 데이터 기간(2025-06~) 이전에 수료했고 이후 주문이 없는 샵입니다. 주문이 들어오면 자동으로 다시 대조합니다';
+  document.getElementById('mst-unlinked').innerHTML=ul.map(r=>`<div class="mrow" style="grid-template-columns:90px 1fr 130px;cursor:default"><span class="id">${msEsc(r.date)}</span><span class="nm">${msEsc(r.shop)}<span class="al">${r.name?msEsc(r.name)+' 원장님':''}${(r.cands||[]).length?' · 비슷한 거래처: '+r.cands.map(c=>msEsc(masterName(c))).join(', '):''}</span></span><span class="acts"><button data-act="certpick" data-rv="" data-shop="${msEsc(r.shop)}">거래처 찾아 연결</button></span></div>`).join('');
 }
 /* ── 마스터 목록: 납품처 목록의 정렬·필터·요약·막대·최근성·리포트 이동을 여기로 통합 ── */
 let mstSort='annual', mstPf='';
@@ -3301,13 +3324,14 @@ function mstPartnerSel(){
 function renderMasterList(){
   const M=window.MASTER; mstPartnerSel();
   const q=(document.getElementById('mst-q').value||'').trim().toLowerCase();
-  const showMerged=document.getElementById('mst-merged').checked;
+  const showMerged=document.getElementById('mst-merged').checked, onlyCert=document.getElementById('mst-cert').checked;
   const live=Object.values(M).filter(m=>!m.mergedInto&&m.status!=='excluded');
   const items=Object.values(M).filter(m=>showMerged||(!m.mergedInto&&m.status!=='excluded')).map(m=>{
     const sh=mstShopOf(m); const st=m.stats||{};
     return {m, sh, y1: sh?sh.y1||0:0, total: sh?sh.total:(st.amount||0), last: sh?sh.last:(st.last||''), n: sh?sh.n:(st.rows||0),
             region: sh?(sh.sido+' '+sh.sigungu):'', pt: m.partner};
   }).filter(x=>{
+    if(onlyCert && !(x.m.cert&&x.m.cert.last)) return false;
     if(mstPf==='__direct' && x.pt) return false;
     if(mstPf && mstPf!=='__direct' && !(x.pt && x.pt.ledgerKey===mstPf)) return false;
     if(!q) return true;
@@ -3329,6 +3353,7 @@ function renderMasterList(){
     <div class="rkcard"><small>최근 1년 합계</small><b>${fmt(y1sum)}원</b></div>
     <div class="rkcard"><small>기간 누적 총액</small><b>${fmt(grand)}원</b></div>
     <div class="rkcard"><small>파트너 관리 / 직거래</small><b>${withPt} / ${live.length-withPt}</b></div>
+    <div class="rkcard"><small>마이크로젝션 수료 샵</small><b>${live.filter(m=>m.cert&&m.cert.last).length}곳</b></div>
     <div class="rkcard${MASTER_REVIEWS.length?' c-warn':''}"><small>확인 대기</small><b>${MASTER_REVIEWS.length}건</b></div>`;
   document.getElementById('mst-list-sub').textContent=live.length+'곳 중 '+items.length+'곳 표시';
   const key = mstSort==='total'?'total':mstSort==='annual'?'y1':null;
@@ -3339,7 +3364,7 @@ function renderMasterList(){
     const badge = sh ? ptag(sh) : (x.pt?`<span class="ptag p">${msEsc(String(x.pt.partnerName||'').replace(/\s*\(.*\)$/,''))}</span>`:'<span class="ptag d">직거래</span>');
     return `<div class="mrow${m.mergedInto?' merged':''}" data-id="${m.id}" data-i="${sh?sh._i:''}">
       <span class="id"><span class="rknum">${idx+1}</span>${m.id}</span>
-      <span class="nm">${msEsc(m.name)}${badge}${m.mergedInto?' <span style="color:#9A3B33;font-weight:400;font-size:11px">→ '+msEsc(masterName(m.mergedInto))+' 에 합쳐짐</span>':''}
+      <span class="nm">${msEsc(m.name)}${badge}${m.cert&&m.cert.last?`<span class="ptag cert" title="수료증 ${m.cert.count}건 · 최근 ${msEsc(m.cert.last)}${m.cert.name?' · '+msEsc(m.cert.name):''}">✓ 수료 ${msEsc(String(m.cert.last).slice(2))}</span>`:''}${m.mergedInto?' <span style="color:#9A3B33;font-weight:400;font-size:11px">→ '+msEsc(masterName(m.mergedInto))+' 에 합쳐짐</span>':''}
         <span class="al">${x.region?msEsc(x.region)+' · ':''}${(m.aliases||[]).length?msEsc((m.aliases||[]).join(' · ')):'<span style="color:#C4CBCF">별칭 없음</span>'}</span></span>
       <span class="bar"><span class="rkbar"><i style="width:${w}%"></i></span></span>
       <span class="st"><b>${money>0?fmt(money)+'원':'–'}</b><br><span class="rkpill b-${bd[1]}">${bd[0]}</span> <span style="color:#9AA7AE">${x.last||''}</span></span>
@@ -3349,6 +3374,8 @@ function renderMasterList(){
 }
 document.getElementById('mst-q').addEventListener('input',()=>renderMasterList());
 document.getElementById('mst-merged').addEventListener('change',()=>renderMasterList());
+document.getElementById('mst-cert').addEventListener('change',()=>renderMasterList());
+document.getElementById('mst-unlinked-toggle').onclick=()=>{ const el=document.getElementById('mst-unlinked'); el.hidden=!el.hidden; document.getElementById('mst-unlinked-toggle').textContent=el.hidden?'펼치기':'접기'; };
 document.querySelectorAll('.mst-sort').forEach(b=>b.onclick=()=>{ mstSort=b.dataset.s; document.querySelectorAll('.mst-sort').forEach(x=>x.classList.toggle('on',x===b)); renderMasterList(); });
 document.querySelectorAll('.mst-pf').forEach(b=>b.onclick=()=>{ mstPf=b.dataset.pf; document.querySelectorAll('.mst-pf').forEach(x=>x.classList.toggle('on',x===b)); const sel=document.getElementById('mst-partner'); sel.value=''; sel.classList.remove('on'); renderMasterList(); });
 document.getElementById('mst-partner').addEventListener('change',e=>{ mstPf=e.target.value; document.querySelectorAll('.mst-pf').forEach(x=>x.classList.remove('on')); e.target.classList.toggle('on',!!mstPf); if(!mstPf) document.querySelector('.mst-pf[data-pf=""]').classList.add('on'); renderMasterList(); });
@@ -3364,7 +3391,11 @@ document.getElementById('page-master').addEventListener('click', async e=>{
   try{
     if(act==='merge'){ const bId=b.dataset.b; if(!confirm(masterName(a)+' ('+a+') 을(를) '+masterName(bId)+' ('+bId+') 에 합칩니다. 주문·금액이 하나로 묶입니다. 계속할까요?')) return;
       await mergeInto(a,bId); if(b.dataset.rv) await reviewDone(b.dataset.rv,'merge:'+bId); toast('합쳤습니다. 다음 게시부터 반영됩니다'); }
-    else if(act==='keep'){ await reviewDone(b.dataset.rv,'keep'); toast('다른 거래처로 두었습니다'); }
+    else if(act==='keep'){ await reviewDone(b.dataset.rv,'keep'); toast('처리했습니다'); }
+    else if(act==='certlink'){ const bId=b.dataset.b, shop=b.dataset.shop;
+      await masterWrite(bId,{aliases:firebase.firestore.FieldValue.arrayUnion(shop)},'cert_alias','수료증 명부 표기 "'+shop+'" 를 별칭으로 연결');
+      await reviewDone(b.dataset.rv,'certlink:'+bId); toast('연결했습니다. 다음 게시부터 수료로 표시됩니다'); }
+    else if(act==='certpick'){ openCertPick(b.dataset.rv, b.dataset.shop); return; }
     else if(act==='plink'){ const [lk,sid]=b.dataset.c.split('/'); const ps=PSHOPS.find(x=>x.ledgerKey===lk&&x.id===sid);
       await masterWrite(a,{partner:{ledgerKey:lk, shopId:sid, partnerName:ps?ps.partner:'', shopName:ps?ps.name:''}},'partner_link',(ps?ps.partner+' · '+ps.name:'')+' 연결'); await reviewDone(b.dataset.rv,'plink:'+b.dataset.c); toast('연결했습니다'); }
     else if(act==='unmerge'){ if(!confirm(masterName(a)+' ('+a+') 을(를) 다시 분리할까요? 다음 게시부터 원래 주소·주문으로 돌아갑니다.')) return; await unmerge(a); toast('분리했습니다'); }
@@ -3384,6 +3415,8 @@ function openMasterEdit(id){
     <div class="chips" id="me-chips">${aliases.map((a,i)=>`<span class="chip">${msEsc(a)}<i data-i="${i}">✕</i></span>`).join('')||'<span style="font-size:12px;color:#9AA7AE">없음</span>'}</div>
     <div style="display:flex;gap:6px;margin-top:6px"><input type="text" id="me-new" placeholder="새 별칭 (예: 스킨노블렙)"><button id="me-add" style="font-family:inherit;border:1px solid #DFDCD2;background:#fff;border-radius:4px;padding:0 10px;cursor:pointer">추가</button></div>
     <label>파트너 연결</label><select id="me-partner"><option value="">본사 직거래</option>${PARTNERS.map(p=>`<optgroup label="${msEsc(p.name)}">`+PSHOPS.filter(x=>x.ledgerKey===p.key).map(x=>`<option value="${x.ledgerKey}|${x.id}" ${m.partner&&m.partner.ledgerKey===x.ledgerKey&&m.partner.shopId===x.id?'selected':''}>${msEsc(x.name)}</option>`).join('')+'</optgroup>').join('')}</select>
+    <label>마이크로젝션 수료</label>
+    <div style="font-size:12.5px">${m.cert&&m.cert.last?`✓ 수료증 ${m.cert.count}건 · 최근 ${msEsc(m.cert.last)}${m.cert.name?' · '+msEsc(m.cert.name)+' 원장님':''}<div style="font-size:11px;color:#7A8B93;margin-top:2px">${(m.cert.records||[]).map(r=>msEsc(r.date+' '+r.shop+(r.name?' ('+r.name+')':''))).join('<br>')}</div>`:'<span style="color:#9A3B33">기록 없음</span> <span style="font-size:11px;color:#7A8B93">— 수료증 발급 사이트 명부에 이 거래처 이름·별칭과 맞는 기록이 없습니다. 명부 표기가 다르면 그 표기를 별칭으로 추가하세요</span>'}</div>
     <label>주소 ${(m.addrKeys||[]).length}곳 · 주문 ${(m.stats||{}).rows||0}행 · ${msWon((m.stats||{}).amount)}원</label>
     <div style="font-size:11.5px;color:#7A8B93">${(m.addrKeys||[]).slice(0,4).map(a=>msEsc(a)).join('<br>')}${(m.addrKeys||[]).length>4?'<br>…':''}</div>
     <div class="row"><button class="danger" id="me-excl">${m.status==='excluded'?'제외 해제':'집계 제외'}</button><span style="flex:1"></span><button id="me-x">닫기</button><button class="k" id="me-ok">저장</button></div></div>`;
@@ -3406,6 +3439,20 @@ function openMasterEdit(id){
     };
   };
   draw(); document.body.appendChild(d);
+}
+function openCertPick(rvId, shop){
+  const d=document.createElement('div'); d.className='mst-edit';
+  const list=()=>{ const q=(d.querySelector('#cp-q').value||'').trim().toLowerCase();
+    const arr=Object.values(window.MASTER).filter(m=>!m.mergedInto&&m.status!=='excluded'&&(!q||(m.id+' '+m.name+' '+(m.aliases||[]).join(' ')).toLowerCase().includes(q))).slice(0,30);
+    d.querySelector('#cp-list').innerHTML=arr.map(m=>`<div class="mrow" style="grid-template-columns:64px 1fr 110px"><span class="id">${m.id}</span><span class="nm">${msEsc(m.name)}<span class="al">${msEsc((m.aliases||[]).join(' · '))}</span></span><span class="acts"><button class="k" data-b="${m.id}">여기에 연결</button></span></div>`).join('')||'<div style="font-size:12px;color:#9AA7AE;padding:6px">검색 결과 없음</div>'; };
+  d.innerHTML=`<div class="box"><h4>수료증 "${msEsc(shop)}" 은 어느 거래처인가요?</h4>
+    <div style="font-size:12px;color:#7A8B93;margin-bottom:6px">고른 거래처의 별칭에 이 표기가 추가되어, 다음 게시부터 수료 기록이 그 거래처에 붙습니다.</div>
+    <input type="text" id="cp-q" placeholder="🔍 거래처 검색"><div id="cp-list" style="margin-top:8px;max-height:50vh;overflow:auto"></div>
+    <div class="row"><button id="cp-x">닫기</button></div></div>`;
+  d.querySelector('#cp-q').oninput=list; d.querySelector('#cp-x').onclick=()=>d.remove(); list();
+  d.querySelector('#cp-list').onclick=async ev=>{ const b=ev.target.closest('button[data-b]'); if(!b) return; const bId=b.dataset.b;
+    try{ await masterWrite(bId,{aliases:firebase.firestore.FieldValue.arrayUnion(shop)},'cert_alias','수료증 명부 표기 "'+shop+'" 를 별칭으로 연결'); if(rvId) await reviewDone(rvId,'certlink:'+bId); d.remove(); await loadMaster(); renderMaster(); toast('연결했습니다. 다음 게시부터 수료로 표시됩니다'); }catch(err){ toast('실패: '+err.message); } };
+  document.body.appendChild(d);
 }
 function openMergePick(a){
   const A=window.MASTER[a]; if(!A) return;
