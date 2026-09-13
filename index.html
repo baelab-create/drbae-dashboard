@@ -63,6 +63,7 @@
   --mono:'JetBrains Mono',ui-monospace,'SFMono-Regular',Menlo,Consolas,monospace;
 }
 body.pg-rank{--accent:var(--teal);--accent-deep:var(--teal-deep);--accent-soft:var(--teal-soft)}
+body.pg-master{--accent:var(--teal);--accent-deep:var(--teal-deep);--accent-soft:var(--teal-soft)}
 body.pg-report{--accent:var(--violet);--accent-deep:var(--violet-deep);--accent-soft:var(--violet-soft)}
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%}
@@ -346,6 +347,7 @@ body.sheet-open .sheet-handle .hc{transform:rotate(45deg)}
 .rkpill,.rkmon-badge{font-size:9.5px;font-weight:800;padding:2px 7px;border-radius:10px;display:inline-block}
 .rkcard.c-ok{background:#E5F5E9;border-color:#BFE6C8}
 .rkcard.c-ok b{color:#217A33}
+.rkcard.c-warn{background:#FFF0E6;border-color:#F1D7C4}.rkcard.c-warn b{color:#B3261E}
 
 .rk-list{flex:1 1 auto;overflow-y:auto;padding:8px 24px 30px}
 .rkmon{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:9px;
@@ -421,15 +423,16 @@ body.sheet-open .sheet-handle .hc{transform:rotate(45deg)}
 .ptag.d{background:#EAE8E1;color:#41565F}
 .ptag.p{background:#EEE8F7;color:#6b4fa1}
 .ptag.h{background:#F6EEDC;color:#8A6520}
+.tabn[hidden]{display:none}
 .tabn{display:inline-block;min-width:16px;padding:0 5px;border-radius:9px;background:#B3261E;color:#fff;font-size:10px;line-height:16px;text-align:center;margin-left:4px;vertical-align:1px}
 /* body 가 100vh·overflow:hidden 이라 페이지가 스스로 스크롤해야 한다 (stpage 와 같은 방식) */
 .mspage{flex:1 1 auto;min-height:0;flex-direction:column;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--paper)}
-.ms-wrap{width:100%;max-width:1100px;margin:0 auto;padding:18px 16px 60px;box-sizing:border-box}
-.ms-sec{background:#fff;border:1px solid #DFDCD2;border-radius:8px;padding:14px 16px;margin-bottom:16px}
-.ms-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
-.ms-head h3{margin:0;font-size:15px}
-.ms-sub{font-size:12px;color:#7A8B93}
-.ms-chk{font-size:12px;color:#41565F;margin-left:auto;display:flex;align-items:center;gap:4px}
+.mst-wrap{width:100%;max-width:1100px;margin:0 auto;padding:18px 16px 60px;box-sizing:border-box}
+.mst-sec{background:#fff;border:1px solid #DFDCD2;border-radius:8px;padding:14px 16px;margin-bottom:16px}
+.mst-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.mst-head h3{margin:0;font-size:15px}
+.mst-sub{font-size:12px;color:#7A8B93}
+.mst-chk{font-size:12px;color:#41565F;margin-left:auto;display:flex;align-items:center;gap:4px}
 .rv{border:1px solid #F1D7C4;background:#FFF8F2;border-radius:6px;padding:10px 12px;margin-bottom:8px;font-size:13px}
 .rv .rv-t{font-weight:800;margin-bottom:4px}
 .rv .rv-type{display:inline-block;font-size:10.5px;font-weight:800;padding:1px 7px;border-radius:8px;background:#B3261E;color:#fff;margin-right:6px;vertical-align:1px}
@@ -438,7 +441,12 @@ body.sheet-open .sheet-handle .hc{transform:rotate(45deg)}
 .rv button,.mrow button,.asg button{font-family:inherit;font-size:12px;border:1px solid #DFDCD2;background:#fff;border-radius:4px;padding:4px 9px;cursor:pointer;color:#16262E}
 .rv button.k,.mrow button.k,.asg button.k{background:#16262E;color:#fff;border-color:#16262E}
 .rv button:hover,.mrow button:hover{border-color:#9AA7AE}
-.mrow{display:grid;grid-template-columns:64px 1fr 130px 90px 110px;gap:8px;align-items:center;padding:7px 6px;border-bottom:1px solid #EFEDE6;font-size:12.5px}
+.mrow{display:grid;grid-template-columns:92px minmax(200px,1.2fr) minmax(80px,1fr) 150px 170px;gap:10px;align-items:center;padding:7px 6px;border-bottom:1px solid #EFEDE6;font-size:12.5px;cursor:pointer}
+.mrow .id .rknum{display:inline-block;width:24px;height:20px;line-height:20px;text-align:center;border-radius:5px;background:#F3F1EA;margin-right:6px;font-size:11px}
+.mrow .bar .rkbar{display:block;height:12px;border-radius:4px;background:#EDEFF4;overflow:hidden}
+.mrow .bar .rkbar i{display:block;height:100%;background:linear-gradient(90deg,#63C7D6,var(--accent-deep));border-radius:4px}
+.mrow .st b{font-family:var(--mono);font-size:12.5px}
+.mrow .nm .ptag{margin-left:6px}
 .mrow:hover{background:#FBFAF6}
 .mrow .id{font-family:monospace;font-size:11.5px;color:#7A8B93}
 .mrow .nm{font-weight:700}
@@ -447,21 +455,21 @@ body.sheet-open .sheet-handle .hc{transform:rotate(45deg)}
 .mrow .pt{font-size:11px}
 .mrow.merged{opacity:.55}
 .mrow .acts{display:flex;gap:4px;justify-content:flex-end}
-.ms-log div{font-size:11.5px;color:#41565F;padding:3px 0;border-bottom:1px dashed #EFEDE6}
-.ms-log b{color:#16262E}
-.ms-edit{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:100001;display:flex;align-items:center;justify-content:center}
-.ms-edit .box{background:#fff;border-radius:8px;padding:16px 18px;width:min(520px,94vw);max-height:86vh;overflow:auto;font-size:13px}
-.ms-edit h4{margin:0 0 8px;font-size:15px}
-.ms-edit label{display:block;font-size:11.5px;color:#7A8B93;margin:8px 0 3px}
-.ms-edit input[type=text],.ms-edit select{width:100%;box-sizing:border-box;font-family:inherit;font-size:13px;padding:6px 8px;border:1px solid #DFDCD2;border-radius:4px}
-.ms-edit .chips{display:flex;flex-wrap:wrap;gap:5px}
-.ms-edit .chip{background:#F3F1EA;border-radius:10px;padding:2px 8px;font-size:12px}
-.ms-edit .chip i{cursor:pointer;color:#9A3B33;font-style:normal;margin-left:4px}
-.ms-edit .row{display:flex;gap:6px;justify-content:flex-end;margin-top:12px}
-.ms-edit .row button{font-family:inherit;font-size:12.5px;border:1px solid #DFDCD2;background:#fff;border-radius:4px;padding:6px 12px;cursor:pointer}
-.ms-edit .row button.k{background:#16262E;color:#fff;border-color:#16262E}
-.ms-edit .row button.danger{color:#9A3B33;border-color:#E6C4BF}
-@media(max-width:700px){.mrow{grid-template-columns:52px 1fr 90px;grid-auto-rows:auto}.mrow .pt,.mrow .st{grid-column:2/span 2}}
+.mst-log div{font-size:11.5px;color:#41565F;padding:3px 0;border-bottom:1px dashed #EFEDE6}
+.mst-log b{color:#16262E}
+.mst-edit{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:100001;display:flex;align-items:center;justify-content:center}
+.mst-edit .box{background:#fff;border-radius:8px;padding:16px 18px;width:min(520px,94vw);max-height:86vh;overflow:auto;font-size:13px}
+.mst-edit h4{margin:0 0 8px;font-size:15px}
+.mst-edit label{display:block;font-size:11.5px;color:#7A8B93;margin:8px 0 3px}
+.mst-edit input[type=text],.mst-edit select{width:100%;box-sizing:border-box;font-family:inherit;font-size:13px;padding:6px 8px;border:1px solid #DFDCD2;border-radius:4px}
+.mst-edit .chips{display:flex;flex-wrap:wrap;gap:5px}
+.mst-edit .chip{background:#F3F1EA;border-radius:10px;padding:2px 8px;font-size:12px}
+.mst-edit .chip i{cursor:pointer;color:#9A3B33;font-style:normal;margin-left:4px}
+.mst-edit .row{display:flex;gap:6px;justify-content:flex-end;margin-top:12px}
+.mst-edit .row button{font-family:inherit;font-size:12.5px;border:1px solid #DFDCD2;background:#fff;border-radius:4px;padding:6px 12px;cursor:pointer}
+.mst-edit .row button.k{background:#16262E;color:#fff;border-color:#16262E}
+.mst-edit .row button.danger{color:#9A3B33;border-color:#E6C4BF}
+@media(max-width:760px){.mrow{grid-template-columns:70px 1fr 120px;grid-auto-rows:auto}.mrow .bar{display:none}.mrow .acts{grid-column:1/-1;justify-content:flex-start}}
 .asg{position:fixed;z-index:100000;background:#fff;border:1px solid #DFDCD2;border-radius:6px;box-shadow:0 8px 28px rgba(0,0,0,.18);padding:12px 14px;width:300px;max-height:70vh;overflow:auto;font-size:12.5px}
 .asg h5{margin:0 0 6px;font-size:13px}
 .asg .cur{color:#41565F;margin-bottom:8px}
@@ -855,11 +863,10 @@ body.pg-mb{--accent:#1B2333;--accent-deep:#0F1420;--accent-soft:#E7E9EF}
   <nav class="tabs">
     <button class="tab on" data-pg="status">현황</button>
     <button class="tab" data-pg="map">지도</button>
-    <button class="tab" data-pg="rank">납품처 목록</button>
     <button class="tab" data-pg="report">샵 리포트</button>
     <button class="tab" data-pg="newshop">신규샵 위치 리포트</button>
     <button class="tab" data-pg="mb">마이크로 블랙</button>
-    <button class="tab" data-pg="master">거래처 관리 <span class="tabn" id="ms-n" hidden>0</span></button>
+    <button class="tab" data-pg="master">거래처 관리 <span class="tabn" id="mst-n" hidden>0</span></button>
   </nav>
   <div class="hdr-actions">
     <span class="hdr-file" id="hdr-file"></span>
@@ -1134,21 +1141,33 @@ body.pg-mb{--accent:#1B2333;--accent-deep:#0F1420;--accent-soft:#E7E9EF}
 </div>
 
 <div class="page-el mspage" id="page-master">
-  <div class="ms-wrap">
-    <section class="ms-sec" id="ms-review-sec">
-      <div class="ms-head"><h3>확인 대기</h3><span class="ms-sub" id="ms-review-sub"></span></div>
-      <div id="ms-review"></div>
+  <div class="mst-wrap">
+    <section class="mst-sec" id="mst-review-sec">
+      <div class="mst-head"><h3>확인 대기</h3><span class="mst-sub" id="mst-review-sub"></span></div>
+      <div id="mst-review"></div>
     </section>
-    <section class="ms-sec">
-      <div class="ms-head"><h3>거래처 마스터</h3><span class="ms-sub" id="ms-list-sub"></span>
-        <input id="ms-q" class="rk-search" type="text" placeholder="🔍 이름·별칭·ID 검색">
-        <label class="ms-chk"><input type="checkbox" id="ms-merged"> 합쳐진 것도 보기</label>
+    <section class="mst-sec">
+      <div class="rk-cards" id="mst-cards" style="margin-bottom:12px"></div>
+      <div class="mst-head"><h3>거래처 마스터</h3><span class="mst-sub" id="mst-list-sub"></span></div>
+      <div class="rk-sorts" style="margin-bottom:8px">
+        <button class="rksort mst-sort on" data-s="annual">최근 1년 주문액순</button>
+        <button class="rksort mst-sort" data-s="total">기간 누적순</button>
+        <button class="rksort mst-sort" data-s="recent">최근 주문순</button>
+        <button class="rksort mst-sort" data-s="name">이름순</button>
+        <input id="mst-q" class="rk-search" type="text" placeholder="🔍 이름·별칭·ID·지역·주소 검색">
       </div>
-      <div id="ms-list"></div>
+      <div class="pf-bar" style="margin-bottom:6px">
+        <span style="font-size:11.5px;color:#7A8B93;font-weight:700">관리 구분</span>
+        <button class="pf mst-pf on" data-pf="">전체</button>
+        <button class="pf mst-pf" data-pf="__direct">본사 직거래</button>
+        <select id="mst-partner"><option value="">파트너 선택…</option></select>
+        <label class="mst-chk"><input type="checkbox" id="mst-merged"> 합쳐진 것도 보기</label>
+      </div>
+      <div id="mst-list"></div>
     </section>
-    <section class="ms-sec">
-      <div class="ms-head"><h3>최근 변경 이력</h3></div>
-      <div id="ms-log" class="ms-log"></div>
+    <section class="mst-sec">
+      <div class="mst-head"><h3>최근 변경 이력</h3></div>
+      <div id="mst-log" class="mst-log"></div>
     </section>
   </div>
 </div>
@@ -3188,14 +3207,14 @@ document.addEventListener('click',e=>{
     try{
       if(s.sid && window.MASTER[s.sid]){ const ps=PSHOPS.find(x=>x.ledgerKey===k&&x.id===id); await masterWrite(s.sid,{partner:{ledgerKey:k, shopId:id, partnerName:ps?ps.partner:'', shopName:ps?ps.name:''}}, 'partner_link', (ps?ps.partner+' · '+ps.name:'')+' 연결'); }
       else await fdb.collection('ledgers').doc(k).collection('shops').doc(id).update({aliases:firebase.firestore.FieldValue.arrayUnion(s.shop)});
-      toast('연결했습니다. 다음 동기화부터 주문이 그 거래처에 들어갑니다'); d.remove(); await loadMaster(); await loadPartners(); computeAssign(); buildList(); }
+      toast('연결했습니다. 다음 동기화부터 주문이 그 거래처에 들어갑니다'); d.remove(); await loadMaster(); await loadPartners(); computeAssign(); buildList(); if(curPage==='master') renderMaster(); }
     catch(err){ toast('실패: '+err.message); }
   };
   const un=d.querySelector('#asg-un'); if(un) un.onclick=async()=>{
     try{
       if(s.sid && window.MASTER[s.sid] && window.MASTER[s.sid].partner) await masterWrite(s.sid,{partner:null},'partner_unlink','파트너 연결 해제');
       else await fdb.collection('ledgers').doc(a.key).collection('shops').doc(a.shop.id).update({aliases:firebase.firestore.FieldValue.arrayRemove(s.shop)});
-      toast('연결을 해제했습니다'); d.remove(); await loadMaster(); await loadPartners(); computeAssign(); buildList(); }
+      toast('연결을 해제했습니다'); d.remove(); await loadMaster(); await loadPartners(); computeAssign(); buildList(); if(curPage==='master') renderMaster(); }
     catch(err){ toast('실패: '+err.message); }
   };
 });
@@ -3254,8 +3273,8 @@ function msWon(n){ return (Math.round(+n||0)).toLocaleString('ko-KR'); }
 function renderMaster(){
   const M=window.MASTER;
   const T={similar:'유사 거래처', merge_candidate:'병합 후보', partner_conflict:'파트너 연결 충돌'};
-  const rvBox=document.getElementById('ms-review');
-  document.getElementById('ms-review-sub').textContent=MASTER_REVIEWS.length?MASTER_REVIEWS.length+'건 — 처리하면 다음 게시(12:10·18:00)부터 모든 화면에 반영됩니다':'없음';
+  const rvBox=document.getElementById('mst-review');
+  document.getElementById('mst-review-sub').textContent=MASTER_REVIEWS.length?MASTER_REVIEWS.length+'건 — 처리하면 다음 게시(12:10·18:00)부터 모든 화면에 반영됩니다':'없음';
   if(!MASTER_REVIEWS.length) rvBox.innerHTML='<div style="font-size:12.5px;color:#7A8B93;padding:6px 2px">확인할 항목이 없습니다.</div>';
   else rvBox.innerHTML=MASTER_REVIEWS.map(rv=>{
     const ev=rv.evidence||{}; const sub=rv.subject||{};
@@ -3270,26 +3289,75 @@ function renderMaster(){
       <div class="rv-c">${cands}<button data-act="keep" data-rv="${rv.id}">다른 거래처 (그대로 둠)</button><button data-act="edit" data-a="${sub.id}">이름·별칭 수정</button></div>
     </div>`;
   }).join('');
-  const q=(document.getElementById('ms-q').value||'').trim().toLowerCase();
-  const showMerged=document.getElementById('ms-merged').checked;
-  let arr=Object.values(M).filter(m=>showMerged||(!m.mergedInto&&m.status!=='excluded'));
-  if(q) arr=arr.filter(m=>(m.id+' '+m.name+' '+(m.aliases||[]).join(' ')).toLowerCase().includes(q));
-  arr.sort((a,b)=>((b.stats||{}).amount||0)-((a.stats||{}).amount||0));
-  document.getElementById('ms-list-sub').textContent=Object.values(M).filter(m=>!m.mergedInto&&m.status!=='excluded').length+'곳 (표시 '+arr.length+')';
-  document.getElementById('ms-list').innerHTML=arr.slice(0,400).map(m=>{
-    const st=m.stats||{}; const pt=m.partner;
-    return `<div class="mrow${m.mergedInto?' merged':''}" data-id="${m.id}">
-      <span class="id">${m.id}</span>
-      <span class="nm">${msEsc(m.name)}${m.mergedInto?' <span style="color:#9A3B33;font-weight:400;font-size:11px">→ '+msEsc(masterName(m.mergedInto))+' 에 합쳐짐</span>':''}<span class="al">${(m.aliases||[]).length?msEsc((m.aliases||[]).join(' · ')):'<span style="color:#C4CBCF">별칭 없음</span>'}</span></span>
-      <span class="st">${st.rows?st.rows+'행 · '+msWon(st.amount)+'원':''}<br><span style="color:#9AA7AE">${st.last||''}</span></span>
-      <span class="pt">${pt?'<span class="ptag p">'+msEsc(String(pt.partnerName||'').replace(/\s*\(.*\)$/,''))+'</span>':'<span class="ptag d">직거래</span>'}</span>
-      <span class="acts">${m.mergedInto?`<button data-act="unmerge" data-a="${m.id}">분리</button>`:`<button data-act="edit" data-a="${m.id}">수정</button><button data-act="mergepick" data-a="${m.id}">합치기</button>`}</span>
-    </div>`;
-  }).join('')+(arr.length>400?'<div style="font-size:12px;color:#7A8B93;padding:8px">… 검색으로 좁혀 주세요 ('+arr.length+'곳)</div>':'');
-  document.getElementById('ms-log').innerHTML=MASTER_LOGS.map(l=>`<div><b>${msEsc(l.at||'')}</b> · ${msEsc(l.by||'')} · ${msEsc(l.action||'')} ${(l.ids||[]).map(i=>'<span style="font-family:monospace">'+msEsc(i)+'</span>').join(' ')} — ${msEsc(l.detail||'')}</div>`).join('')||'<div>이력이 없습니다.</div>';
+  renderMasterList();
 }
-document.getElementById('ms-q').addEventListener('input',()=>renderMaster());
-document.getElementById('ms-merged').addEventListener('change',()=>renderMaster());
+/* ── 마스터 목록: 납품처 목록의 정렬·필터·요약·막대·최근성·리포트 이동을 여기로 통합 ── */
+let mstSort='annual', mstPf='';
+function mstShopOf(m){ return SHOPS.find(s=>s.sid===m.id) || null; }   // 발송 데이터 쪽 샵(y1·total·last·지역)
+function mstPartnerSel(){
+  const sel=document.getElementById('mst-partner'); if(!sel || sel.options.length>1) return;
+  sel.innerHTML='<option value="">파트너 선택…</option>'+PARTNERS.map(p=>`<option value="${p.key}">${msEsc(p.name)}</option>`).join('');
+}
+function renderMasterList(){
+  const M=window.MASTER; mstPartnerSel();
+  const q=(document.getElementById('mst-q').value||'').trim().toLowerCase();
+  const showMerged=document.getElementById('mst-merged').checked;
+  const live=Object.values(M).filter(m=>!m.mergedInto&&m.status!=='excluded');
+  const items=Object.values(M).filter(m=>showMerged||(!m.mergedInto&&m.status!=='excluded')).map(m=>{
+    const sh=mstShopOf(m); const st=m.stats||{};
+    return {m, sh, y1: sh?sh.y1||0:0, total: sh?sh.total:(st.amount||0), last: sh?sh.last:(st.last||''), n: sh?sh.n:(st.rows||0),
+            region: sh?(sh.sido+' '+sh.sigungu):'', pt: m.partner};
+  }).filter(x=>{
+    if(mstPf==='__direct' && x.pt) return false;
+    if(mstPf && mstPf!=='__direct' && !(x.pt && x.pt.ledgerKey===mstPf)) return false;
+    if(!q) return true;
+    const hay=(x.m.id+' '+x.m.name+' '+(x.m.aliases||[]).join(' ')+' '+x.region+' '+(x.m.addrKeys||[]).join(' ')).toLowerCase();
+    return hay.includes(q);
+  });
+  if(mstSort==='annual') items.sort((a,b)=>b.y1-a.y1||b.total-a.total);
+  else if(mstSort==='total') items.sort((a,b)=>b.total-a.total);
+  else if(mstSort==='recent') items.sort((a,b)=>a.last>b.last?-1:a.last<b.last?1:b.total-a.total);
+  else items.sort((a,b)=>a.m.name.localeCompare(b.m.name,'ko'));
+  // 요약 카드
+  const grand=live.reduce((a,m)=>{ const sh=mstShopOf(m); return a+(sh?sh.total:((m.stats||{}).amount||0)); },0);
+  const y1sum=live.reduce((a,m)=>{ const sh=mstShopOf(m); return a+(sh?sh.y1||0:0); },0);
+  const active=live.filter(m=>{ const sh=mstShopOf(m); return sh && !isDorm(sh,3); }).length;
+  const withPt=live.filter(m=>m.partner).length;
+  document.getElementById('mst-cards').innerHTML=`
+    <div class="rkcard"><small>거래처</small><b>${live.length}곳</b></div>
+    <div class="rkcard c-ok"><small>활성 (3개월 내 주문)</small><b>${active}곳</b></div>
+    <div class="rkcard"><small>최근 1년 합계</small><b>${fmt(y1sum)}원</b></div>
+    <div class="rkcard"><small>기간 누적 총액</small><b>${fmt(grand)}원</b></div>
+    <div class="rkcard"><small>파트너 관리 / 직거래</small><b>${withPt} / ${live.length-withPt}</b></div>
+    <div class="rkcard${MASTER_REVIEWS.length?' c-warn':''}"><small>확인 대기</small><b>${MASTER_REVIEWS.length}건</b></div>`;
+  document.getElementById('mst-list-sub').textContent=live.length+'곳 중 '+items.length+'곳 표시';
+  const key = mstSort==='total'?'total':mstSort==='annual'?'y1':null;
+  const max=Math.max(1,...items.map(x=>key?x[key]:x.total));
+  document.getElementById('mst-list').innerHTML=items.slice(0,400).map((x,idx)=>{
+    const m=x.m, sh=x.sh, bd=BAND[recencyBand(x.last)];
+    const money=key?x[key]:x.total, w=Math.round(money/max*100);
+    const badge = sh ? ptag(sh) : (x.pt?`<span class="ptag p">${msEsc(String(x.pt.partnerName||'').replace(/\s*\(.*\)$/,''))}</span>`:'<span class="ptag d">직거래</span>');
+    return `<div class="mrow${m.mergedInto?' merged':''}" data-id="${m.id}" data-i="${sh?sh._i:''}">
+      <span class="id"><span class="rknum">${idx+1}</span>${m.id}</span>
+      <span class="nm">${msEsc(m.name)}${badge}${m.mergedInto?' <span style="color:#9A3B33;font-weight:400;font-size:11px">→ '+msEsc(masterName(m.mergedInto))+' 에 합쳐짐</span>':''}
+        <span class="al">${x.region?msEsc(x.region)+' · ':''}${(m.aliases||[]).length?msEsc((m.aliases||[]).join(' · ')):'<span style="color:#C4CBCF">별칭 없음</span>'}</span></span>
+      <span class="bar"><span class="rkbar"><i style="width:${w}%"></i></span></span>
+      <span class="st"><b>${money>0?fmt(money)+'원':'–'}</b><br><span class="rkpill b-${bd[1]}">${bd[0]}</span> <span style="color:#9AA7AE">${x.last||''}</span></span>
+      <span class="acts">${m.mergedInto?`<button data-act="unmerge" data-a="${m.id}">분리</button>`:`${sh?`<button data-act="report" data-i="${sh._i}">리포트</button>`:''}<button data-act="edit" data-a="${m.id}">수정</button><button data-act="mergepick" data-a="${m.id}">합치기</button>`}</span>
+    </div>`;
+  }).join('')+(items.length>400?'<div style="font-size:12px;color:#7A8B93;padding:8px">… 검색으로 좁혀 주세요 ('+items.length+'곳)</div>':'');
+}
+document.getElementById('mst-q').addEventListener('input',()=>renderMasterList());
+document.getElementById('mst-merged').addEventListener('change',()=>renderMasterList());
+document.querySelectorAll('.mst-sort').forEach(b=>b.onclick=()=>{ mstSort=b.dataset.s; document.querySelectorAll('.mst-sort').forEach(x=>x.classList.toggle('on',x===b)); renderMasterList(); });
+document.querySelectorAll('.mst-pf').forEach(b=>b.onclick=()=>{ mstPf=b.dataset.pf; document.querySelectorAll('.mst-pf').forEach(x=>x.classList.toggle('on',x===b)); const sel=document.getElementById('mst-partner'); sel.value=''; sel.classList.remove('on'); renderMasterList(); });
+document.getElementById('mst-partner').addEventListener('change',e=>{ mstPf=e.target.value; document.querySelectorAll('.mst-pf').forEach(x=>x.classList.remove('on')); e.target.classList.toggle('on',!!mstPf); if(!mstPf) document.querySelector('.mst-pf[data-pf=""]').classList.add('on'); renderMasterList(); });
+// 행 클릭(버튼·배지 제외) → 샵 리포트
+document.getElementById('mst-list').addEventListener('click',e=>{
+  if(e.target.closest('button')||e.target.closest('.ptag')) return;
+  const row=e.target.closest('.mrow'); if(!row||row.dataset.i==='') return;
+  switchPage('report'); selectReport(+row.dataset.i);
+});
 document.getElementById('page-master').addEventListener('click', async e=>{
   const b=e.target.closest('button[data-act]'); if(!b) return;
   const act=b.dataset.act, a=b.dataset.a;
@@ -3300,6 +3368,7 @@ document.getElementById('page-master').addEventListener('click', async e=>{
     else if(act==='plink'){ const [lk,sid]=b.dataset.c.split('/'); const ps=PSHOPS.find(x=>x.ledgerKey===lk&&x.id===sid);
       await masterWrite(a,{partner:{ledgerKey:lk, shopId:sid, partnerName:ps?ps.partner:'', shopName:ps?ps.name:''}},'partner_link',(ps?ps.partner+' · '+ps.name:'')+' 연결'); await reviewDone(b.dataset.rv,'plink:'+b.dataset.c); toast('연결했습니다'); }
     else if(act==='unmerge'){ if(!confirm(masterName(a)+' ('+a+') 을(를) 다시 분리할까요? 다음 게시부터 원래 주소·주문으로 돌아갑니다.')) return; await unmerge(a); toast('분리했습니다'); }
+    else if(act==='report'){ switchPage('report'); selectReport(+b.dataset.i); return; }
     else if(act==='edit'){ openMasterEdit(a); return; }
     else if(act==='mergepick'){ openMergePick(a); return; }
     await loadMaster(); renderMaster(); computeAssign(); try{ buildList(); buildRank(); }catch(err){}
@@ -3308,7 +3377,7 @@ document.getElementById('page-master').addEventListener('click', async e=>{
 function openMasterEdit(id){
   const m=window.MASTER[id]; if(!m) return;
   const aliases=(m.aliases||[]).slice();
-  const d=document.createElement('div'); d.className='ms-edit';
+  const d=document.createElement('div'); d.className='mst-edit';
   const draw=()=>{ d.innerHTML=`<div class="box"><h4>${msEsc(m.name)} <span style="font-family:monospace;font-size:11px;color:#7A8B93">${id}</span></h4>
     <label>표시 이름 (모든 화면·명세서·관리대장에 쓰이는 이름)</label><input type="text" id="me-name" value="${msEsc(m.name)}">
     <label>별칭 — 이 거래처가 주문할 때 실제로 적은 표기들. 오타를 알게 되면 여기 추가하세요</label>
@@ -3340,7 +3409,7 @@ function openMasterEdit(id){
 }
 function openMergePick(a){
   const A=window.MASTER[a]; if(!A) return;
-  const d=document.createElement('div'); d.className='ms-edit';
+  const d=document.createElement('div'); d.className='mst-edit';
   const list=()=>{ const q=(d.querySelector('#mp-q').value||'').trim().toLowerCase();
     const arr=Object.values(window.MASTER).filter(m=>m.id!==a&&!m.mergedInto&&m.status!=='excluded'&&(!q||(m.id+' '+m.name+' '+(m.aliases||[]).join(' ')).toLowerCase().includes(q))).slice(0,30);
     d.querySelector('#mp-list').innerHTML=arr.map(m=>`<div class="mrow" style="grid-template-columns:64px 1fr 90px"><span class="id">${m.id}</span><span class="nm">${msEsc(m.name)}<span class="al">${msEsc((m.aliases||[]).join(' · '))}</span></span><span class="acts"><button class="k" data-b="${m.id}">여기에 합치기</button></span></div>`).join('')||'<div style="font-size:12px;color:#9AA7AE;padding:6px">검색 결과 없음</div>'; };
