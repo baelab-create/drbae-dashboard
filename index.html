@@ -1857,6 +1857,7 @@ function geocodeAll(){
       // 지도 탭이 숨겨진 상태(현황 탭 등)에서 setBounds하면 크기 0 기준으로 어긋남 → 탭 진입 시 적용
       if(!bounds.isEmpty()){ if(curPage==='map') map.setBounds(bounds); else window.__pendingBounds=bounds; }
       try{ localStorage.setItem('drbae_geo_v1', JSON.stringify(GEO)); }catch(e){}
+      saveGeoCache();                                  // 좌표를 Firestore private/geo 에 저장 → 컨트롤 타워(마이크로젝션 입점 격자)가 읽는다
       toast(`${done}곳 표시 완료${failed.length?` · 미매칭 ${failed.length}곳`:''}`);
       if(failed.length) console.warn('미매칭 주소:',failed);
       return;
@@ -1883,6 +1884,18 @@ function geocodeAll(){
   })(0);
 }
 
+/* 주소 → 좌표 캐시를 본사 전용 문서(private/geo)에 저장. 키는 공백 제거 주소(마스터 addrKeys 와 같은 규칙).
+   파트너 화면의 '마이크로젝션 입점 가능 확인'은 이 좌표로 만든 격자 답안만 읽는다 (주소·좌표 자체는 파트너에게 안 감). */
+let _geoSaved='';
+async function saveGeoCache(){
+  try{
+    if(typeof fdb==='undefined' || !USER) return;
+    const out={}; SHOPS.forEach(s=>{ if(s.lat&&s.lng&&s.addr) out[String(s.addr).replace(/\s+/g,'')]={lat:+s.lat.toFixed(6), lng:+s.lng.toFixed(6)}; });
+    const sig=JSON.stringify(out); if(sig===_geoSaved) return;
+    await fdb.collection('private').doc('geo').set({coords:out, at:C.nowStamp(), n:Object.keys(out).length}, {merge:true});
+    _geoSaved=sig;
+  }catch(e){ console.warn('좌표 캐시 저장 실패', e); }
+}
 function addMarker(s,lat,lng){
   const el=document.createElement('div'); el.className='pin';
   el.innerHTML='<div class="circle"></div>';
