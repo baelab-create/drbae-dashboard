@@ -1,0 +1,1749 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>닥터배 발송 명세서 — 택배 포장 프로그램</title>
+<script src="vendor/xlsx.full.min.js"></script>
+<script src="../shared/product_rules.js"></script>
+<style>
+  :root{
+    --brand:#8E1F2F;          /* 닥터배 딥 버건디 */
+    --brand-soft:#F6E8EA;
+    --ink:#1C1B1A;
+    --ink-soft:#6B6560;
+    --paper:#FFFFFF;
+    --bg:#ECE9E4;
+    --line:#D8D2CB;
+    --warn-bg:#FFF6E0;
+    --warn-line:#E4B94E;
+  }
+  *{box-sizing:border-box; -webkit-print-color-adjust:exact; print-color-adjust:exact;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+    background:var(--bg); color:var(--ink);
+  }
+
+  /* ───── 화면 레이아웃: 좌측 제어판 + 우측 A4 미리보기 ───── */
+  #app{display:flex; min-height:100vh;}
+  #panel{
+    width:300px; flex:0 0 300px; background:#F7F4EF; color:#2A2723;
+    border-right:1px solid #E3DDD3;
+    padding:20px 18px; position:sticky; top:0; height:100vh; overflow-y:auto;
+  }
+  #panel h1{font-size:17px; margin:0 0 2px; letter-spacing:-.3px;}
+  #panel h1 b{color:var(--brand);}
+  #panel .sub{font-size:11.5px; color:#8A8378; margin:0 0 16px;}
+  .step{font-size:11px; color:#A5813A; letter-spacing:.15em; margin:18px 0 6px; font-weight:800;}
+
+  #drop{
+    border:1.5px dashed #C9C2B7; border-radius:10px; padding:18px 12px;
+    text-align:center; font-size:12.5px; color:#7A746C; cursor:pointer;
+    background:#FFFFFF; transition:.15s;
+  }
+  #drop.hover{border-color:var(--brand); color:var(--brand); background:var(--brand-soft);}
+  #drop b{color:#2A2723;}
+  #fileInfo{font-size:11.5px; color:#2F7D32; margin-top:8px; display:none; line-height:1.5;}
+
+  #dateList{display:flex; flex-direction:column; gap:5px;}
+  .dateBtn{
+    display:flex; justify-content:space-between; align-items:center;
+    background:#FFFFFF; border:1px solid #DDD6CC; color:#2A2723;
+    border-radius:8px; padding:9px 12px; font-size:13px; cursor:pointer; width:100%;
+    font-family:inherit;
+  }
+  .dateBtn:hover{border-color:#C9A24B;}
+  .dateBtn small{color:#8A8378; font-size:11px;}
+  .dateBtn.on{background:var(--brand); border-color:var(--brand); color:#fff;}
+  .dateBtn.on small{color:#F1C8CE;}
+
+  #shopList{display:flex; flex-direction:column; gap:3px;}
+  .shopRow{display:flex; align-items:center; gap:8px; font-size:12.5px; padding:5px 6px; border-radius:6px;}
+  .shopRow:hover{background:#EFEAE2;}
+  .shopRow input{accent-color:#A5813A;}
+  .shopRow .nm{flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .shopRow .qty{color:#8A8378; font-size:11px;}
+  .shopRow button{
+    background:#fff; border:1px solid #D0C9BE; color:#6B6560; border-radius:5px;
+    font-size:10.5px; padding:2px 7px; cursor:pointer; font-family:inherit;
+  }
+  .shopRow button:hover{border-color:#A5813A; color:#A5813A;}
+
+  #printBtn{
+    width:100%; margin-top:16px; background:#C9A24B; color:#1C1B1A;
+    border:none; border-radius:9px; padding:13px; font-size:14.5px; font-weight:800;
+    cursor:pointer; font-family:inherit; letter-spacing:-.2px;
+  }
+  #printBtn:disabled{background:#E3DDD3; color:#A29B90; cursor:not-allowed;}
+  #printBtn:hover:not(:disabled){background:#B8923C;}
+
+  #cjBtn, #allCsvBtn{
+    width:100%; margin-top:8px; background:#FFFFFF; color:#8A6A1F;
+    border:1px solid #C9A24B99; border-radius:9px; padding:11px; font-size:13px; font-weight:700;
+    cursor:pointer; font-family:inherit; letter-spacing:-.2px;
+  }
+  #cjBtn:disabled, #allCsvBtn:disabled{color:#B5AEA4; border-color:#DDD6CC; cursor:not-allowed;}
+  #cjBtn:hover:not(:disabled), #allCsvBtn:hover:not(:disabled){background:#FBF4E4; border-color:#A5813A;}
+
+  /* ── 서비스·메모 입력 ── */
+  #memoShop{
+    width:100%; background:#FFFFFF; color:#2A2723; border:1px solid #DDD6CC;
+    border-radius:7px; font-family:inherit; font-size:12px; padding:6px 8px; margin-bottom:6px;
+  }
+  #memoText{
+    width:100%; box-sizing:border-box; background:#FFFFFF; color:#2A2723;
+    border:1px solid #DDD6CC; border-radius:7px; font-family:inherit; font-size:12.5px;
+    padding:8px; resize:vertical; min-height:112px;
+  }
+  #memoText:focus{outline:none; border-color:#C9A24B;}
+
+  /* ── 검색 ── */
+  #searchBox{
+    flex:1; min-width:0; background:#FFFFFF; color:#2A2723; border:1px solid #DDD6CC;
+    border-radius:7px; font-family:inherit; font-size:12.5px; padding:7px 9px;
+  }
+  #searchBox:focus{outline:none; border-color:#C9A24B;}
+  #searchClear{
+    background:#FFFFFF; border:1px solid #DDD6CC; border-radius:7px; color:#8A8378;
+    cursor:pointer; font-family:inherit; font-size:12px; padding:0 10px;
+  }
+  #searchClear:hover{border-color:#A5813A; color:#A5813A;}
+
+  /* 서비스 제품 선택 칩 — 클릭 토글, 선택 시 제품색으로 채움 */
+  #svcChips{display:flex; flex-wrap:wrap; gap:4px; margin-bottom:6px;}
+  #svcChips .schip{
+    font-size:10.5px; font-weight:700; padding:3px 8px; border-radius:99px;
+    border:1.5px solid var(--c); color:var(--c); background:transparent;
+    cursor:pointer; user-select:none; line-height:1.3;
+  }
+  #svcChips .schip.on{background:var(--c); color:#fff;}
+  #svcChips .schip.on.light{color:#1C1B1A;}
+
+  /* ── CJ 접수 파일 미리보기 오버레이 ── */
+  #cjOverlay{position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:99; display:none;
+    align-items:center; justify-content:center;}
+  #cjOverlay.open{display:flex;}
+  #cjPanel{background:#fff; color:#1C1B1A; width:min(1240px,95vw); max-height:88vh;
+    border-radius:14px; display:flex; flex-direction:column; overflow:hidden;
+    box-shadow:0 18px 60px rgba(0,0,0,.45); font-family:inherit;}
+  #cjHead{display:flex; align-items:center; gap:12px; padding:13px 18px; border-bottom:1px solid #E7E2DB;}
+  #cjHead .tt{font-size:15px; font-weight:800;}
+  #cjHead .sub{font-size:11.5px; color:#7A746C; margin-top:2px;}
+  #cjHead .sp{flex:1;}
+  #cjHead button{font-family:inherit; border-radius:8px; padding:9px 16px; font-size:12.5px;
+    font-weight:700; cursor:pointer;}
+  #cjDl{background:#C9A24B; border:none; color:#1C1B1A;}
+  #cjDl:hover{background:#DDB55F;}
+  #cjClose{background:#fff; border:1px solid #D8D2CB; color:#5A554E;}
+  #cjClose:hover{border-color:#8B857D;}
+  #cjBody{overflow:auto;}
+  #cjBody table{border-collapse:collapse; font-size:11px; white-space:nowrap;}
+  #cjBody th{position:sticky; top:0; background:#4472C4; color:#fff; font-weight:700;
+    padding:6px 9px; border:1px solid #3A62AC; text-align:center; z-index:1;}
+  #cjBody td{padding:4px 9px; border:1px solid #E7E2DB;}
+  #cjBody tr:nth-child(even) td{background:#F7F5F1;}
+
+  .hint{font-size:10.5px; color:#7A746C; line-height:1.55; margin-top:10px;}
+
+
+  /* ───── A4 시트 ───── */
+  #stage{flex:1; padding:26px; display:flex; flex-direction:column; align-items:center; gap:26px;}
+  #empty{color:var(--ink-soft); font-size:14px; margin-top:14vh; text-align:center; line-height:1.9;}
+  .sheet{
+    width:210mm; min-height:296mm; background:var(--paper);
+    box-shadow:0 3px 22px rgba(0,0,0,.16);
+    padding:14mm 15mm 12mm; display:flex; flex-direction:column; position:relative;
+  }
+
+  .sh-band{display:flex; justify-content:space-between; align-items:flex-end;
+    border-bottom:3px solid #6B6E73; padding-bottom:4mm;}
+  .sh-band .logo-img{height:11mm; width:auto; display:block;
+    -webkit-print-color-adjust:exact; print-color-adjust:exact;}
+  .sh-band .doc{ text-align:right;}
+  .sh-band .doc .t{
+    display:inline-block; font-size:15px; font-weight:800; letter-spacing:.3em;
+    color:#fff; background:#2F80D0; padding:1.2mm 2mm 1.2mm 3mm; border-radius:1mm;
+    -webkit-print-color-adjust:exact; print-color-adjust:exact;
+  }
+  .sh-band .doc .t.extra{background:#E8590C;}   /* 추가발송은 오렌지로 구분 */
+
+  /* 추가발송 제품 수량 편집 */
+  #extraQty{display:none; margin-bottom:6px;}
+  #extraQty .qrow2{display:flex; align-items:center; gap:6px; font-size:11.5px; padding:2px 0;}
+  #extraQty .qn{flex:1; font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  #extraQty b{min-width:16px; text-align:center;}
+  #extraQty button{
+    width:20px; height:20px; line-height:1; background:#fff; border:1px solid #D0C9BE;
+    border-radius:5px; color:#5A554E; cursor:pointer; font-family:inherit;
+  }
+  #extraQty button:hover{border-color:#A5813A; color:#A5813A;}
+
+  #extraBtn{
+    display:none; width:100%; margin-top:6px; background:#FFF4EC; color:#C24A08;
+    border:1.5px solid #E8590C88; border-radius:8px; padding:9px; font-size:12.5px; font-weight:800;
+    cursor:pointer; font-family:inherit;
+  }
+  #extraBtn:hover{background:#FFE8DA;}
+  .sh-band .doc .d{font-size:11.5px; color:var(--ink-soft); margin-top:2px;}
+
+  .sh-shop{margin:7mm 0 0;}
+  .sh-shop .label{font-size:10.5px; letter-spacing:.2em; color:var(--brand); font-weight:800;}
+  .sh-shop .name{font-size:30px; font-weight:900; letter-spacing:-.5px; margin:1mm 0 3mm; line-height:1.15;}
+  .sh-shop .name .heart{font-size:22px; -webkit-print-color-adjust:exact; print-color-adjust:exact;}
+  .meta{width:100%; border-collapse:collapse; font-size:12.5px;}
+  .meta td{padding:1.6mm 0; vertical-align:top;}
+  .meta td.k{width:22mm; color:var(--ink-soft); font-weight:700; font-size:11.5px;}
+  .msgBox{
+    margin-top:3.5mm; background:var(--warn-bg); border:1.5px solid var(--warn-line);
+    border-radius:3mm; padding:3mm 4mm; font-size:13px; font-weight:700;
+  }
+  .msgBox .mk{font-size:10.5px; letter-spacing:.15em; color:#A2761B; display:block; margin-bottom:1mm; font-weight:800;}
+
+  .items{width:100%; border-collapse:collapse; margin-top:6mm;}
+  .items th{
+    font-size:11px; letter-spacing:.12em; color:#fff; background:#6B6E73;
+    padding:2.6mm 3mm; text-align:left; font-weight:800;
+  }
+  .items th.c, .items td.c{text-align:center;}
+  .items th.r, .items td.r{text-align:right;}
+  .items th:first-child{border-radius:1.5mm 0 0 0;}
+  .items th:nth-child(2){width:16mm;}
+  .items th:last-child{width:30mm; border-radius:0 1.5mm 0 0;}
+  .items td{border-bottom:1px solid var(--line); padding:3.2mm 3mm; vertical-align:middle;}
+  .pname{font-size:16.5px; font-weight:800; letter-spacing:-.3px; line-height:1.3;}
+  .psub{font-size:12.5px; font-weight:700; color:var(--ink-soft); margin-top:1.2mm; line-height:1.35;}
+  .pqty{font-size:21px; font-weight:900; text-align:center;}
+  .pqty small{font-size:11px; font-weight:700; color:var(--ink-soft); margin-left:1px;}
+  .pamt{font-size:13.5px; font-weight:700; white-space:nowrap;}
+
+  .sumRow{display:flex; justify-content:flex-end; gap:8mm; margin-top:4mm;
+    font-size:13px; font-weight:800; border-top:2px solid var(--ink); padding-top:3mm;}
+  .sumRow b{font-size:16px; color:var(--brand);}
+
+  .hist{margin-top:5mm; border:1px solid var(--line); border-radius:2.5mm; padding:3mm 4mm 2mm; background:#FBFAF8;}
+  .hist-head{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:1.5mm;}
+  .hist-head .ht{font-size:11.5px; font-weight:800; letter-spacing:-.2px;}
+  .hist-head .ht small{font-weight:600; color:var(--ink-soft); font-size:10px;}
+  .hist-head .hs{font-size:10.5px; color:var(--ink-soft); font-weight:700;}
+  .lchips{display:flex; flex-wrap:wrap; gap:2mm 4mm; margin-top:1.5mm;}
+  .lchips .lchip{display:inline-flex; align-items:center; gap:1.2mm; font-size:9.5px; font-weight:700; color:#4A453F;}
+  .lchips .lchip i{display:inline-block; width:3.2mm; height:3.2mm; border-radius:0.8mm;}
+  .memoBox{
+    margin-top:5mm; border:1.5px solid var(--brand); border-radius:2.5mm;
+    padding:3mm 4mm; background:#FDF9EF; font-size:12px; line-height:1.55; white-space:pre-wrap;
+  }
+  /* 마이크로젝션 교육 수료 뱃지 — 포장 전 납품 가능 여부 확인용 */
+  .mjBadge{
+    display:table; margin:1.5mm 0 2mm; padding:1.2mm 3mm; border-radius:1.2mm;
+    font-size:11px; font-weight:800; letter-spacing:-.2px;
+    -webkit-print-color-adjust:exact; print-color-adjust:exact;
+  }
+  /* 멘토링 담당 파트너 안내 — 파트너 관리대장에 등록된 샵 (명세서 맨 아래) */
+  .mentorBox{
+    margin-top:auto; border:2px solid #2F80D0; border-radius:2.5mm; background:#EEF5FC;
+    padding:3mm 4.5mm; font-size:12.5px; line-height:1.65; color:#1C3F66; font-weight:600;
+    -webkit-print-color-adjust:exact; print-color-adjust:exact;
+  }
+  .mentorBox + .sh-foot{margin-top:0;}   /* 빈 공간은 안내 박스 위로 몰아 박스를 맨 아래에 붙인다 */
+  .mentorBox b{font-weight:900; color:#16508F;}
+  /* '멘토링' 강조 — 빨간 색연필로 그은 듯한 밑줄 + 별표 (손그림 SVG, 인쇄에도 색 유지) */
+  .penMark{
+    position:relative; display:inline-block; font-weight:900; color:#16508F;
+    padding:0 4.6mm 1.4mm 0.5mm; margin:0 0.5mm;
+    background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 12' preserveAspectRatio='none'%3E%3Cpath d='M2 6.8 C22 4.2 48 5.2 72 4.6 S92 5.8 98 4.8' fill='none' stroke='%23D62828' stroke-width='3.4' stroke-linecap='round' opacity='.88'/%3E%3Cpath d='M5 10.4 C30 8.2 58 9 94 7.4' fill='none' stroke='%23D62828' stroke-width='2.2' stroke-linecap='round' opacity='.65'/%3E%3C/svg%3E") left bottom / calc(100% - 3.4mm) 3mm no-repeat;
+    -webkit-print-color-adjust:exact; print-color-adjust:exact;
+  }
+  .penMark::before{
+    content:''; position:absolute; right:-0.6mm; top:-2.8mm; width:5mm; height:5mm;
+    background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12.4 2.2 L14.6 9.1 L21.8 9.4 L16 13.6 L18.3 21 L12 16.6 L5.6 20.6 L8.1 13.4 L2.3 9.2 L9.6 9.2 Z' fill='%23D62828' fill-opacity='.18' stroke='%23D62828' stroke-width='1.9' stroke-linejoin='round' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat;
+    transform:rotate(-12deg);
+    -webkit-print-color-adjust:exact; print-color-adjust:exact;
+  }
+  .sheet.fit2 .mentorBox{font-size:11px; padding:2mm 3.5mm;}
+  .sheet.fit3 .mentorBox{font-size:10.5px;}
+  .mjBadge.ok{background:#E7F5EC; color:#186A3B; border:1.5px solid #2F9E44;}
+  .mjBadge.warn{background:#FDECEA; color:#9B1C1C; border:1.5px solid #C0261B;}
+
+  .memoBox .mk{
+    display:table; font-size:10.5px; font-weight:800; color:#fff;
+    background:var(--brand); padding:1mm 3mm; border-radius:1mm;
+    letter-spacing:.08em; margin-bottom:1.8mm;
+    -webkit-print-color-adjust:exact; print-color-adjust:exact;
+  }
+  .memoBox .svcline{display:flex; flex-wrap:wrap; gap:1.5mm; margin-bottom:1mm;}
+  .memoBox .svcp{
+    display:inline-block; font-size:10.5px; font-weight:800; padding:0.8mm 3mm;
+    border-radius:99px; background:#fff; border:1.5px solid var(--pc); color:var(--pc);
+    -webkit-print-color-adjust:exact; print-color-adjust:exact;
+  }
+
+  /* ── A4 자동 맞춤: 내용이 한 장을 넘치면 단계적으로 축소 (autofitSheets가 부여) ──
+     fit1: 품목 글씨·행 간격 축소 → fit2: 추가 축소 + 차트 축소 → fit3: 차트 생략(최후) */
+  .sheet.fit1 .sh-shop{margin-top:4.5mm;}
+  .sheet.fit1 .sh-shop .name{font-size:24px; margin:1mm 0 2mm;}
+  .sheet.fit1 .items td{padding:2mm 3mm;}
+  .sheet.fit1 .pname{font-size:13.5px;}
+  .sheet.fit1 .psub{font-size:11px; margin-top:0.6mm;}
+  .sheet.fit1 .sumRow{margin-top:2.5mm;}
+  .sheet.fit1 .hist{margin-top:3mm;}
+  .sheet.fit1 .memoBox{margin-top:3mm;}
+
+  .sheet.fit2 .sh-band .logo-img{height:9mm;}
+  .sheet.fit2 .sh-shop .name{font-size:20px;}
+  .sheet.fit2 .items td{padding:1.4mm 3mm;}
+  .sheet.fit2 .pname{font-size:11.5px;}
+  .sheet.fit2 .psub{font-size:9.5px;}
+  .sheet.fit2 .sumRow{margin-top:2mm; font-size:11px;}
+  .sheet.fit2 .sumRow b{font-size:13px;}
+  .sheet.fit2 .hist{padding:2mm 3mm 1.5mm;}
+  .sheet.fit2 .hist svg{width:86%; margin:0 auto;}
+  .sheet.fit2 .lchips .lchip{font-size:8.5px;}
+  .sheet.fit2 .memoBox{font-size:10.5px; padding:2mm 3mm;}
+  .sheet.fit2 .memoBox .svcp{font-size:9.5px;}
+  .sheet.fit2 .sh-foot .ord{font-size:8.5px;}
+
+  .sheet.fit3 .hist{display:none;}
+  .sheet.fit3 .items td{padding:1.1mm 3mm;}
+  .sheet.fit3 .pname{font-size:10.5px;}
+  .sheet.fit3 .memoBox{font-size:10px;}
+
+  .sh-foot{margin-top:auto; padding-top:5mm;}
+  .sh-foot .ord{font-size:10px; color:var(--ink-soft); line-height:1.6;}
+  .sh-foot .thanks{
+    margin-top:3mm; border-top:1px solid var(--line); padding-top:3mm;
+    font-size:11px; color:var(--ink-soft); display:flex; justify-content:space-between;
+  }
+  .sh-foot .thanks b{color:#2F80D0;}
+
+  /* ───── 인쇄 ───── */
+  @page{size:A4; margin:0;}
+  @media print{
+    body{background:#fff;}
+    #panel,#empty{display:none !important;}
+    #stage{padding:0; gap:0; display:block;}
+    .sheet{box-shadow:none; width:210mm; height:296mm; page-break-after:always; break-after:page;}
+    .sheet:last-child{page-break-after:auto;}
+    body.printOne .sheet{display:none;}
+    body.printOne .sheet.target{display:flex;}
+    #cjOverlay{display:none !important;}
+  }
+  @media (max-width:900px){
+    #app{flex-direction:column;}
+    #panel{width:100%; height:auto; position:static;}
+    #stage{overflow-x:auto; align-items:flex-start;}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <aside id="panel">
+    <h1>닥터<b>배</b> 발송 명세서</h1>
+    <p class="sub">BAE Lab · 택배 포장 프로그램</p>
+
+    <div class="step">STEP 1 · 엑셀 (자동 로딩)</div>
+    <div id="drop">
+      최신 엑셀이 <b>자동으로</b> 불러와집니다.<br>
+      <span style="font-size:11px;color:#8B857D;">수동 교체는 파일을 끌어다 놓거나 클릭</span>
+      <input type="file" id="fileInput" accept=".xlsx,.xls" style="display:none">
+    </div>
+    <div id="fileInfo"></div>
+    <button id="reloadBtn" style="width:100%;margin-top:10px;background:#FFFFFF;color:#5A554E;border:1px solid #DDD6CC;border-radius:8px;padding:8px;font-size:12px;cursor:pointer;font-family:inherit;">🔄 최신 엑셀 다시 불러오기</button>
+
+    <div class="step">🔍 검색 <small style="font-weight:400;color:#8B857D">(샵·수취인·연락처·주소 → 과거 명세서 모아보기)</small></div>
+    <div style="display:flex; gap:6px;">
+      <input id="searchBox" placeholder="예: 뷰티따뜻 / 김지애 / 01051043120">
+      <button id="searchClear" title="검색 지우기">✕</button>
+    </div>
+    <div id="searchInfo" class="hint" style="display:none; margin-top:5px;"></div>
+    <button id="extraBtn">➕ 오늘 추가발송 만들기</button>
+
+    <div class="step">STEP 2 · 발송 샵 <small style="font-weight:400;color:#8B857D">(전체 인쇄에 모두 포함)</small></div>
+    <div id="shopList"><span class="hint">아래 STEP 3에서 발송 날짜를 먼저 선택하세요.</span></div>
+
+    <div class="step" id="memoTitle" style="display:none">📝 서비스 · 메모 <small style="font-weight:400;color:#8B857D">(명세서 하단에 인쇄)</small></div>
+    <div id="memoWrap" style="display:none">
+      <select id="memoShop"></select>
+      <div class="hint" style="margin:2px 0 4px">서비스로 넣을 제품을 클릭하세요 (다시 클릭 = 해제)</div>
+      <div id="svcChips"></div>
+      <textarea id="memoText" rows="5" placeholder="추가 메모 (예: 신제품 사용해 보시라고 동봉했습니다)"></textarea>
+      <div class="hint" style="margin-top:4px">자동 저장되어 명세서 하단에 인쇄되고, 전체 발송내역 CSV에 '서비스' 행으로 기록됩니다.</div>
+    </div>
+
+    <button id="printBtn" disabled>🖨 전체 인쇄 (A4)</button>
+    <button id="cjBtn" disabled>📦 CJ 접수 파일</button>
+    <button id="allCsvBtn" disabled>⬇ 전체 발송내역 CSV (주문+서비스)</button>
+    <p class="hint">
+      · 샵 1곳 = A4 1장으로 분리 인쇄됩니다. 개별 샵만 뽑으려면 목록의 [인쇄] 버튼을 누르세요.<br>
+      · 인쇄 대화상자에서 <b>배경 그래픽 켜기</b>, 여백 <b>없음</b>으로 설정하세요. (⌘P)<br>
+      · 스마트스토어 다운로드 파일에 암호가 걸려 있으면, 엑셀에서 열어 암호 없이 다른 이름으로 저장한 뒤 업로드하세요.
+    </p>
+
+    <div class="step">STEP 3 · 날짜 선택 <small style="font-weight:400;color:#8B857D">(주문 접수일 기준 · 18시 이후 주문은 다음날)</small></div>
+    <div style="font-size:11px;color:#8B857D;margin-bottom:6px;">
+      기준 컬럼:
+      <select id="dateCol" style="background:#FFFFFF;color:#2A2723;border:1px solid #DDD6CC;border-radius:5px;font-family:inherit;font-size:11px;padding:2px 4px;"></select>
+    </div>
+    <div id="dateList"><span class="hint">최근 3개월 발송 날짜가 여기에 나타납니다.</span></div>
+  </aside>
+
+  <main id="stage">
+    <div id="empty">
+      📦<br>왼쪽에서 <b>발주발송관리 엑셀</b>을 업로드하고 날짜를 선택하면,<br>
+      샵별로 분리된 A4 발송 명세서가 여기에 표시됩니다.
+    </div>
+  </main>
+</div>
+
+<!-- CJ 접수 파일 미리보기 -->
+<div id="cjOverlay">
+  <div id="cjPanel">
+    <div id="cjHead">
+      <div>
+        <div class="tt">📦 CJ 접수 파일 미리보기</div>
+        <div class="sub" id="cjSub"></div>
+      </div>
+      <div class="sp"></div>
+      <button id="cjDl">⬇ 엑셀 다운로드</button>
+      <button id="cjClose">닫기</button>
+    </div>
+    <div id="cjBody"></div>
+  </div>
+</div>
+
+<script>
+/* 제품 SKU 분류 규칙은 shared/product_rules.js 에 있습니다 (지도와 공유하는 단일 원본).
+   위 <script src="../shared/product_rules.js"> 로 로드됨 — SKU_NAME · SKU_COLOR · productsOfSku */
+
+/* ── 행별 SKU 분류 캐시 (RAW 재로딩 시 초기화) ── */
+let SKU_CACHE = new WeakMap();
+function skusOf(r){
+  let v = SKU_CACHE.get(r);
+  if(!v){ v = productsOfSku(String(r[COLS.opt]||''), String(r[COLS.prod]||'')); SKU_CACHE.set(r, v); }
+  return v;
+}
+/* 품목 글씨색 = 제품 라인 색 (차트·범례와 동일 기준).
+   연한 색(데모·기타·세미나 등)은 인쇄 가독성을 위해 기본 잉크색으로 표시한다. */
+function itemColor(sku){
+  const hex = SKU_COLOR[sku];
+  return (!hex || isLightColor(hex)) ? '#1C1B1A' : hex;
+}
+
+/* ══════════════ 상태 ══════════════ */
+let RAW = [];            // 전체 행
+let COLS = {};           // 컬럼명 매핑
+let DATE_COLS = [];      // 날짜형 후보 컬럼
+let curDateCol = null;
+let curDate = null;
+let shops = [];          // 현재 날짜의 샵 배열
+
+const $ = s => document.querySelector(s);
+
+/* ══════════════ 파일 로드 ══════════════ */
+const drop = $('#drop'), fileInput = $('#fileInput');
+drop.addEventListener('click', ()=>fileInput.click());
+drop.addEventListener('dragover', e=>{e.preventDefault(); drop.classList.add('hover');});
+drop.addEventListener('dragleave', ()=>drop.classList.remove('hover'));
+drop.addEventListener('drop', e=>{
+  e.preventDefault(); drop.classList.remove('hover');
+  if(e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', e=>{ if(e.target.files[0]) loadFile(e.target.files[0]); });
+
+function loadFile(file){
+  const reader = new FileReader();
+  reader.onload = e=> processArrayBuffer(e.target.result, file.name, true);
+  reader.readAsArrayBuffer(file);
+}
+
+/* 엑셀 arrayBuffer 처리 (업로드/자동로딩 공용).
+   alertOnError=false 이면 자동로딩 실패 시 조용히 false 반환. */
+function processArrayBuffer(buf, label, alertOnError){
+  let wb;
+  try{ wb = XLSX.read(buf, {type:'array', cellDates:true}); }
+  catch(err){
+    if(alertOnError) alert('파일을 읽을 수 없습니다.\n스마트스토어 다운로드 파일에 암호가 설정된 경우, 엑셀에서 열어 암호 없이 다시 저장한 뒤 업로드해 주세요.');
+    return false;
+  }
+  // '주문번호' 헤더가 있는 시트/행 탐색
+  let found = null;
+  for(const name of wb.SheetNames){
+    const grid = XLSX.utils.sheet_to_json(wb.Sheets[name], {header:1, defval:null});
+    for(let r=0; r<Math.min(grid.length,6); r++){
+      if((grid[r]||[]).some(c => typeof c==='string' && c.replace(/\s/g,'').includes('주문번호'))){
+        found = {name, headerRow:r, grid}; break;
+      }
+    }
+    if(found) break;
+  }
+  if(!found){ if(alertOnError) alert("'주문번호' 컬럼을 찾지 못했습니다. 발주발송관리 엑셀이 맞는지 확인해 주세요."); return false; }
+
+  const header = found.grid[found.headerRow].map(h => h==null ? '' : String(h).trim());
+  RAW = [];
+  for(let r=found.headerRow+1; r<found.grid.length; r++){
+    const row = found.grid[r]; if(!row) continue;
+    const obj = {};
+    header.forEach((h,i)=>{ if(h) obj[h] = row[i]; });
+    if(obj['주문번호']!=null && String(obj['주문번호']).trim()!=='') RAW.push(obj);
+  }
+  ingest(header, label);
+  return true;
+}
+
+/* ══════════════ 자동 로딩 (로컬 서버에서 최신 엑셀 fetch) ══════════════
+   start-packing.bat 이 git pull 로 최신 엑셀을 받은 뒤 로컬 서버로 이 페이지를
+   열면, 아래가 output 폴더의 최신 엑셀을 자동으로 읽어들인다.
+   file:// 로 직접 열거나 서버가 없으면 fetch 가 실패 → 수동 업로드로 폴백. */
+const AUTO_XLSX_URL = '/output/' + encodeURIComponent('스마트스토어_발주발송관리_통합.xlsx');
+
+/* ══════════════ 클라우드 모드 — 닥터배 대시보드 '발송 명세서' 탭 ══════════════
+   대시보드가 이 페이지를 ?cloud=1 로 같은 출처 iframe 에 띄우면 로컬 서버(serve.py) 대신
+   Firestore 를 쓴다 (로그인은 대시보드의 본사 구글 계정을 그대로 사용).
+     packing/xlsx(+chunks)  포장 PC 가 올린 최신 엑셀        packing/certs·master  수료 명부·거래처 마스터
+     packing_memos/{sha1}   서비스 메모 (포장 PC 와 양방향)   packing/refresh       🔄 요청 ↔ 포장 PC 응답
+     packing/status         포장 PC 생존 신호
+   포장 PC 쪽 구현: packing/cloud_sync.py */
+const CLOUD = new URLSearchParams(location.search).has('cloud');
+const FB = CLOUD ? (()=>{ try{ return (parent!==window && parent.firebase && parent.firebase.apps.length) ? parent.firebase : null; }catch(e){ return null; } })() : null;
+const CDB = FB ? FB.firestore() : null;
+const cref = p => CDB.doc(p);
+async function cloudJson(name){
+  const d = await cref('packing/'+name).get();
+  return d.exists ? JSON.parse(d.data().json || 'null') : null;
+}
+async function cloudXlsx(){
+  const meta = await cref('packing/xlsx').get();
+  if(!meta.exists) throw new Error('포장 PC가 아직 엑셀을 올리지 않았습니다');
+  const {chunks, v, at} = meta.data();
+  let b64 = '';
+  for(let i=0;i<chunks;i++){
+    const c = await cref('packing/xlsx/chunks/'+i).get();
+    if(!c.exists || c.data().v !== v) throw new Error('포장 PC가 새 엑셀을 올리는 중 — 잠시 후 다시 시도');
+    b64 += c.data().t;
+  }
+  const bin = atob(b64), u = new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) u[i] = bin.charCodeAt(i);
+  return {buf: u.buffer, at: at || ''};
+}
+async function memoDocId(k){   // 포장 PC cloud_sync.doc_id 와 같은 규칙 (sha1 앞 24자)
+  const h = await crypto.subtle.digest('SHA-1', new TextEncoder().encode(k));
+  return [...new Uint8Array(h)].map(b=>b.toString(16).padStart(2,'0')).join('').slice(0,24);
+}
+/* 클라우드 🔄: 요청 문서를 쓰고 포장 PC 의 응답(doneReqId)을 기다린다. PC가 꺼져 있으면 4분 뒤 포기 */
+async function cloudRefresh(){
+  if(!CDB) return {ok:false, log:'클라우드 연결 없음'};
+  const reqId = Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+  const ref = cref('packing/refresh');
+  await ref.set({reqId, requestedAt: FB.firestore.FieldValue.serverTimestamp(), by:'대시보드'}, {merge:true});
+  return await new Promise(resolve=>{
+    let un = null;
+    const timer = setTimeout(()=>{ if(un) un(); resolve({ok:false, log:'포장 PC 응답 없음 (4분)'}); }, 240000);
+    un = ref.onSnapshot(d=>{
+      const x = d.data() || {};
+      if(x.doneReqId === reqId){ clearTimeout(timer); un(); resolve({ok:!!x.ok, log:x.log||''}); }
+    }, e=>{ clearTimeout(timer); resolve({ok:false, log:e.message}); });
+  });
+}
+/* 클라우드 모드: 포장 PC 생존 신호가 5분 넘게 없으면 경고 (메모는 저장되고, PC 프로그램이 켜지면 반영) */
+function pcStatusWarn(st){
+  let el = $('#pcWarn');
+  if(!el){
+    el = document.createElement('div'); el.id = 'pcWarn';
+    el.style.cssText = 'display:none;margin:6px 0;padding:7px 9px;border-radius:7px;background:#FDECEA;color:#9B1C1C;font-size:11.5px;font-weight:700;line-height:1.5';
+    $('#fileInfo').after(el);
+  }
+  const stale = !st || Date.now() - (st.ms||0) > 5*60000;
+  el.style.display = stale ? 'block' : 'none';
+  if(stale) el.textContent = '⚠ 포장 PC 연결 끊김' + (st && st.at ? ' (마지막 신호 '+st.at+')' : '')
+    + ' — 메모는 저장되며 PC의 명세서 프로그램이 켜지면 반영됩니다. 🔄 새 주문 수집은 PC가 켜져 있어야 합니다.';
+}
+
+async function autoLoad(silent){
+  const info = document.querySelector('#fileInfo');
+  try{
+    let buf, label;
+    if(CLOUD){
+      if(!CDB) throw new Error('닥터배 대시보드의 "발송 명세서" 탭에서 열어 주세요 (본사 로그인 필요)');
+      const x = await cloudXlsx();
+      buf = x.buf; label = '포장 PC 엑셀 · ' + x.at;
+    }else{
+      const res = await fetch(AUTO_XLSX_URL + '?t=' + Date.now(), {cache:'no-store'});
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      buf = await res.arrayBuffer();
+      label = '자동 로딩 · ' + new Date().toLocaleString('ko-KR', {hour12:false});
+    }
+    if(!processArrayBuffer(buf, label, false)) throw new Error('엑셀 파싱 실패');
+    return true;
+  }catch(err){
+    if(!silent){
+      info.style.display='block'; info.style.color='#B07E1A';
+      info.textContent = '⚠ 자동 로딩 실패 — 아래로 직접 업로드하세요. (' + err.message + ')';
+    }
+    console.warn('autoLoad 실패:', err);
+    return false;
+  }
+}
+
+/* ══════════════ 샵 엔티티 병합 (이력 집계용) ══════════════
+   같은 샵이 1년간 복수 주소(이전·집/샵 혼용·표기 변형)로 주문한 경우가 많아,
+   [샵명 ↔ 주소] 연결망의 연결요소(union-find)를 하나의 샵 엔티티로 본다.
+   ※ 페이지 분리는 계속 '주소' 기준 (택배 1건 = 주소 1곳 = A4 1장) */
+let ENT = null;
+function buildEntities(){
+  const parent = new Map();
+  const add = k => { if(!parent.has(k)) parent.set(k,k); };
+  const find = k => {
+    let r=k; while(parent.get(r)!==r) r=parent.get(r);
+    let c=k; while(parent.get(c)!==c){ const n=parent.get(c); parent.set(c,r); c=n; }
+    return r;
+  };
+  const union = (a,b)=>{ add(a); add(b); const ra=find(a), rb=find(b); if(ra!==rb) parent.set(ra,rb); };
+  // ⚠ 주문자ID·행 단위 상호명은 병합 신호로 쓰지 않는다: 원장이 다른 샵/지인 주소로
+  //   대리주문하며 자기 샵명을 적거나(상호명 허브), 한 계정이 여러 샵으로 발송하는
+  //   허브 계정이 실존하여, 무관한 샵 수십 곳이 하나로 합쳐지는 사고가 났음
+  //   (2026-07 하이글림 ₩77M 오표기). → 각 주소의 '대표(최빈) 상호명'만 사용해
+  //   소수의 대리주문 행이 다리를 놓지 못하게 한다.
+  const cntByAddr = new Map();               // addrKey → Map(상호명→빈도)
+  RAW.forEach(r=>{
+    const a = addrKey(r);
+    if(!parent.has('A:'+a)) add('A:'+a);
+    const n = normName(parseShopName(r[COLS.opt])||'');
+    if(!isPlaceholderName(n)){
+      if(!cntByAddr.has(a)) cntByAddr.set(a, new Map());
+      const m = cntByAddr.get(a); m.set(n, (m.get(n)||0)+1);
+    }
+    const p = normPhone(r[COLS.phone]);      // 같은 전화번호 = 같은 샵 (주소 이전에도 유지됨)
+    if(p) union('A:'+a, 'P:'+p);
+  });
+  // 마스킹 주소 복원 — 네이버는 오래된 주문의 주소 번지를 '*'로 가리되 글자 수는 유지한다.
+  // ('지정로 ** (지축동) ***호' ↔ '지정로 17 (지축동) 618호') 같은 샵이 쪼개지므로,
+  // '*'를 와일드카드로 보고 길이가 같은 온전한 주소와 대조해 정확히 1곳만 맞으면 잇는다.
+  const allAddrs = [...cntByAddr.keys()].concat([...parent.keys()].filter(k=>k.startsWith('A:')).map(k=>k.slice(2)));
+  const plain = [...new Set(allAddrs)].filter(a=>a && !a.includes('*'));
+  const escRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  [...new Set(allAddrs)].filter(a=>a && a.includes('*')).forEach(m=>{
+    const re = new RegExp('^' + escRe(m).replace(/\\\*/g, '.') + '$');
+    const hits = plain.filter(a => a.length === m.length && re.test(a));
+    if(hits.length === 1) union('A:'+m, 'A:'+hits[0]);   // 후보가 여럿이면 애매하므로 잇지 않음
+  });
+
+  const nameSet = new Set();
+  cntByAddr.forEach((m,a)=>{
+    let best=null, bc=0;
+    m.forEach((c,n)=>{ if(c>bc){ bc=c; best=n; } });
+    if(best){ union('A:'+a, 'N:'+best); nameSet.add(best); }
+  });
+  // 대표 상호명 접두 일치 병합 — 상호명은 법상 유일하므로 앞부분이 같으면 같은 샵의 표기
+  // 변형으로 본다 (예: "핀에스테틱일산" ≒ "핀에스테틱 일산점"). 짧은 쪽 4자 미만은 제외.
+  const names = [...nameSet];
+  for(let i=0;i<names.length;i++)
+    for(let j=i+1;j<names.length;j++){
+      const s = names[i].length <= names[j].length ? names[i] : names[j];
+      const l = names[i].length <= names[j].length ? names[j] : names[i];
+      if(s.length>=4 && l.startsWith(s)) union('N:'+names[i], 'N:'+names[j]);
+    }
+  ENT = { find: k => parent.has(k) ? find(k) : k };
+
+  // 엔티티(동일샵)별 상호·수취인 표기 모음 — 수료 명부 대조에 사용.
+  // 한 샵이 주소마다 다른 표기를 써도(한글/영문/지점명) 전부 모아 두면 매칭률이 올라간다.
+  ENT_INFO = new Map();
+  RAW.forEach(r=>{
+    const e = ENT.find('A:'+addrKey(r));
+    if(!ENT_INFO.has(e)) ENT_INFO.set(e, {names:new Set(), recvs:new Set()});
+    const o = ENT_INFO.get(e);
+    const pn = parseShopName(r[COLS.opt]); if(pn) o.names.add(pn);
+    const rv = String(r[COLS.recv]||'').trim(); if(rv) o.recvs.add(rv);
+  });
+}
+let ENT_INFO = new Map();
+
+/* RAW가 채워진 뒤 공통 초기화 (업로드/내장 데이터 공용) */
+function ingest(header, label){
+    SKU_CACHE = new WeakMap();   // 새 데이터 → 분류 캐시 초기화
+    // 주요 컬럼 유연 매핑
+    const find = kw => header.find(h => h.replace(/\s/g,'').includes(kw)) || null;
+    COLS = {
+      order: find('주문번호'),
+      recv:  find('수취인명') || find('수취인'),
+      prod:  find('상품명'),
+      opt:   find('옵션정보') || find('옵션'),
+      qty:   find('수량'),
+      addr:  find('통합배송지') || find('배송지') || find('주소'),
+      phone: find('수취인연락처') || find('연락처') || find('전화'),
+      oid:   find('주문자ID') || find('주문자아이디'),
+      sid:   find('거래처ID'),                        // 거래처 마스터 ID (collect_orders 가 채움)
+      odate: find('주문일'),
+      msg:   find('배송메세지') || find('배송메시지') || find('배송요청'),
+      amt:   find('최종상품별총주문금액') || find('총주문금액') || find('주문금액'),
+    };
+    // 날짜형 후보 컬럼 (주문 접수일 우선 — 주문이 들어온 날 기준으로 분류)
+    DATE_COLS = header.filter(h => /발송일|결제일|주문일|발주확인일/.test(h) && RAW.some(r => toDate(r[h])));
+    if(!DATE_COLS.length) DATE_COLS = header.filter(h => RAW.filter(r=>toDate(r[h])).length > RAW.length*0.5);
+    curDateCol = DATE_COLS.find(h=>h.includes('주문일')) || DATE_COLS.find(h=>h.includes('발송일')) || DATE_COLS[0] || null;
+    curDate = null;
+    buildEntities();
+
+    $('#fileInfo').style.display='block';
+    $('#fileInfo').textContent = `✓ ${label} — ${RAW.length}행 로드됨`;
+    renderDateColSelect();
+    renderDates();
+    $('#stage').innerHTML = '<div id="empty">발송 날짜를 선택하세요.</div>';
+    $('#shopList').innerHTML = '<span class="hint">날짜를 선택하세요.</span>';
+    $('#printBtn').disabled = true;
+    $('#cjBtn').disabled = true;
+    $('#allCsvBtn').disabled = false;         // 전체 CSV는 날짜 선택 없이도 가능
+    clearSearch(true);                        // 데이터 재로딩 시 검색 모드 초기화
+    loadMemosFromServer();                    // 저장된 서비스·메모 불러오기
+    if(!CERTS.length) loadCertsFromServer().then(()=>{ if(curDate) buildShops(); });
+    loadMasterFromServer().then(()=>{ if(curDate) buildShops(); });
+}
+
+/* ══════════════ 날짜 처리 ══════════════ */
+function toDate(v){
+  if(v==null || v==='') return null;
+  if(v instanceof Date && !isNaN(v)) return v;
+  if(typeof v==='number' && v>30000 && v<60000){ // Excel serial
+    return new Date(Date.UTC(1899,11,30) + v*86400000);
+  }
+  if(typeof v==='string'){
+    const m = v.match(/(\d{4})[.\-\/년\s]+(\d{1,2})[.\-\/월\s]+(\d{1,2})/);
+    if(m) return new Date(+m[1], +m[2]-1, +m[3]);
+    const d = new Date(v); if(!isNaN(d)) return d;
+  }
+  return null;
+}
+const UNSHIPPED = '__unshipped__';   // '미발송' 가상 날짜 키 (발송일이 비어있는 주문)
+// 현재 기준 컬럼의 표시용 이름 (명세서 헤더 등)
+const dateColLabel = () => !curDateCol ? '' :
+  curDateCol.includes('주문일') ? '발송 기준일' :
+  curDateCol.includes('발송일') ? '발송일' : curDateCol;
+
+const CUTOFF_HOUR = 18;   // 이 시각 이후 주문은 다음날 발송 → 다음날 그룹으로 분류
+// 분류용 날짜: 주문일 기준일 때 18시 이후 주문은 다음날(발송 예정일)로 넘긴다.
+// (시각 정보가 없는 과거 소급분은 그대로 당일 처리. 발송일 기준일 땐 실제 날짜 그대로)
+function groupDate(r){
+  const v = r[curDateCol];
+  const d = toDate(v);
+  if(!d) return null;
+  if(curDateCol && curDateCol.includes('주문일')){
+    const hm = String(v).match(/(\d{2}):\d{2}/);
+    if(hm && +hm[1] >= CUTOFF_HOUR){ const nd = new Date(d); nd.setDate(nd.getDate()+1); return nd; }
+  }
+  return d;
+}
+const dkey = d => d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const dfmt = k => { const [y,m,d]=k.split('-'); return `${y}.${m}.${d}`; };
+const WD = ['일','월','화','수','목','금','토'];
+const won = n => '₩' + Math.round(n).toLocaleString('ko-KR');
+const fmtWan = n => n>=10000 ? String(Math.round(n/1000)/10).replace(/\.0$/,'')+'만' : n.toLocaleString('ko-KR');
+
+function renderDateColSelect(){
+  const sel = $('#dateCol');
+  sel.innerHTML = DATE_COLS.map(c=>`<option ${c===curDateCol?'selected':''}>${c}</option>`).join('');
+  sel.onchange = ()=>{ curDateCol = sel.value; curDate=null; renderDates();
+    $('#stage').innerHTML='<div id="empty">발송 날짜를 선택하세요.</div>';
+    $('#shopList').innerHTML='<span class="hint">날짜를 선택하세요.</span>'; $('#printBtn').disabled=true; $('#cjBtn').disabled=true; };
+}
+
+function renderDates(){
+  const box = $('#dateList');
+  if(!curDateCol){ box.innerHTML='<span class="hint">날짜 컬럼이 없습니다.</span>'; return; }
+  // 최근 3개월(오늘 기준)만 표시 — 그 이전 발송 날짜는 목록에서 제외
+  const cutoff = new Date(); cutoff.setMonth(cutoff.getMonth()-3); cutoff.setHours(0,0,0,0);
+  const map = new Map(); // key -> {rows, shops:Set}
+  RAW.forEach(r=>{
+    const d = groupDate(r); if(!d) return;
+    if(d < cutoff) return;   // 3개월 이전 데이터는 날짜 목록에서 제외
+    const k = dkey(d);
+    if(!map.has(k)) map.set(k,{rows:0, shops:new Set()});
+    const e = map.get(k); e.rows++;
+    e.shops.add(addrKey(r));
+  });
+  // ➕ 추가발송이 있는 날짜도 목록에 포함 (주문이 없는 날이어도 표시)
+  Object.values(MEMOS).forEach(v=>{
+    if(!(v.type==='extra' && v.date)) return;
+    const d = new Date(v.date+'T00:00:00'); if(isNaN(d) || d<cutoff) return;
+    if(!map.has(v.date)) map.set(v.date,{rows:0, shops:new Set()});
+    const e = map.get(v.date); e.rows++; e.shops.add('X|'+normAddr(v.addr||''));
+  });
+  // 미발송(발송일 없음) 주문은 맨 위에 고정 버튼으로 — 오늘 포장할 대상
+  const unRows = RAW.filter(r=>!groupDate(r));
+  const unShops = new Set(unRows.map(r=>addrKey(r)));
+  const unBtn = unRows.length ? `<button class="dateBtn" data-k="${UNSHIPPED}" style="border-color:#C9A24B;">
+      <span>📦 미발송 <small>(발송 전)</small></span>
+      <small>샵 ${unShops.size} · ${unRows.length}건</small></button>` : '';
+  const keys = [...map.keys()].sort().reverse();
+  box.innerHTML = (unBtn + keys.map(k=>{
+    const d = new Date(k), e = map.get(k);
+    return `<button class="dateBtn" data-k="${k}">
+      <span>${dfmt(k)} <small>(${WD[d.getDay()]})</small></span>
+      <small>샵 ${e.shops.size} · ${e.rows}건</small></button>`;
+  }).join('')) || '<span class="hint">최근 3개월 내 발송 날짜가 없습니다.</span>';
+  box.querySelectorAll('.dateBtn').forEach(b=>b.onclick=()=>{
+    clearSearch(true);                       // 날짜 선택 = 검색 모드 해제
+    box.querySelectorAll('.dateBtn').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');
+    curDate = b.dataset.k;
+    buildShops();
+  });
+}
+
+/* ══════════════ 샵 그룹핑 ══════════════ */
+const normAddr = a => String(a||'').replace(/\s+/g,'');
+const normName = s => String(s||'').toLowerCase().replace(/[\s._\-]/g,'');
+const normPhone = s => { const d = String(s||'').replace(/\D/g,''); return d.length>=9 ? d : ''; };
+// 병합 근거로 쓸 수 없는 자리표시 상호명 (서로 다른 고객이 같은 문구를 쓸 수 있음)
+const isPlaceholderName = s => !s || /^(창업준비중|준비중|창업예정|오픈예정|미정|없음|해당없음|개인|x+|\?+)$/.test(s);
+// 행의 그룹 키(주소 기준). 주소가 없는 행은 수취인명만으로는 (마스킹 "김*희"·동명이인)
+// 서로 다른 사람이 충돌하므로 전화/주문자ID/주문번호를 붙여 구분한다.
+function addrKey(r){
+  const a = normAddr(r[COLS.addr]);
+  if(a) return a;
+  const tag = normPhone(r[COLS.phone]) || String(r[COLS.oid]||'').trim() || String(r[COLS.order]||'');
+  return 'recv:' + String(r[COLS.recv]||'?') + ':' + tag;
+}
+function parseShopName(optStr){
+  const s = String(optStr||'');
+  for(const re of [
+    /샵\s*상호명\s*[:：]\s*([^\/]+)/,          // [필수] 샵 상호명: X
+    /샵\s*이름[^:：]*[:：]\s*([^\/]+)/,        // 샵이름(수료증용): X
+    /샵\s*인스타[^:：]*[:：]\s*([^\/]+)/,      // [필수] 샵 인스타: X
+    /인스타\s*아이디[^:：]*[:：]\s*([^\/]+)/,  // [필수] 인스타아이디(확인용): X
+  ]){ const m = s.match(re); if(m) return m[1].replace(/^[\s:：]+/,'').trim(); }
+  return null;
+}
+function productParts(optStr){
+  // 옵션정보에서 샵 정보를 제외한 제품 부분 추출.
+  // key가 제품명인 경우(예: "토코포르테 (갈색): 1박스")와 value가 제품명인 경우
+  // (예: "스킨부스터 4종: 엑소토카인-블루")가 혼재하므로 key — value 전체를 유지한다.
+  return String(optStr||'').split(/\s\/\s/)
+    .filter(p=>!/샵\s*상호|인스타|샵\s*이름|성함/.test(p.split(/[:：]/)[0]))
+    .map(p=>p.replace(/\[필수\]\s*/g,'').replace(/\(필수[^)]*\)\s*/g,'').trim())
+    .filter(Boolean)
+    .map(p=>{
+      const i = p.search(/[:：]/);
+      if(i<0) return p;
+      const k = p.slice(0,i).trim(), v = p.slice(i+1).trim();
+      return v ? (k ? k+' — '+v : v) : k;
+    });
+}
+// 노이즈 태그([26년도 결제창], [26년도 납품], [필수])만 제거.
+// [칼리파우더], [여름 피부열 관리 3종 세트 구성] 등 제품 정보 대괄호는 보존한다.
+const cleanProd = s => String(s||'')
+  .replace(/\[\d{2}년도[^\]]*\]\s*/g,'')
+  .replace(/\[필수\]\s*/g,'')
+  .trim();
+
+function buildShops(){
+  const isUn = curDate === UNSHIPPED;   // '미발송' 선택: 발송일이 비어있는 주문들
+  const rows = RAW.filter(r=>{
+    const d = groupDate(r);
+    return isUn ? !d : (d && dkey(d)===curDate);
+  });
+
+  // ── 최근 12개월 주문 이력 (샵 엔티티 기준, 선택일 포함) ──
+  const baseKey = isUn ? dkey(new Date()) : curDate;   // 미발송이면 오늘 기준
+  const {histMap, svcByEnt, startKey} = buildHistAndSvc(baseKey);
+
+  const map = new Map();
+  rows.forEach(r=>accumShopRow(map, addrKey(r), r));
+
+  // ➕ 이 날짜의 추가발송(주문 외) 명세서
+  const extraSheets = (curDate===UNSHIPPED) ? [] :
+    Object.entries(MEMOS).filter(([k,v])=>v.type==='extra' && v.date===curDate)
+      .map(([k,v])=>extraShopObj(k, v, histMap, svcByEnt, startKey, null));
+
+  shops = [...map.values()].map(s=>({...s, name:s.name||s.recv||'(미상)', items:[...s.items.values()],
+           hist: histMap.get(ENT.find('A:'+s.key))||null, histStart: startKey,
+           svcMonths: svcByEnt.get(ENT.find('A:'+s.key))||null}))
+          .concat(extraSheets)
+          // 최신 주문이 위(1페이지), 먼저 들어온 주문이 아래 — 어제 발송분과 밤사이 신규 주문 구분용
+          .sort((a,b)=> String(b.lastOrd||'').localeCompare(String(a.lastOrd||''))
+                        || a.name.localeCompare(b.name,'ko'));
+  renderShopList();
+  renderSheets();
+}
+
+/* ── 추가발송 항목 → 시트용 샵 객체 ── */
+function extraShopObj(k, v, histMap, svcByEnt, startKey, histEnd){
+  const skey = normAddr(v.addr) || ('recv:'+String(v.recv||'?'));
+  const ent = ENT.find('A:'+skey);
+  const o = {key:skey, extraKey:k, isExtra:true, include:true,
+    name:v.name||v.recv||'(미상)', recv:v.recv||'', addr:v.addr||'',
+    msgs:new Set(), orders:new Set(),
+    items:(v.products||[]).map(c=>({main:SKU_NAME[c]||c, sub:'', qty:(v.qty||{})[c]||1, amt:null, sku:c})),
+    hist: histMap.get(ent)||null, histStart:startKey,
+    svcMonths: svcByEnt.get(ent)||null,
+    lastOrd: v.date+' 23:59:59'};   // 그 날짜 그룹 맨 위로
+  if(histEnd) o.histEnd = histEnd;
+  return o;
+}
+
+/* ── 공용: 12개월 이력(엔티티별)·서비스 월 계산 — 일반 모드/검색 모드 공용 ── */
+function buildHistAndSvc(baseKey){
+  const endD = new Date(baseKey+'T00:00:00');
+  const startD = new Date(endD); startD.setMonth(startD.getMonth()-12); startD.setDate(startD.getDate()+1);
+  const histMap = new Map();
+  if(COLS.amt){
+    RAW.forEach(r=>{
+      const d = groupDate(r); if(!d) return;
+      const k = dkey(d);
+      if(new Date(k+'T00:00:00') < startD || k > baseKey) return;
+      const key = ENT.find('A:'+addrKey(r));
+      if(!histMap.has(key)) histMap.set(key,{byDate:new Map(), orders:new Set(), byMonth:new Map()});
+      const h = histMap.get(key);
+      const amt = Number(r[COLS.amt])||0;
+      h.byDate.set(k, (h.byDate.get(k)||0) + amt);
+      h.orders.add(String(r[COLS.order]));
+      // 월별 × SKU 누적 (12개월 제품군별 차트용) — 납품처 앱과 동일하게
+      // 한 행에서 SKU 여러 개가 나오면 금액을 균등 분할해 배분
+      const mon = k.slice(0,7);
+      const skus = skusOf(r);
+      const share = amt / skus.length;
+      if(!h.byMonth.has(mon)) h.byMonth.set(mon, new Map());
+      const lm = h.byMonth.get(mon);
+      skus.forEach(c=>lm.set(c, (lm.get(c)||0) + share));
+    });
+  }
+  // 샵 엔티티별 '서비스 제공' 월 집합 (저장된 메모의 제품 목록 기반 → 차트 마커)
+  const svcByEnt = new Map();
+  Object.values(MEMOS).forEach(m=>{
+    if(!(m.products&&m.products.length) || !m.date || !m.addr) return;
+    const ent = ENT.find('A:'+(normAddr(m.addr)||'recv:'+String(m.recv||'?')));
+    if(!svcByEnt.has(ent)) svcByEnt.set(ent, new Set());
+    svcByEnt.get(ent).add(String(m.date).slice(0,7));
+  });
+  return {histMap, svcByEnt, startKey: dkey(startD)};
+}
+
+/* ── 공용: 행 1개를 샵 객체에 누적 (mapKey는 호출자 정의 — 검색 모드는 날짜|주소) ── */
+function accumShopRow(map, mapKey, r){
+  if(!map.has(mapKey)) map.set(mapKey,{key: addrKey(r), name:null, recv:r[COLS.recv]||'', addr:r[COLS.addr]||'',
+    msgs:new Set(), orders:new Set(), items:new Map(), include:true, sid:''});
+  const s = map.get(mapKey);
+  if(!s.sid && COLS.sid && r[COLS.sid]) s.sid = String(r[COLS.sid]).trim();
+  const pn = parseShopName(r[COLS.opt]);
+  if(!s.name && pn) s.name = pn;
+  if(r[COLS.msg]) s.msgs.add(String(r[COLS.msg]).trim());
+  s.orders.add(String(r[COLS.order]));
+  // 이 샵의 최신 주문 시각 (출력 페이지 정렬용 — ISO형 문자열이라 문자열 비교로 충분)
+  const ov = String(r[COLS.odate]||r[curDateCol]||'');
+  if(ov > (s.lastOrd||'')) s.lastOrd = ov;
+  const parts = productParts(r[COLS.opt]);
+  const optTxt  = parts.join(' · ');
+  const prodTxt = cleanProd(r[COLS.prod]);
+  // 제목(위, 굵게) = 상품명 / 아랫줄 = 옵션정보 — 명확히 구분 표기.
+  // 단, 이 취합본은 옵션행의 상품명이 '1병' 같은 옵션값의 반복인 경우가 있어,
+  // 그때(옵션 텍스트에 이미 포함됨)는 옵션 텍스트를 제목으로 쓴다.
+  let main, sub;
+  if(!prodTxt || (optTxt && optTxt.includes(prodTxt))){
+    main = optTxt || prodTxt;
+    sub  = '';
+  }else{
+    main = prodTxt;
+    sub  = (optTxt && optTxt !== prodTxt) ? optTxt : '';
+  }
+  const qty  = Number(r[COLS.qty]) || 1;
+  const ik = main+'|'+sub;
+  if(!s.items.has(ik)) s.items.set(ik,{main, sub:(sub!==main?sub:''), qty:0, amt:0, sku:skusOf(r)[0]});
+  const it = s.items.get(ik);
+  it.qty += qty;
+  it.amt += Number(r[COLS.amt]) || 0;
+}
+
+/* ══════════════ 🔍 검색 모드: 샵명·수취인·연락처·주소 → 과거 명세서 모아보기 ══════════════ */
+function clearSearch(silent){
+  $('#searchBox').value = '';
+  $('#searchInfo').style.display = 'none';
+  $('#extraBtn').style.display = 'none';
+  if(silent) return;
+  if(curDate){ buildShops(); }
+  else{
+    shops = []; renderShopList();
+    $('#stage').innerHTML = '<div id="empty">날짜를 선택하거나 검색하세요.</div>';
+    $('#printBtn').disabled = true; $('#cjBtn').disabled = true;
+  }
+}
+function runSearch(qRaw){
+  const q = String(qRaw||'').trim();
+  const info = $('#searchInfo');
+  if(!q){ clearSearch(); return; }
+  if(!RAW.length) return;
+  const nq = q.toLowerCase().replace(/\s+/g,'');
+  const matchRow = r => [parseShopName(r[COLS.opt])||'', String(r[COLS.recv]||''),
+                         String(r[COLS.phone]||''), String(r[COLS.addr]||'')]
+    .join('|').toLowerCase().replace(/\s+/g,'').includes(nq);
+  // 매칭된 행의 '동일샵 엔티티' 전체 이력을 가져옴 (표기 변형·주소 이전 포함)
+  const ents = new Set(RAW.filter(matchRow).map(r=>ENT.find('A:'+addrKey(r))));
+  const rows = ents.size ? RAW.filter(r=>ents.has(ENT.find('A:'+addrKey(r)))) : [];
+  info.style.display = 'block';
+  if(!rows.length){ info.textContent = `"${q}" — 검색 결과 없음`; return; }
+
+  curDate = null;
+  document.querySelectorAll('.dateBtn').forEach(x=>x.classList.remove('on'));
+  const today = dkey(new Date());
+  const {histMap, svcByEnt, startKey} = buildHistAndSvc(today);   // 이력 차트는 오늘 기준 12개월
+  const map = new Map();
+  rows.forEach(r=>{
+    const d = groupDate(r);
+    const dk = d ? dkey(d) : today;
+    accumShopRow(map, dk + '|' + addrKey(r), r);   // 발송 기준일 1일 = 명세서 1장
+    map.get(dk + '|' + addrKey(r)).sheetDate = dk;
+  });
+  // 매칭 엔티티의 추가발송 이력도 시트로 포함
+  const extraSheets = Object.entries(MEMOS)
+    .filter(([k,v])=>v.type==='extra' && ents.has(ENT.find('A:'+(normAddr(v.addr)||'recv:'+String(v.recv||'?')))))
+    .map(([k,v])=>{ const o = extraShopObj(k, v, histMap, svcByEnt, startKey, today); o.sheetDate = v.date; return o; });
+
+  shops = [...map.values()].map(s=>({...s, name:s.name||s.recv||'(미상)', items:[...s.items.values()],
+    hist: histMap.get(ENT.find('A:'+s.key))||null, histStart: startKey, histEnd: today,
+    svcMonths: svcByEnt.get(ENT.find('A:'+s.key))||null}))
+    .concat(extraSheets)
+    .sort((a,b)=> b.sheetDate.localeCompare(a.sheetDate)
+                  || String(b.lastOrd||'').localeCompare(String(a.lastOrd||'')));
+  renderShopList();
+  renderSheets();
+  $('#cjBtn').disabled = true;   // CJ 접수 파일은 날짜 선택 모드 전용
+  info.textContent = `🔍 "${q}" — 명세서 ${shops.length}장 (최신순) · 날짜를 클릭하면 검색 해제`;
+  const xb = $('#extraBtn');
+  xb.style.display = 'block';
+  xb.textContent = `➕ "${shops[0].name}" 오늘 추가발송 만들기`;
+}
+function createExtraShipment(){
+  const s0 = shops[0]; if(!s0) return;
+  const today = dkey(new Date());
+  const key = today + '|' + s0.key + '|X';
+  if(!MEMOS[key])
+    MEMOS[key] = {date:today, name:s0.name, recv:s0.recv, addr:s0.addr, memo:'', products:[], qty:{}, type:'extra'};
+  clearSearch(true);
+  curDate = today;
+  renderDates();
+  document.querySelectorAll('.dateBtn').forEach(x=>x.classList.toggle('on', x.dataset.k===today));
+  buildShops();
+  // 방금 만든 추가발송을 메모 편집 대상으로 선택 → 제품 칩·수량·사유 입력
+  const idx = shops.findIndex(x=>x.extraKey===key);
+  if(idx>=0){ $('#memoShop').value = String(idx); memoSelKey = shops[idx].key; loadMemoIntoBox(); }
+}
+
+/* ══════════════ 좌측 샵 목록 & 범례 ══════════════ */
+function renderShopList(){
+  // 모든 샵을 항상 전체 인쇄 대상에 포함 (단순화 — 체크박스 없음)
+  const box = $('#shopList');
+  box.innerHTML = shops.map((s,i)=>{
+    const q = s.items.reduce((a,b)=>a+b.qty,0);
+    const dp = s.sheetDate ? `<span class="qty">${s.sheetDate.slice(5).replace('-','.')}</span> ` : '';
+    const xb = s.isExtra ? '<span style="color:#C24A08;font-weight:800">➕</span> ' : '';
+    return `<div class="shopRow">
+      ${dp}${xb}<span class="nm" title="${s.name}">${s.name}</span>
+      <span class="qty">${q}개</span>
+      <button data-p="${i}">인쇄</button></div>`;
+  }).join('');
+  box.querySelectorAll('button').forEach(b=>b.onclick=()=>printOne(+b.dataset.p));
+  $('#printBtn').disabled = !shops.length;
+  $('#cjBtn').disabled = !shops.length;
+
+  // ── 서비스·메모 입력 UI (샵 선택 유지) ──
+  const mw = $('#memoWrap'), mt = $('#memoTitle');
+  if(!shops.length){ mw.style.display='none'; mt.style.display='none'; }
+  else{
+    mw.style.display='block'; mt.style.display='block';
+    const sel = $('#memoShop');
+    sel.innerHTML = shops.map((s,i)=>`<option value="${i}">${s.isExtra?'➕ ':''}${esc(s.name)}</option>`).join('');
+    // 목록이 재정렬돼도 같은 샵이 계속 선택되도록 샵 키로 복원 (인덱스 밀림 방지)
+    const idx = memoSelKey ? shops.findIndex(s=>s.key===memoSelKey) : -1;
+    sel.value = String(idx >= 0 ? idx : 0);
+    memoSelKey = (shops[+sel.value]||{}).key || null;
+    loadMemoIntoBox();
+  }
+}
+
+/* ══════════════ 서비스·메모 (제품은 구조화 저장 → 명세서 인쇄 + 전체 CSV '서비스' 행 + 차트 마커) ══════════════ */
+let MEMOS = {};   // key = "YYYY-MM-DD|샵키" → {date,name,recv,addr,memo,products:[SKU코드,...]}
+const memoDateKey = () => (curDate && curDate!==UNSHIPPED) ? curDate : dkey(new Date());   // 미발송·미선택=오늘
+const memoKey = (shopKey, dk) => (dk || memoDateKey()) + '|' + shopKey;
+// 서비스로 선택 가능한 제품 (판매 SKU — 세트/배너/기타 제외)
+const SERVICE_SKUS = ['EXO_BLUE','PDRN','CALCI','TOCO_LIQ','GEL500','GEL150','LIQMASK',
+                      'EXO_BLACK','SCALP_B','SCALP_S','HAIR_T','FIRM','CALM','MJ','DERMA','AIR','ADAPTER'];
+const SVC_MARK = ['#12B886','서비스 제공'];   // 12개월 차트 마커 색·라벨
+const isLightColor = hex => { const n=parseInt(hex.slice(1),16);
+  return (0.299*(n>>16)+0.587*((n>>8)&255)+0.114*(n&255)) > 150; };
+
+/* ══════════════ 마이크로젝션 교육 수료 확인 ══════════════
+   판매 정책: 마이크로젝션은 교육 수료(수료증) 샵에만 납품한다.
+   수료증 발급 사이트(drbae-certificate)의 명부를 받아, 마이크로젝션이 포함된
+   주문의 명세서에 수료 여부 뱃지를 찍어 포장 단계에서 걸러낼 수 있게 한다. */
+let CERTS = [], CERT_SOURCE = '';
+/* 거래처 마스터(shop_master.json) — 컨트롤 타워가 수료 명부를 거래처ID 에 연결해 둔 결과.
+   거래처ID 가 있는 샵은 이름 대조보다 이 정보를 우선 쓴다 (오타·영문 표기에 흔들리지 않음). */
+let MASTER = {}, MASTER_AT = '';
+async function loadMasterFromServer(){
+  try{
+    const d = CLOUD ? (CDB ? await cloudJson('master') : null)
+                    : await fetch('/api/master', {cache:'no-store'}).then(r=>r.ok ? r.json() : null);
+    if(!d) return;
+    MASTER = d.shops || {}; MASTER_AT = d.generated || ''; MASTER_BY_ADDR = null;
+  }catch(e){ console.warn('거래처 마스터 로딩 실패:', e.message); }
+}
+/* 멘토링 담당 파트너 — 거래처 마스터의 partner (파트너 관리대장 연결, 컨트롤 타워가 채움).
+   거래처ID 가 없는 시트(추가발송 등)는 배송지 주소키로 찾는다. 표시는 괄호(지점) 뺀 파트너 이름. */
+let MASTER_BY_ADDR = null;
+function mentorOf(s){
+  let mm = s.sid && MASTER[s.sid];
+  if(!mm){
+    if(!MASTER_BY_ADDR){
+      MASTER_BY_ADDR = new Map();
+      for(const m of Object.values(MASTER)) for(const a of (m.addrKeys||[])) MASTER_BY_ADDR.set(a, m);
+    }
+    mm = MASTER_BY_ADDR.get(String(s.addr||'').replace(/\s+/g,''));
+  }
+  return mm && mm.partner ? String(mm.partner).replace(/\s*\(.*?\)\s*/g,'').trim() : '';
+}
+/* 받침에 맞는 조사: 미네일은 / 에밀리는 (한글이 아니면 '은(는)') */
+function josaEunNeun(w){
+  const c = String(w||'').trim().slice(-1).charCodeAt(0);
+  if(!(c>=0xAC00 && c<=0xD7A3)) return '은(는)';
+  return (c-0xAC00)%28 ? '은' : '는';
+}
+function MENTOR_BOX(s){
+  const p = mentorOf(s);
+  if(!p) return '';
+  return `<div class="mentorBox"><b>${esc(s.name)}</b>${josaEunNeun(s.name)} 현재 <b>${esc(p)}</b> <span class="penMark">멘토링</span> 담당 샵입니다.<br>`
+       + `제품 사용 등 문의 사항이 있으면 언제든지 편하게 <b>${esc(p)}</b>에 문의 바랍니다.</div>`;
+}
+/* 수료 명부에 영문·로마자로 등재된 샵 ↔ 주문서의 한글 상호 연결표.
+   명부는 회차에 따라 "Whitewitch / Baek So Ra"처럼 영문으로 적힌 항목이 있어
+   자동 대조가 안 된다. 새로 발견되면 '주문 상호(또는 원장명)': '명부 상호' 로 한 줄 추가.
+   ※ 여기에 없고 명부에도 없으면 실제 미수료로 보고 빨간 뱃지가 뜬다. */
+const CERT_ALIASES = {
+  '왁싱현': 'WAXING HYUN',
+  '화이트위치': 'Whitewitch',
+  '오늘에스테틱': 'ONUL Aesthetic',
+  'onul_skincare': 'ONUL Aesthetic',
+};
+async function loadCertsFromServer(){
+  try{
+    const d = CLOUD ? (CDB ? await cloudJson('certs') : null)
+                    : await fetch('/api/certs', {cache:'no-store'}).then(r=>r.ok ? r.json() : null);
+    if(!d) return;
+    CERTS = (d.records||[]).filter(r=>r && r.shop && r.date);
+    CERT_SOURCE = d.source || '';
+  }catch(e){ console.warn('수료 명부 로딩 실패:', e.message); }
+}
+/* 샵 ↔ 수료 명부 매칭.
+   상호 표기가 흔들려도(띄어쓰기·지점명) 찾도록 정규화 후 완전일치 → 접두일치(4자+)로 보고,
+   상호가 다르면 원장 성함(수취인명)으로도 대조한다. 여러 번 수료했으면 가장 최근 날짜. */
+function certOf(shop){
+  if(!shop) return null;
+  // 1순위: 거래처 마스터의 수료 연결 (거래처ID 기준)
+  const mm = shop.sid && MASTER[shop.sid];
+  if(mm && mm.cert && mm.cert.last) return {date: mm.cert.last, shop: mm.name, name: mm.cert.name||'', viaMaster: true};
+  if(!CERTS.length) return null;
+  // 동일샵(엔티티) 전체의 표기를 모아 대조 — 주소마다 상호가 달라도 한 샵으로 본다
+  const info = ENT_INFO.get(ENT.find('A:'+shop.key)) || {names:new Set(), recvs:new Set()};
+  const raw   = [shop.name, ...info.names].filter(Boolean);
+  // 별칭표에 등록된 상호는 명부 표기(영문 등)로도 함께 대조
+  const mapped = raw.map(n=>CERT_ALIASES[n]).filter(Boolean);
+  const cand  = [...raw, ...mapped].map(normName);
+  const recvs = [...info.recvs, shop.recv].filter(Boolean).map(normName);
+  const escRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  // 오래된 주문은 수취인명이 '신*지'처럼 가려져 온다 — 글자 수가 같으면 와일드카드로 대조
+  const sameName = (a,b) => {
+    if(!a || !b) return false;
+    if(a === b) return true;
+    if(a.length !== b.length) return false;
+    if(a.includes('*')) return new RegExp('^'+escRe(a).replace(/\\\*/g,'.')+'$').test(b);
+    if(b.includes('*')) return new RegExp('^'+escRe(b).replace(/\\\*/g,'.')+'$').test(a);
+    return false;
+  };
+  let best = null;
+  for(const c of CERTS){
+    const cs = normName(c.shop), cn = normName(c.name||'');
+    // 상호 일치(표기 변형·지점명 허용)
+    const hitShop = cand.some(n => n && cs && (n===cs ||
+      (n.length>=4 && cs.startsWith(n)) || (cs.length>=4 && n.startsWith(cs))));
+    // 원장 성함 일치 — 한글/영문 상호가 서로 달라도 잇는 실질적 키.
+    // 동명이인 오인을 줄이려 3글자 이상만 인정한다.
+    const hitRecv = cn.length>=3 && recvs.some(rv => rv.length>=3 && sameName(rv, cn));
+    if(!(hitShop || hitRecv)) continue;
+    if(!best || String(c.date) > String(best.date)) best = c;
+  }
+  return best;
+}
+const MJ_BADGE = s => {
+  if(!s.items.some(it=>it.sku==='MJ')) return '';        // 마이크로젝션 주문에만 표시
+  const c = certOf(s);
+  if(c) return `<div class="mjBadge ok">✓ 마이크로젝션 교육 수료: ${dfmt(String(c.date))}`
+             + `${c.name?` · ${esc(c.name)} 원장님`:''}`
+             + `${c.viaMaster?` <small>(거래처 ${esc(s.sid)})</small>`:(normName(c.shop)!==normName(s.name)?` <small>(수료 명부: ${esc(c.shop)})</small>`:'')}</div>`;
+  return `<div class="mjBadge warn">⚠ 마이크로젝션 수료증 정보 없음 — 주의!!`
+       + `${CERT_SOURCE==='none'?' (명부를 불러오지 못함)':''}</div>`;
+};
+
+let memoUnsub = null;
+async function loadMemosFromServer(){
+  if(CLOUD){   // 실시간 구독 — 포장 PC·다른 기기에서 쓴 메모가 바로 보인다 (한 번만 등록)
+    if(!CDB || memoUnsub) return;
+    await new Promise(resolve=>{
+      memoUnsub = CDB.collection('packing_memos').onSnapshot(snap=>{
+        const m = {};
+        snap.forEach(d=>{ const x = d.data(); if(x.key && !x.deleted && x.entry) m[x.key] = x.entry; });
+        const changed = JSON.stringify(m) !== JSON.stringify(MEMOS);
+        MEMOS = m; resolve();
+        if(changed && curDate) buildShops();
+      }, e=>{ console.warn('메모 구독 실패:', e.message); memoSaveWarn(true); resolve(); });
+    });
+    return;
+  }
+  try{
+    const res = await fetch('/api/memos', {cache:'no-store'});
+    if(res.ok) MEMOS = await res.json() || {};
+  }catch(e){ console.warn('메모 로딩 실패(서버 미지원?):', e.message); }
+}
+let memoSaveTimer = null;
+let memoSelKey = null;   // 선택된 샵을 인덱스가 아닌 샵 키로 기억 (목록 재정렬에도 유지)
+function selectedMemoShop(){ const i = +$('#memoShop').value; return shops[i] || null; }
+// 저장 실패를 화면에 크게 표시 (서버 꺼짐 등으로 메모가 조용히 유실되는 사고 방지)
+function memoSaveWarn(bad){
+  let w = document.getElementById('memoSaveWarn');
+  if(!w){
+    w = document.createElement('div');
+    w.id = 'memoSaveWarn';
+    w.style.cssText = 'display:none;color:#C0261B;font-size:11.5px;font-weight:800;margin-top:5px;line-height:1.5;';
+    w.textContent = CLOUD
+      ? '⚠ 메모 저장 실패! 인터넷 연결 또는 대시보드 로그인을 확인해 주세요. 메모 내용을 복사해 둔 뒤 페이지를 새로고침하세요.'
+      : '⚠ 메모 저장 실패! 서버 연결이 끊겼습니다. 메모 내용을 복사해 둔 뒤, 프로그램을 닫고 바탕화면 아이콘으로 다시 실행해 주세요.';
+    $('#memoText').insertAdjacentElement('afterend', w);
+  }
+  w.style.display = bad ? 'block' : 'none';
+  $('#memoText').style.borderColor = bad ? '#C0261B' : '';
+}
+// 이 샵의 메모 키 찾기: 현재 날짜 키 우선, 없으면 ±3일 내 가장 가까운 그 샵의 메모
+// (주문일/발송일 기준 전환·하루 차이에도 메모가 항상 보이도록)
+function memoKeyFor(shopKey, dk){
+  const baseDk = dk || memoDateKey();
+  const exact = baseDk + '|' + shopKey;
+  if(MEMOS[exact]) return exact;
+  const base = new Date(baseDk+'T00:00:00').getTime();
+  let best=null, bd=Infinity;
+  for(const k of Object.keys(MEMOS)){
+    if(!k.endsWith('|'+shopKey)) continue;
+    const diff = Math.abs(new Date(k.split('|')[0]+'T00:00:00').getTime()-base)/86400000;
+    if(diff<=3 && diff<bd){ bd=diff; best=k; }
+  }
+  return best;
+}
+function memoEntry(shop){
+  if(shop && shop.extraKey) return MEMOS[shop.extraKey] || {memo:'', products:[], qty:{}, type:'extra'};
+  const k = memoKeyFor(shop.key, shop.sheetDate);
+  return (k && MEMOS[k]) || {memo:'', products:[]};
+}
+
+function renderSvcChips(){
+  const s = selectedMemoShop(); if(!s) return;
+  const e = memoEntry(s);
+  const sel = new Set(e.products || []);
+  $('#svcChips').innerHTML = SERVICE_SKUS.map(c=>{
+    const on = sel.has(c), light = isLightColor(SKU_COLOR[c]);
+    return `<span class="schip${on?' on':''}${light?' light':''}" data-c="${c}" style="--c:${SKU_COLOR[c]}">${esc(SKU_NAME[c])}</span>`;
+  }).join('');
+  $('#svcChips').querySelectorAll('.schip').forEach(ch=>ch.onclick=()=>toggleSvcProduct(ch.dataset.c));
+  // 추가발송이면 선택 제품별 수량 편집 행 표시
+  let qbox = document.getElementById('extraQty');
+  if(!qbox){
+    qbox = document.createElement('div'); qbox.id = 'extraQty';
+    $('#svcChips').insertAdjacentElement('afterend', qbox);
+  }
+  if((s.isExtra || s.extraKey) && sel.size){
+    const q = e.qty || {};
+    qbox.style.display = 'block';
+    qbox.innerHTML = [...sel].map(c=>`
+      <div class="qrow2"><span class="qn" style="color:${SKU_COLOR[c]||'#555'}">${esc(SKU_NAME[c]||c)}</span>
+        <button data-c="${c}" data-d="-1">−</button><b>${q[c]||1}</b><button data-c="${c}" data-d="1">＋</button></div>`).join('');
+    qbox.querySelectorAll('button').forEach(b=>b.onclick=()=>setExtraQty(b.dataset.c, +b.dataset.d));
+  } else { qbox.style.display = 'none'; qbox.innerHTML = ''; }
+}
+function toggleSvcProduct(code){
+  const s = selectedMemoShop(); if(!s || !curDate) return;
+  const e = memoEntry(s);
+  const ps = new Set(e.products || []);
+  const q = Object.assign({}, e.qty || {});
+  if(ps.has(code)){ ps.delete(code); delete q[code]; }
+  else { ps.add(code); q[code] = 1; }
+  persistMemo(s, $('#memoText').value, [...ps], q);
+  renderSvcChips();
+}
+function setExtraQty(code, delta){
+  const s = selectedMemoShop(); if(!s) return;
+  const e = memoEntry(s);
+  const q = Object.assign({}, e.qty || {});
+  q[code] = Math.max(1, (q[code]||1) + delta);
+  persistMemo(s, $('#memoText').value, e.products || [], q);
+  renderSvcChips();
+}
+function loadMemoIntoBox(){
+  const s = selectedMemoShop(); if(!s) return;
+  if(document.activeElement !== $('#memoText'))   // 입력 중이면 덮어쓰지 않음 (커서 보존)
+    $('#memoText').value = memoEntry(s).memo || '';
+  renderSvcChips();
+}
+function onMemoEdited(){
+  const s = selectedMemoShop(); if(!s || !curDate) return;
+  const e = memoEntry(s);
+  persistMemo(s, $('#memoText').value, e.products || [], e.qty);
+}
+function persistMemo(s, text, products, qty){
+  const isX = !!(s.extraKey || s.isExtra);
+  // 추가발송은 자기 키(날짜|샵|X) 고정. 일반 메모는 (±3일 내) 기존 항목 갱신, 없으면 시트 날짜로 신규
+  const k = isX ? (s.extraKey || (memoDateKey()+'|'+s.key+'|X'))
+                : (memoKeyFor(s.key, s.sheetDate) || memoKey(s.key, s.sheetDate));
+  const date = k.split('|')[0];
+  const q = isX ? (qty || (MEMOS[k]&&MEMOS[k].qty) || {}) : undefined;
+  if(String(text).trim() || products.length){
+    MEMOS[k] = {date, name:s.name, recv:s.recv, addr:s.addr, memo:String(text).trim(), products};
+    if(isX){ MEMOS[k].type='extra'; MEMOS[k].qty=q; }
+  }
+  else delete MEMOS[k];
+  const entrySnap = MEMOS[k] ? JSON.parse(JSON.stringify(MEMOS[k])) : null;   // 저장 시점까지 원격 갱신에 덮이지 않게 지금 값을 잡아 둔다
+  clearTimeout(memoSaveTimer);
+  memoSaveTimer = setTimeout(async ()=>{
+    const payload = JSON.stringify({key:k, date, name:s.name, recv:s.recv, addr:s.addr,
+                                    memo:text, products,
+                                    ...(isX ? {type:'extra', qty:q} : {})});
+    const post = CLOUD ? async ()=>{
+      if(!CDB) throw new Error('클라우드 연결 없음');
+      await CDB.collection('packing_memos').doc(await memoDocId(k)).set({
+        key:k, entry:entrySnap, deleted:!entrySnap, updatedAt:Date.now(),
+        serverAt: FB.firestore.FieldValue.serverTimestamp(), by:'대시보드'});
+    } : async ()=>{
+      const res = await fetch('/api/memo', {method:'POST',
+        headers:{'Content-Type':'application/json'}, body:payload});
+      if(!res.ok) throw new Error('HTTP '+res.status);
+    };
+    try{ await post(); memoSaveWarn(false); }
+    catch(e1){
+      await new Promise(r=>setTimeout(r,1500));            // 1회 재시도
+      try{ await post(); memoSaveWarn(false); }
+      catch(e2){ memoSaveWarn(true); console.warn('메모 저장 실패:', e2.message); }
+    }
+    buildShops();   // 명세서 메모 박스 + 차트 '서비스 제공' 마커 갱신
+  }, 500);
+}
+
+/* ══════════════ A4 시트 렌더 ══════════════ */
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+/* ── 최근 12개월 · 월별 제품군별 주문 현황 (스택 막대, 색상 = 제품 라인) ── */
+function histLineOrder(hist){
+  // 납품처 앱과 동일: 이 샵에 등장하는 SKU를 총액 큰 순으로 (스택 아래→위)
+  const tot = new Map();
+  hist.byMonth.forEach(lm=>lm.forEach((v,c)=>tot.set(c,(tot.get(c)||0)+v)));
+  return [...tot.keys()].sort((a,b)=>tot.get(b)-tot.get(a));
+}
+const lineHex = c => SKU_COLOR[c] || '#B0AAA2';
+
+function historySVG(hist, startKey, endKey, svcMonths){
+  const W=680, H=120, L=12, R=12, TOP=16, BOT=16, base=H-BOT;
+  // 12개월 슬롯 (시작월 ~ 종료월)
+  const months=[];
+  const m0=new Date(startKey+'T00:00:00'); m0.setDate(1);
+  const mEnd=new Date(endKey+'T00:00:00'); mEnd.setDate(1);
+  for(let d=new Date(m0); d<=mEnd; d.setMonth(d.getMonth()+1))
+    months.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);
+  const slotW=(W-L-R)/months.length, barW=Math.min(34, slotW*0.62);
+  const totals=months.map(m=>{ const lm=hist.byMonth.get(m); let t=0; if(lm) lm.forEach(v=>t+=v); return t; });
+  const maxT=Math.max(...totals, 1);
+  const order=histLineOrder(hist);
+  let svg=`<line x1="${L}" y1="${base}" x2="${W-R}" y2="${base}" stroke="#1C1B1A" stroke-width="1.2"/>`;
+  months.forEach((m,i)=>{
+    const cx=L+slotW*(i+0.5);
+    const [yy,mm]=m.split('-');
+    const lbl=(i===0||mm==='01')?`${yy.slice(2)}.${+mm}월`:`${+mm}월`;
+    svg+=`<text x="${cx.toFixed(1)}" y="${base+11}" font-size="8.5" text-anchor="middle" fill="#8B857D">${lbl}</text>`;
+    const lm=hist.byMonth.get(m); if(!lm||!totals[i]) return;
+    // 스택: 제품 라인 순서대로 아래→위
+    let y=base;
+    order.forEach(label=>{
+      const v=lm.get(label)||0; if(!v) return;
+      const h=Math.max(2,(v/maxT)*(base-TOP-12));
+      y-=h;
+      svg+=`<rect x="${(cx-barW/2).toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" fill="${lineHex(label)}"/>`;
+    });
+    svg+=`<text x="${cx.toFixed(1)}" y="${(y-3).toFixed(1)}" font-size="8.5" font-weight="700" text-anchor="middle" fill="#6B6560">${fmtWan(totals[i])}</text>`;
+  });
+  // 서비스 제공 마커 — 해당 월 슬롯 상단에 ◆
+  let svcUsed=false;
+  if(svcMonths && svcMonths.size){
+    months.forEach((m,i)=>{
+      if(!svcMonths.has(m)) return;
+      svcUsed=true;
+      const cx=L+slotW*(i+0.5);
+      svg+=`<path d="M ${cx.toFixed(1)} 3 l 4.2 4.2 l -4.2 4.2 l -4.2 -4.2 Z" fill="${SVC_MARK[0]}"/>`;
+    });
+  }
+  let chips=order.map(c=>`<span class="lchip"><i style="background:${lineHex(c)}"></i>${esc(SKU_NAME[c]||c)}</span>`).join('');
+  if(svcUsed) chips+=`<span class="lchip"><i style="background:${SVC_MARK[0]};border-radius:50%"></i>◆ ${SVC_MARK[1]}</span>`;
+  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;">${svg}</svg>`
+       + `<div class="lchips">${chips}</div>`;
+}
+
+function renderSheets(){
+  const list = shops.filter(s=>s.include);
+  if(!list.length){ $('#stage').innerHTML='<div id="empty">인쇄할 샵이 없습니다.</div>'; return; }
+  const endKey = curDate===UNSHIPPED ? dkey(new Date()) : curDate;  // 이력 차트 종료일 (미발송=오늘)
+  $('#stage').innerHTML = list.map((s,idx)=>{
+    const totQty = s.items.reduce((a,b)=>a+b.qty,0);
+    const totAmt = s.items.reduce((a,b)=>a+b.amt,0);
+    const itemsHtml = s.items.map(it=>{
+      const col = itemColor(it.sku);                // 제품 라인 색 (차트·범례와 동일 기준)
+      return `<tr>
+        <td><div class="pname" style="color:${col}">${esc(it.main)}</div>
+            ${it.sub?`<div class="psub" style="color:${col}">${esc(it.sub)}</div>`:''}</td>
+        <td class="c pqty">${it.qty}<small>개</small></td>
+        <td class="r pamt">${it.amt==null?'—':won(it.amt)}</td></tr>`;
+    }).join('');
+    const msg = [...s.msgs].filter(Boolean).join(' / ');
+    return `<div class="sheet" data-idx="${idx}">
+      <div class="sh-band">
+        <img class="logo-img" src="drbae_logo.png" alt="Dr.BAE — Nature-Inspired Derma Technology">
+        <div class="doc"><div class="t${s.isExtra?' extra':''}">${s.isExtra?'추가 발송':'발송 명세서'}</div><div class="d">${(()=>{ const sdk = s.sheetDate || curDate;
+          return sdk===UNSHIPPED ? '미발송 · 출력일 '+dfmt(dkey(new Date()))+' ('+WD[new Date().getDay()]+')'
+                                 : dateColLabel()+' '+dfmt(sdk)+' ('+WD[new Date(sdk).getDay()]+')'; })()}</div></div>
+      </div>
+      <div class="sh-shop">
+        <div class="label">SHIP TO</div>
+        <div class="name">${esc(s.name)} <span class="heart">❤️</span></div>
+        ${MJ_BADGE(s)}
+        <table class="meta">
+          <tr><td class="k">수취인</td><td>${esc(s.recv)}</td></tr>
+          <tr><td class="k">배송지</td><td>${esc(s.addr)}</td></tr>
+        </table>
+        ${msg?`<div class="msgBox"><span class="mk">배송 요청사항</span>${esc(msg)}</div>`:''}
+      </div>
+      <table class="items">
+        <thead><tr><th>품목</th><th class="c">수량</th><th class="r">주문금액</th></tr></thead>
+        <tbody>${itemsHtml}</tbody>
+      </table>
+      <div class="sumRow"><span>품목 ${s.items.length}종</span><span>총 수량 <b>${totQty}개</b></span>${s.isExtra?'':`<span>총 주문금액 <b>${won(totAmt)}</b></span>`}</div>
+      ${s.hist && s.hist.byDate.size ? (()=>{ const endK = s.histEnd || endKey; return `
+      <div class="hist">
+        <div class="hist-head">
+          <span class="ht">최근 12개월 · 월별 제품군별 주문 현황 <small>(${dfmt(s.histStart)} ~ ${dfmt(endK)})</small></span>
+          <span class="hs">주문 ${s.hist.orders.size}건 · 누적 ${won([...s.hist.byDate.values()].reduce((a,b)=>a+b,0))}</span>
+        </div>
+        ${historySVG(s.hist, s.histStart, endK, s.svcMonths)}
+      </div>`; })() : ''}
+      ${(()=>{
+        if(s.isExtra){   // 추가발송: 제품은 위 품목표에 있으므로 사유 메모만
+          const e = MEMOS[s.extraKey];
+          return (e && e.memo) ? `<div class="memoBox"><span class="mk">추가 발송 사유</span>${esc(e.memo)}</div>` : '';
+        }
+        const mk2 = memoKeyFor(s.key, s.sheetDate); const e = mk2 ? MEMOS[mk2] : null;
+        if(!e || (!(e.products&&e.products.length) && !e.memo)) return '';
+        const pchips = (e.products||[]).map(c=>
+          `<span class="svcp" style="--pc:${SKU_COLOR[c]||'#888'}">${esc(SKU_NAME[c]||c)}</span>`
+        ).join('');
+        return `<div class="memoBox"><span class="mk">서비스 제공</span>`
+          + (pchips?`<div class="svcline">${pchips}</div>`:'')
+          + (e.memo?esc(e.memo):'') + `</div>`;
+      })()}
+      ${MENTOR_BOX(s)}
+      <div class="sh-foot">
+        <div class="ord">${s.isExtra?'추가 발송 · 주문 외 발송건':'주문번호 '+[...s.orders].map(esc).join(' · ')}</div>
+        <div class="thanks">
+          <span><b>닥터배 (BAE Lab)</b> 제품을 이용해 주셔서 감사합니다. 내용물을 확인해 주세요.</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  autofitSheets();
+}
+
+/* ── A4 자동 맞춤: 시트가 한 장(296mm)을 넘으면 fit1→fit2→fit3 순으로 축소 적용 ── */
+function autofitSheets(){
+  const budget = Math.ceil(296 * 96 / 25.4) + 3;   // 296mm를 px로 (여유 3px)
+  document.querySelectorAll('#stage .sheet').forEach(sh=>{
+    sh.classList.remove('fit1','fit2','fit3');
+    const over = ()=> sh.scrollHeight > budget;
+    if(!over()) return;
+    for(const c of ['fit1','fit2','fit3']){
+      sh.classList.add(c);                          // 누적 적용 (fit2는 fit1 위에)
+      if(!over()) break;
+    }
+  });
+}
+
+/* ══════════════ 인쇄 ══════════════ */
+$('#printBtn').onclick = ()=>window.print();
+function printOne(shopIdx){
+  // include 목록 내 위치 찾기 (미포함 샵이면 임시 포함)
+  const s = shops[shopIdx];
+  const wasIncluded = s.include;
+  if(!wasIncluded){ s.include = true; renderSheets(); }
+  const list = shops.filter(x=>x.include);
+  const pos = list.indexOf(s);
+  document.body.classList.add('printOne');
+  document.querySelectorAll('.sheet').forEach((el,i)=>el.classList.toggle('target', i===pos));
+  const cleanup = ()=>{
+    document.body.classList.remove('printOne');
+    document.querySelectorAll('.sheet').forEach(el=>el.classList.remove('target'));
+    if(!wasIncluded){ s.include=false; renderShopList(); renderSheets(); }
+    window.removeEventListener('afterprint', cleanup);
+  };
+  window.addEventListener('afterprint', cleanup);
+  window.print();
+}
+
+/* ══════════════ CJ 접수 파일 (선택 발송일 리스트 → 미리보기 + 엑셀 다운로드) ══════════════ */
+const CJ_COLS = ['상품주문번호','주문번호','배송방법','택배사','송장번호','발송일',
+                 '수취인명','수취인연락처1','상품명','옵션정보','수량','통합배송지','배송메세지'];
+// 숫자로 쓰면 엑셀에서 지수표기·앞자리 0 소실이 생기는 컬럼 → 텍스트로 강제
+const CJ_TEXT_COLS = new Set(['상품주문번호','주문번호','송장번호','수취인연락처1']);
+let cjCurrent = [];   // 미리보기 중인 행 (다운로드용)
+
+function cjHeaderMap(){
+  // 요구 컬럼명 ↔ 실제 로드된 엑셀 헤더 매핑 (공백 무시, 정확 일치 우선)
+  const keys = RAW.length ? Object.keys(RAW[0]) : [];
+  const norm = s => String(s).replace(/\s/g,'');
+  const m = {};
+  CJ_COLS.forEach(c=>{
+    m[c] = keys.find(k=>norm(k)===norm(c)) || keys.find(k=>norm(k).includes(norm(c))) || null;
+  });
+  return m;
+}
+function cjFmt(col, v){
+  if(v==null) return '';
+  if(v instanceof Date){
+    const p=n=>String(n).padStart(2,'0');
+    return `${v.getFullYear()}-${p(v.getMonth()+1)}-${p(v.getDate())} ${p(v.getHours())}:${p(v.getMinutes())}:${p(v.getSeconds())}`;
+  }
+  if(col==='수량'){ const n=Number(v); return isNaN(n)?String(v):n; }
+  return String(v);
+}
+function cjRows(){
+  // 현재 선택 발송일의 전체 샵 행 — 명세서와 같은 샵 순서(가나다)
+  const isUn = curDate === UNSHIPPED;
+  const rows = RAW.filter(r=>{
+    const d = groupDate(r);
+    return isUn ? !d : (d && dkey(d)===curDate);
+  });
+  const inc = new Map(shops.map(s=>[s.key, s.include]));
+  const order = new Map(shops.map((s,i)=>[s.key, i]));
+  const base = rows.filter(r=>inc.get(addrKey(r))!==false)
+             .sort((a,b)=>(order.get(addrKey(a))??999)-(order.get(addrKey(b))??999));
+  // ➕ 추가발송 → CJ 접수용 합성 행 (1건 = 택배 1개)
+  const H = cjHeaderMap();
+  const put = (row,col,val)=>{ if(H[col]) row[H[col]] = val; };
+  shops.filter(s=>s.isExtra).forEach(s=>{
+    const e = MEMOS[s.extraKey]||{};
+    const row = {};
+    put(row,'수취인명', s.recv); put(row,'통합배송지', s.addr);
+    put(row,'배송방법','택배,등기,소포');
+    put(row,'상품명','[추가발송] '+(e.products||[]).map(c=>(SKU_NAME[c]||c)+(((e.qty||{})[c]||1)>1?' x'+(e.qty||{})[c]:'')).join(', '));
+    put(row,'수량', (e.products||[]).reduce((a,c)=>a+((e.qty||{})[c]||1),0));
+    put(row,'발송일', curDate);
+    put(row,'옵션정보', e.memo||'');
+    base.push(row);
+  });
+  return base;
+}
+function openCj(){
+  if(!curDate || !RAW.length) return;
+  const H = cjHeaderMap();
+  cjCurrent = cjRows();
+  const label = curDate===UNSHIPPED ? '미발송' : dfmt(curDate);
+  $('#cjSub').textContent =
+    `${label} · 샵 ${shops.length}곳 · ${cjCurrent.length}행 (해당 발송일 전체)`;
+  $('#cjBody').innerHTML = '<table><thead><tr>'
+    + CJ_COLS.map(c=>`<th>${c}</th>`).join('')
+    + '</tr></thead><tbody>'
+    + cjCurrent.map(r=>'<tr>'
+        + CJ_COLS.map(c=>`<td>${esc(cjFmt(c, H[c] ? r[H[c]] : ''))}</td>`).join('')
+        + '</tr>').join('')
+    + '</tbody></table>';
+  $('#cjOverlay').classList.add('open');
+}
+function downloadCj(){
+  const H = cjHeaderMap();
+  const aoa = [CJ_COLS.slice()];
+  cjCurrent.forEach(r=>aoa.push(CJ_COLS.map(c=>{
+    const v = cjFmt(c, H[c] ? r[H[c]] : '');
+    return CJ_TEXT_COLS.has(c) ? String(v) : v;
+  })));
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols'] = [18,18,12,10,14,19,9,14,26,34,6,46,18].map(w=>({wch:w}));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '발주발송관리');
+  const fname = 'CJ접수_' + (curDate===UNSHIPPED ? '미발송_' + dkey(new Date()) : curDate) + '.xlsx';
+  XLSX.writeFile(wb, fname);
+}
+
+/* ══════════════ 전체 발송내역 CSV (네이버 주문 + 서비스 메모 결합) ══════════════ */
+function csvEsc(v){ return '"' + String(v==null?'':v).replace(/"/g,'""') + '"'; }
+// 엔티티(동일샵 병합)별 대표 상호명: 가장 최근 발송일에 쓴 원 표기 (개명·표기 변경 반영)
+function entityRepNames(){
+  const latest = new Map();   // ent → {t, name}
+  RAW.forEach(r=>{
+    const n = parseShopName(r[COLS.opt]); if(!n) return;
+    if(isPlaceholderName(normName(n))) return;
+    const ent = ENT.find('A:'+addrKey(r));
+    const d = toDate(r[curDateCol]);
+    const t = d ? d.getTime() : 0;
+    const cur = latest.get(ent);
+    if(!cur || t >= cur.t) latest.set(ent, {t, name:n});
+  });
+  const rep = new Map();
+  latest.forEach((v,ent)=>rep.set(ent, v.name));
+  return rep;
+}
+function downloadAllCsv(){
+  const H = cjHeaderMap();
+  const g = (r,c)=>cjFmt(c, H[c] ? r[H[c]] : '');
+  const rep = entityRepNames();   // 동일샵 병합 알고리즘 적용 → 표기가 달라도 같은 대표샵명
+  const cols = ['구분','발송일','샵명','대표샵명','수취인명','수취인연락처1','상품명','옵션정보','수량',
+                '통합배송지','배송메세지','주문번호','상품주문번호','메모'];
+  const rows = [];
+  RAW.forEach(r=>{
+    const raw = parseShopName(r[COLS.opt])||String(r[COLS.recv]||'');
+    const merged = rep.get(ENT.find('A:'+addrKey(r))) || raw;
+    rows.push(['주문', g(r,'발송일'), raw, merged,
+      g(r,'수취인명'), g(r,'수취인연락처1'), g(r,'상품명'), g(r,'옵션정보'), g(r,'수량'),
+      g(r,'통합배송지'), g(r,'배송메세지'), g(r,'주문번호'), g(r,'상품주문번호'), '']);
+  });
+  Object.values(MEMOS).forEach(m=>{
+    const ent = ENT.find('A:'+(normAddr(m.addr)||'recv:'+String(m.recv||'?')));
+    const merged = rep.get(ent) || m.name || '';
+    const gubun = m.type==='extra' ? '추가발송' : '서비스';
+    const prods = (m.products&&m.products.length) ? m.products : [null];
+    prods.forEach(p=>{                       // 제품 1개 = 1행 (상품명·수량 정확히 기록)
+      const q = p ? String((m.qty||{})[p]||1) : '';
+      rows.push([gubun, m.date||'', m.name||'', merged, m.recv||'', '',
+        p?(SKU_NAME[p]||p):'', '', q, m.addr||'', '', '', '', m.memo||'']);
+    });
+  });
+  rows.sort((a,b)=>String(b[1]).localeCompare(String(a[1])));   // 발송일 최신순
+  const csv = String.fromCharCode(0xFEFF) + [cols, ...rows].map(row=>row.map(csvEsc).join(',')).join('\r\n');   // BOM: 엑셀 한글 호환
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = '발송내역_전체_' + dkey(new Date()) + '.csv';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+/* ══════════════ 자동 갱신 감시 ══════════════
+   프로그램을 켜 둔 채로 두면 그 시점 데이터에 멈춰, 새로 들어온 주문이 화면에 없어
+   "샵 수가 다르다"는 혼란이 생긴다. 1분마다 엑셀 파일의 갱신 여부만 가볍게 확인해
+   (수집기는 12:10 자동 실행·🔄·Run workflow로 파일을 새로 쓴다) 바뀌었으면 자동 재로딩. */
+let lastStamp = null, autoWatchTimer = null;
+async function fileStamp(){
+  if(CLOUD){
+    if(!CDB) return null;
+    try{
+      const [m, st] = await Promise.all([cref('packing/xlsx').get(), cref('packing/status').get()]);
+      pcStatusWarn(st.exists ? st.data() : null);
+      return m.exists ? m.data().v : null;
+    }catch(e){ return null; }
+  }
+  try{
+    const res = await fetch(AUTO_XLSX_URL + '?h=' + Date.now(), {method:'HEAD', cache:'no-store'});
+    return res.ok ? (res.headers.get('Last-Modified') || res.headers.get('Content-Length')) : null;
+  }catch(e){ return null; }
+}
+async function checkForUpdate(){
+  // 메모 입력 중이거나 검색·인쇄 중이면 방해하지 않는다
+  if(document.activeElement === $('#memoText') || document.activeElement === $('#searchBox')) return;
+  if($('#searchInfo').style.display === 'block' || $('#cjOverlay').classList.contains('open')) return;
+  if(!CLOUD){   // 노트북(대시보드)에서 쓴 메모가 포장 PC 화면에도 1분 안에 보이도록 (클라우드 모드는 실시간 구독)
+    const before = JSON.stringify(MEMOS);
+    await loadMemosFromServer();
+    if(curDate && JSON.stringify(MEMOS) !== before) buildShops();
+  }
+  const s = await fileStamp();
+  if(!s || !lastStamp){ lastStamp = s || lastStamp; return; }
+  if(s === lastStamp) return;
+  lastStamp = s;
+  const prevDate = curDate;
+  if(await autoLoad(true)){
+    if(prevDate){
+      const btn = document.querySelector(`.dateBtn[data-k="${prevDate}"]`);
+      if(btn) btn.click();
+    }
+    const info = $('#fileInfo');
+    info.style.color = '#2F7D32';
+    info.textContent += '  ↻ 새 주문 반영됨';
+  }
+}
+function startAutoWatch(){
+  clearInterval(autoWatchTimer);
+  fileStamp().then(s=>lastStamp = s);
+  autoWatchTimer = setInterval(checkForUpdate, 60000);   // 1분 간격
+}
+
+/* ══════════════ 🔄 최신화: 수집기 실행 → 파일 재로딩 (선택 날짜 유지) ══════════════ */
+async function reloadLatest(){
+  const rb = $('#reloadBtn'), info = $('#fileInfo');
+  const orig = rb.textContent;
+  rb.disabled = true;
+  rb.textContent = CLOUD ? '⏳ 포장 PC에서 새 주문 수집 중... (1분 내외)' : '⏳ 네이버에서 새 주문 수집 중... (10초 내외)';
+  const prevDate = curDate, prevCol = curDateCol;
+  let collected = false, failLog = '';
+  try{
+    if(CLOUD) ({ok: collected, log: failLog} = await cloudRefresh());
+    else{
+      const res = await fetch('/api/refresh', {method:'POST'});
+      collected = res.ok;
+      if(!res.ok){ try{ failLog = ((await res.json())||{}).log || ''; }catch(e){} }
+    }
+  }catch(e){ failLog = e.message; }   // 구버전 서버(엔드포인트 없음)·서버 미실행 등
+  await autoLoad(false);
+  lastStamp = await fileStamp();      // 방금 받은 파일을 기준으로 → 자동 감시가 중복 알림 내지 않게
+  // 보고 있던 날짜 복원 (재로딩 후에도 그대로 이어서 작업)
+  if(prevDate){
+    if(prevCol && DATE_COLS.includes(prevCol) && curDateCol !== prevCol){
+      curDateCol = prevCol; renderDateColSelect(); renderDates();
+    }
+    const btn = document.querySelector(`.dateBtn[data-k="${prevDate}"]`);
+    if(btn) btn.click();
+  }
+  if(!collected){
+    info.style.color = '#B07E1A';
+    info.textContent += CLOUD
+      ? ' ⚠ 포장 PC가 새 주문을 수집하지 못했습니다 — 마지막으로 올라온 엑셀 기준입니다. (' + String(failLog||'').slice(-80) + ')'
+      : ' ⚠ 수집 실행 실패 — 저장된 파일 기준입니다. 프로그램을 닫고 바탕화면 아이콘으로 다시 실행해 보세요.';
+    console.warn('refresh 실패:', failLog);
+  }
+  rb.disabled = false;
+  rb.textContent = orig;
+}
+
+/* ══════════════ 초기화: 최신 엑셀 자동 로딩 + 새로고침 버튼 ══════════════ */
+(function(){
+  const rb = document.querySelector('#reloadBtn');
+  if(rb) rb.addEventListener('click', reloadLatest);
+  $('#cjBtn').onclick = openCj;
+  $('#cjDl').onclick = downloadCj;
+  $('#allCsvBtn').onclick = downloadAllCsv;
+  $('#memoShop').addEventListener('change', ()=>{
+    memoSelKey = (shops[+$('#memoShop').value]||{}).key || null;
+    loadMemoIntoBox();
+  });
+  $('#memoText').addEventListener('input', onMemoEdited);
+  $('#cjClose').onclick = ()=>$('#cjOverlay').classList.remove('open');
+  let searchTimer = null;
+  $('#searchBox').addEventListener('input', ()=>{
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(()=>runSearch($('#searchBox').value), 350);
+  });
+  $('#searchBox').addEventListener('keydown', e=>{
+    if(e.key==='Enter'){ clearTimeout(searchTimer); runSearch($('#searchBox').value); }
+  });
+  $('#searchClear').onclick = ()=>clearSearch();
+  $('#extraBtn').onclick = createExtraShipment;
+  $('#cjOverlay').addEventListener('click', e=>{ if(e.target.id==='cjOverlay') e.target.classList.remove('open'); });
+  autoLoad(false);  // 페이지 열릴 때 자동 로딩 — 실패하면 경고를 표시 (반드시 start-packing.bat으로 열 것)
+  startAutoWatch(); // 이후 새 주문이 수집되면 1분 내 자동 반영
+})();
+</script>
+</body>
+</html>
