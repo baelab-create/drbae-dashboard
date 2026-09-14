@@ -605,6 +605,7 @@ function buildEntities(){
   //   (2026-07 하이글림 ₩77M 오표기). → 각 주소의 '대표(최빈) 상호명'만 사용해
   //   소수의 대리주문 행이 다리를 놓지 못하게 한다.
   const cntByAddr = new Map();               // addrKey → Map(상호명→빈도)
+  const ordByAddr = new Map();               // addrKey → Map(상호명→주문번호 Set) — 신호②-b
   RAW.forEach(r=>{
     const a = addrKey(r);
     if(!parent.has('A:'+a)) add('A:'+a);
@@ -612,6 +613,9 @@ function buildEntities(){
     if(!isPlaceholderName(n)){
       if(!cntByAddr.has(a)) cntByAddr.set(a, new Map());
       const m = cntByAddr.get(a); m.set(n, (m.get(n)||0)+1);
+      if(!ordByAddr.has(a)) ordByAddr.set(a, new Map());
+      const om = ordByAddr.get(a); if(!om.has(n)) om.set(n, new Set());
+      om.get(n).add(String(r[COLS.order]||''));
     }
     const p = normPhone(r[COLS.phone]);      // 같은 전화번호 = 같은 샵 (주소 이전에도 유지됨)
     if(p) union('A:'+a, 'P:'+p);
@@ -643,6 +647,18 @@ function buildEntities(){
       const l = names[i].length <= names[j].length ? names[j] : names[i];
       if(s.length>=4 && l.startsWith(s)) union('N:'+names[i], 'N:'+names[j]);
     }
+  // 신호②-b 보조 상호명 — 샵명이 확실하면 주소·수취인이 달라도 한 샵 (shared/shop_merge.py secondary_names 와 같은 규칙).
+  // 대표가 아닌 이름도 ⓐ 그 주소에서 주문 2건 이상 ⓑ 그 이름을 보조로 쓰는 샵이 이 샵 하나뿐이면 연결.
+  // ⓑ가 없으면 허브의 대리 구매(더마커런트 세트 등)로 무관한 샵이 합쳐진다. 접두 확장은 하지 않는다.
+  const domOf = new Map();
+  cntByAddr.forEach((m,a)=>{ let best=null, bc=0; m.forEach((c,n)=>{ if(c>bc){ bc=c; best=n; } }); domOf.set(a, best); });
+  const minority = new Map();
+  cntByAddr.forEach((m,a)=>m.forEach((c,n)=>{
+    if(n!==domOf.get(a)){ if(!minority.has(n)) minority.set(n, new Set()); minority.get(n).add(find('A:'+a)); }
+  }));
+  cntByAddr.forEach((m,a)=>m.forEach((c,n)=>{
+    if(n!==domOf.get(a) && ordByAddr.get(a).get(n).size>=2 && minority.get(n).size===1) union('A:'+a, 'N:'+n);
+  }));
   ENT = { find: k => parent.has(k) ? find(k) : k };
 
   // 엔티티(동일샵)별 상호·수취인 표기 모음 — 수료 명부 대조에 사용.
