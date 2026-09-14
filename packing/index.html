@@ -247,9 +247,10 @@
   }
   .mentorBox + .sh-foot{margin-top:0;}   /* 빈 공간은 안내 박스 위로 몰아 박스를 맨 아래에 붙인다 */
   .mentorBox b{font-weight:900; color:#16508F;}
+  .mentorBox b.partner{color:#111;}             /* 파트너 이름·'멘토링'은 검정 굵게 */
   /* '멘토링' 강조 — 빨간 색연필로 그은 듯한 밑줄 + 별표 (손그림 SVG, 인쇄에도 색 유지) */
   .penMark{
-    position:relative; display:inline-block; font-weight:900; color:#16508F;
+    position:relative; display:inline-block; font-weight:900; color:#111;
     padding:0 4.6mm 1.4mm 0.5mm; margin:0 0.5mm;
     background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 12' preserveAspectRatio='none'%3E%3Cpath d='M2 6.8 C22 4.2 48 5.2 72 4.6 S92 5.8 98 4.8' fill='none' stroke='%23D62828' stroke-width='3.4' stroke-linecap='round' opacity='.88'/%3E%3Cpath d='M5 10.4 C30 8.2 58 9 94 7.4' fill='none' stroke='%23D62828' stroke-width='2.2' stroke-linecap='round' opacity='.65'/%3E%3C/svg%3E") left bottom / calc(100% - 3.4mm) 3mm no-repeat;
     -webkit-print-color-adjust:exact; print-color-adjust:exact;
@@ -1124,8 +1125,8 @@ function josaEunNeun(w){
 function MENTOR_BOX(s){
   const p = mentorOf(s);
   if(!p) return '';
-  return `<div class="mentorBox"><b>${esc(s.name)}</b>${josaEunNeun(s.name)} 현재 <b>${esc(p)}</b> <span class="penMark">멘토링</span> 담당 샵입니다.<br>`
-       + `제품 사용 등 문의 사항이 있으면 언제든지 편하게 <b>${esc(p)}</b>에 문의 바랍니다.</div>`;
+  return `<div class="mentorBox"><b>${esc(s.name)}</b>${josaEunNeun(s.name)} 현재 <b class="partner">${esc(p)}</b> <span class="penMark">멘토링</span> 담당 샵입니다.<br>`
+       + `제품 사용 등 문의 사항이 있으면 언제든지 편하게 <b class="partner">${esc(p)}</b>에 문의 바랍니다.</div>`;
 }
 /* 수료 명부에 영문·로마자로 등재된 샵 ↔ 주문서의 한글 상호 연결표.
    명부는 회차에 따라 "Whitewitch / Baek So Ra"처럼 영문으로 적힌 항목이 있어
