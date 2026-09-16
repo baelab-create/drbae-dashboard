@@ -660,7 +660,20 @@ function buildEntities(){
   cntByAddr.forEach((m,a)=>m.forEach((c,n)=>{
     if(n!==domOf.get(a) && ordByAddr.get(a).get(n).size>=2 && minority.get(n).size===1) union('A:'+a, 'N:'+n);
   }));
+  // 신호⑥ 거래처 마스터 — 컨트롤 타워·대시보드에서 사람이 합쳐 둔 결정(지점 주소·별칭)을 그대로 반영한다.
+  // (shared/shop_merge.py apply_master 와 같은 규칙: 같은 거래처ID의 주소끼리만 잇고 이름으로는 잇지 않는다)
+  // 예: 모클락 강남 ↔ 모클락 명동 — 상호가 3자라 접두 규칙에 안 걸리지만 마스터에 한 거래처로 등록돼 있다.
+  Object.entries(MASTER).forEach(([sid, m])=>{
+    (m.addrKeys||[]).forEach(a=>{ if(a) union('A:'+a, 'M:'+sid); });
+  });
+  RAW.forEach(r=>{                                   // 엑셀의 거래처ID 컬럼(수집기가 채움)으로도 연결
+    const sid = String(r[COLS.sid]||'').trim();
+    if(sid && MASTER[sid]) union('A:'+addrKey(r), 'M:'+sid);
+  });
   ENT = { find: k => parent.has(k) ? find(k) : k };
+  // 엔티티 → 거래처ID — 아직 거래처ID 컬럼이 없는 새 주문(수집기가 ID를 채우기 전)도 마스터 이름·수료 정보를 쓸 수 있게
+  ENT_SID = new Map();
+  Object.keys(MASTER).forEach(sid=>{ const e = ENT.find('M:'+sid); if(!ENT_SID.has(e)) ENT_SID.set(e, sid); });
 
   // 엔티티(동일샵)별 상호·수취인 표기 모음 — 수료 명부 대조에 사용.
   // 한 샵이 주소마다 다른 표기를 써도(한글/영문/지점명) 전부 모아 두면 매칭률이 올라간다.
@@ -674,6 +687,7 @@ function buildEntities(){
   });
 }
 let ENT_INFO = new Map();
+let ENT_SID = new Map();      // 엔티티 → 거래처ID (거래처 마스터 연결)
 
 /* RAW가 채워진 뒤 공통 초기화 (업로드/내장 데이터 공용) */
 function ingest(header, label){
@@ -713,7 +727,7 @@ function ingest(header, label){
     clearSearch(true);                        // 데이터 재로딩 시 검색 모드 초기화
     loadMemosFromServer();                    // 저장된 서비스·메모 불러오기
     if(!CERTS.length) loadCertsFromServer().then(()=>{ if(curDate) buildShops(); });
-    loadMasterFromServer().then(()=>{ if(curDate) buildShops(); });
+    loadMasterFromServer().then(()=>{ buildEntities(); if(curDate) buildShops(); });   // 마스터가 늦게 도착해도 병합(신호⑥)에 반영
 }
 
 /* ══════════════ 날짜 처리 ══════════════ */
@@ -942,6 +956,9 @@ function accumShopRow(map, mapKey, r){
   if(!s.sid && COLS.sid && r[COLS.sid]) s.sid = String(r[COLS.sid]).trim();
   const pn = parseShopName(r[COLS.opt]);
   if(!s.name && pn) s.name = pn;
+  if(!s.sid){ const es = ENT_SID.get(ENT.find('A:'+s.key)); if(es) s.sid = es; }   // 새 주문(거래처ID 미부여)도 같은 샵이면 연결
+  const mm = s.sid && MASTER[s.sid];
+  if(mm && mm.name) s.name = mm.name;      // 표시 이름은 거래처 마스터가 정한 이름 (오타·표기 흔들림 통일)
   if(r[COLS.msg]) s.msgs.add(String(r[COLS.msg]).trim());
   s.orders.add(String(r[COLS.order]));
   // 이 샵의 최신 주문 시각 (출력 페이지 정렬용 — ISO형 문자열이라 문자열 비교로 충분)
@@ -999,8 +1016,11 @@ function runSearch(qRaw){
 
   curDate = null;
   document.querySelectorAll('.dateBtn').forEach(x=>x.classList.remove('on'));
-  const today = dkey(new Date());
-  const {histMap, svcByEnt, startKey} = buildHistAndSvc(today);   // 이력 차트는 오늘 기준 12개월
+  // 이력 차트 기준일 = 오늘과 검색된 명세서 중 가장 늦은 날짜 (18시 이후 주문은 다음날 발송으로 분류되므로
+  // 오늘로 고정하면 그 주문이 자기 이력 창 밖으로 밀려 12개월 현황에서 빠진다 — 2026-09-16 모클락 명동 건)
+  const today0 = dkey(new Date());
+  const today = rows.reduce((mx, r)=>{ const d = groupDate(r); const k = d ? dkey(d) : today0; return k > mx ? k : mx; }, today0);
+  const {histMap, svcByEnt, startKey} = buildHistAndSvc(today);   // 기준일로부터 12개월
   const map = new Map();
   rows.forEach(r=>{
     const d = groupDate(r);
