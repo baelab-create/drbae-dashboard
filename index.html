@@ -886,6 +886,14 @@ header{background:var(--neu-bg);border-bottom:0;box-shadow:0 10px 20px -14px var
 .st-chart svg line{opacity:.55}
 .spark{opacity:.75}
 .ttip{border-radius:12px}
+/* 탭이 9개로 늘어 좁은 창에서 글자가 줄바꿈되던 것 방지 — 한 줄 유지, 넘치면 가로 스크롤 */
+.tab{white-space:nowrap}
+.tabs{overflow-x:auto;scrollbar-width:none;max-width:60vw}
+.tabs::-webkit-scrollbar{display:none}
+/* 숫자 카드: 금액이 두 줄로 꺾이지 않게 */
+.st-card b{white-space:nowrap;letter-spacing:-.02em}
+.st-card.tot b{font-size:22px}
+@media(max-width:1100px){.st-card b{font-size:21px}.st-card.tot b{font-size:19px}.st-card.kpi b{font-size:24px}}
 </style>
 </head>
 <body>
