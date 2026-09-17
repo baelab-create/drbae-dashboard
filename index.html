@@ -847,53 +847,66 @@ body.pg-mb{--accent:#1B2333;--accent-deep:#0F1420;--accent-soft:#E7E9EF}
   .daterange{padding-top:4px}
 }
 
-/* ===== 뉴모피즘 스킨 (2026-09-17, 교수님 요청) — 바탕·상단바·탭·현황 페이지 ===== */
-:root{--neu-bg:#E6EAF2;--neu-hi:#FFFFFF;--neu-lo:#C2C9D6;--neu-lo2:#AEB6C6;
-  --neu-out:10px 10px 22px var(--neu-lo),-10px -10px 22px var(--neu-hi);
-  --neu-out-sm:5px 5px 11px var(--neu-lo),-5px -5px 11px var(--neu-hi);
-  --neu-in:inset 6px 6px 12px var(--neu-lo),inset -6px -6px 12px var(--neu-hi);
-  --neu-in-sm:inset 3px 3px 7px var(--neu-lo),inset -3px -3px 7px var(--neu-hi)}
+/* ===== 뉴모피즘 스킨 v2 (2026-09-18, 교수님 레퍼런스 반영: 밝은 바탕·깊은 소프트 섀도·블루 그라데이션·아이브로우 제목) ===== */
+:root{--neu-bg:#EEF1F6;--neu-hi:#FFFFFF;--neu-lo:#C8CFDB;--neu-lo2:#B4BCCB;--neu-navy:#1C2557;--neu-blue:#2F80ED;--neu-blue2:#5EA8FF;
+  --neu-out:12px 12px 26px var(--neu-lo),-12px -12px 26px var(--neu-hi);
+  --neu-out-sm:6px 6px 14px var(--neu-lo),-6px -6px 14px var(--neu-hi);
+  --neu-in:inset 7px 7px 14px var(--neu-lo),inset -7px -7px 14px var(--neu-hi);
+  --neu-in-sm:inset 3px 3px 7px var(--neu-lo),inset -3px -3px 7px var(--neu-hi);
+  --neu-grad:linear-gradient(135deg,#2F80ED 0%,#5EA8FF 100%)}
 body{background:var(--neu-bg)}
-header{background:var(--neu-bg);border-bottom:0;box-shadow:0 10px 20px -14px var(--neu-lo2)}
+header{background:var(--neu-bg);border-bottom:0;box-shadow:0 12px 24px -16px var(--neu-lo2)}
+.brand h1{color:var(--neu-navy)}
 .brand .leaf{box-shadow:var(--neu-out-sm)}
-.tabs{background:var(--neu-bg);box-shadow:var(--neu-in);border-radius:16px;padding:6px;gap:2px}
-.tab{color:#5F6A7A;border-radius:12px;transition:box-shadow .15s,color .15s}
-.tab:hover{color:var(--ink)}
-.tab.on{background:var(--neu-bg);color:var(--accent-deep);box-shadow:var(--neu-out-sm)}
-.upbtn{border:0;box-shadow:var(--neu-out-sm);border-radius:12px}
-.upbtn.sec{background:var(--neu-bg);border:0;color:var(--ink)}
-.upbtn.sec:hover{background:var(--neu-bg);color:var(--accent-deep)}
+.tabs{background:var(--neu-bg);box-shadow:var(--neu-in);border-radius:18px;padding:6px;gap:2px;overflow-x:auto;scrollbar-width:none;max-width:60vw}
+.tabs::-webkit-scrollbar{display:none}
+.tab{white-space:nowrap;color:#6B7590;border-radius:13px;transition:box-shadow .15s,color .15s}
+.tab:hover{color:var(--neu-navy)}
+.tab.on{background:var(--neu-bg);color:var(--neu-blue);box-shadow:var(--neu-out-sm)}
+.upbtn{border:0;border-radius:13px;background:var(--neu-grad);box-shadow:var(--neu-out-sm)}
+.upbtn:hover{background:var(--neu-grad);filter:brightness(1.05)}
+.upbtn.sec{background:var(--neu-bg);border:0;color:var(--neu-navy)}
+.upbtn.sec:hover{background:var(--neu-bg);color:var(--neu-blue);filter:none}
 .upbtn:active{box-shadow:var(--neu-in-sm)}
 .hdr-file{color:#7A8494}
 /* 현황 페이지 */
 .stpage{background:var(--neu-bg)}
-.st-range{color:#5F6A7A}
-.st-card,.st-panel{background:var(--neu-bg);border:0;border-radius:22px;box-shadow:var(--neu-out)}
-.st-card{padding:18px 20px}
-.st-card .k{color:#6B7480}
-.st-card b{color:#2A3245}
+.st-inner{padding:30px 22px 60px}
+.st-range{color:#6B7590}
+.st-range b{color:var(--neu-navy)}
+.st-grid{gap:18px;margin-bottom:22px}
+.st-card,.st-panel{background:var(--neu-bg);border:0;border-radius:24px;box-shadow:var(--neu-out)}
+.st-card{padding:20px 22px;gap:10px}
+.st-card .k{color:#6B7590;font-size:11.5px;letter-spacing:.04em}
+.st-card b{color:var(--neu-navy);white-space:nowrap;letter-spacing:-.02em}
+.st-card.kpi b{font-size:30px}
+/* 합계 카드: 첫 번째는 블루 그라데이션 강조, 나머지는 눌린 홈 + 파란 숫자 */
 .st-card.tot{background:var(--neu-bg);box-shadow:var(--neu-in);border:0}
-.st-card.tot .k{color:#6B7480}
-.st-card.tot b{color:var(--accent-deep)}
-.st-panel{padding:20px 22px}
-.st-panel h3{color:#2A3245}
+.st-card.tot .k{color:#6B7590}
+.st-card.tot b{font-size:23px;color:var(--neu-blue)}
+.st-grid:not(.kpi2) .st-card.tot:first-of-type,.st-grid:not(.kpi2) .st-card.tot.first{background:var(--neu-grad);box-shadow:8px 8px 20px rgba(47,128,237,.35),-8px -8px 20px var(--neu-hi)}
+.st-grid:not(.kpi2) .st-card.tot:first-of-type .k{color:rgba(255,255,255,.85)}
+.st-grid:not(.kpi2) .st-card.tot:first-of-type b{color:#fff}
+.st-panel{padding:24px 26px;margin-bottom:22px}
+.st-ph{margin-bottom:12px}
+.st-panel h3{display:flex;flex-direction:column-reverse;gap:3px;color:var(--neu-navy);font-size:17px;font-weight:900;letter-spacing:-.02em}
+.st-panel h3 small{margin:0;color:var(--neu-blue);font-size:11px;font-weight:700;letter-spacing:.08em}
 .seg{background:var(--neu-bg);border:0;box-shadow:var(--neu-in-sm);border-radius:14px;padding:4px}
-.seg button{border-radius:11px;color:#5F6A7A;background:transparent}
-.seg button.on{background:var(--neu-bg);color:var(--accent-deep);box-shadow:var(--neu-out-sm)}
-.hbar .ht{height:16px;background:var(--neu-bg);box-shadow:var(--neu-in-sm);border-radius:9px;overflow:hidden}
-.hbar .ht i{border-radius:9px;background:linear-gradient(90deg,var(--accent),#7B89EE)}
-.hbar .hl{color:#2A3245}
-.st-chart svg line{opacity:.55}
-.spark{opacity:.75}
+.seg button{border-radius:11px;color:#6B7590;background:transparent}
+.seg button.on{background:var(--neu-grad);color:#fff;box-shadow:4px 4px 10px rgba(47,128,237,.35)}
+.hbars{gap:10px}
+.hbar .hl{color:var(--neu-navy)}
+.hbar .ht{height:18px;background:var(--neu-bg);box-shadow:var(--neu-in-sm);border-radius:10px;overflow:hidden}
+.hbar .ht i{border-radius:10px;background:var(--neu-grad);box-shadow:2px 2px 6px rgba(47,128,237,.35)}
+.hbar .hv{color:#6B7590}
+.st-chart svg line{opacity:.45}
+.st-chart svg .stb{fill:#3D8BFF;filter:drop-shadow(3px 4px 5px rgba(90,110,150,.35))}
+.st-chart svg .stc{fill:#2BB3A9;filter:drop-shadow(2px 3px 4px rgba(90,110,150,.3))}
+.st-chart svg text{fill:#6B7590}
+.spark{opacity:.8}
 .ttip{border-radius:12px}
-/* 탭이 9개로 늘어 좁은 창에서 글자가 줄바꿈되던 것 방지 — 한 줄 유지, 넘치면 가로 스크롤 */
-.tab{white-space:nowrap}
-.tabs{overflow-x:auto;scrollbar-width:none;max-width:60vw}
-.tabs::-webkit-scrollbar{display:none}
-/* 숫자 카드: 금액이 두 줄로 꺾이지 않게 */
-.st-card b{white-space:nowrap;letter-spacing:-.02em}
-.st-card.tot b{font-size:22px}
-@media(max-width:1100px){.st-card b{font-size:21px}.st-card.tot b{font-size:19px}.st-card.kpi b{font-size:24px}}
+.st-cols{gap:22px}
+@media(max-width:1100px){.st-card b{font-size:22px}.st-card.tot b{font-size:19px}.st-card.kpi b{font-size:26px}}
 </style>
 </head>
 <body>
