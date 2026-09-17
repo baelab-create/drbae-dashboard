@@ -847,14 +847,17 @@ body.pg-mb{--accent:#1B2333;--accent-deep:#0F1420;--accent-soft:#E7E9EF}
   .daterange{padding-top:4px}
 }
 
-/* ===== 뉴모피즘 스킨 v2 (2026-09-18, 교수님 레퍼런스 반영: 밝은 바탕·깊은 소프트 섀도·블루 그라데이션·아이브로우 제목) ===== */
-:root{--neu-bg:#EEF1F6;--neu-hi:#FFFFFF;--neu-lo:#C8CFDB;--neu-lo2:#B4BCCB;--neu-navy:#1C2557;--neu-blue:#2F80ED;--neu-blue2:#5EA8FF;
+/* ===== 뉴모피즘 스킨 v2 (2026-09-18, 교수님 레퍼런스 반영: 그레이&화이트 그라데이션 바탕·깊은 소프트 섀도·블루 포인트·아이브로우 제목) ===== */
+:root{--neu-bg:#EDEFF2;--neu-hi:#FFFFFF;--neu-lo:#CBCFD5;--neu-lo2:#B9BEC6;--neu-navy:#2A2E36;--neu-blue:#2F80ED;--neu-blue2:#5EA8FF;
+  --neu-page:linear-gradient(160deg,#F8F9FB 0%,#ECEEF1 55%,#E4E6EA 100%);
+  --neu-card:linear-gradient(145deg,#F6F7F9 0%,#E8EAEE 100%);
+  --neu-card-in:linear-gradient(145deg,#E6E8EC 0%,#F3F4F6 100%);
   --neu-out:12px 12px 26px var(--neu-lo),-12px -12px 26px var(--neu-hi);
   --neu-out-sm:6px 6px 14px var(--neu-lo),-6px -6px 14px var(--neu-hi);
   --neu-in:inset 7px 7px 14px var(--neu-lo),inset -7px -7px 14px var(--neu-hi);
   --neu-in-sm:inset 3px 3px 7px var(--neu-lo),inset -3px -3px 7px var(--neu-hi);
   --neu-grad:linear-gradient(135deg,#2F80ED 0%,#5EA8FF 100%)}
-body{background:var(--neu-bg)}
+body{background:var(--neu-page);background-attachment:fixed}
 header{background:var(--neu-bg);border-bottom:0;box-shadow:0 12px 24px -16px var(--neu-lo2)}
 .brand h1{color:var(--neu-navy)}
 .brand .leaf{box-shadow:var(--neu-out-sm)}
@@ -862,7 +865,7 @@ header{background:var(--neu-bg);border-bottom:0;box-shadow:0 12px 24px -16px var
 .tabs::-webkit-scrollbar{display:none}
 .tab{white-space:nowrap;color:#6B7590;border-radius:13px;transition:box-shadow .15s,color .15s}
 .tab:hover{color:var(--neu-navy)}
-.tab.on{background:var(--neu-bg);color:var(--neu-blue);box-shadow:var(--neu-out-sm)}
+.tab.on{background:var(--neu-card);color:var(--neu-blue);box-shadow:var(--neu-out-sm)}
 .upbtn{border:0;border-radius:13px;background:var(--neu-grad);box-shadow:var(--neu-out-sm)}
 .upbtn:hover{background:var(--neu-grad);filter:brightness(1.05)}
 .upbtn.sec{background:var(--neu-bg);border:0;color:var(--neu-navy)}
@@ -870,18 +873,18 @@ header{background:var(--neu-bg);border-bottom:0;box-shadow:0 12px 24px -16px var
 .upbtn:active{box-shadow:var(--neu-in-sm)}
 .hdr-file{color:#7A8494}
 /* 현황 페이지 */
-.stpage{background:var(--neu-bg)}
+.stpage{background:var(--neu-page)}
 .st-inner{padding:30px 22px 60px}
 .st-range{color:#6B7590}
 .st-range b{color:var(--neu-navy)}
 .st-grid{gap:18px;margin-bottom:22px}
-.st-card,.st-panel{background:var(--neu-bg);border:0;border-radius:24px;box-shadow:var(--neu-out)}
+.st-card,.st-panel{background:var(--neu-card);border:0;border-radius:24px;box-shadow:var(--neu-out)}
 .st-card{padding:20px 22px;gap:10px}
 .st-card .k{color:#6B7590;font-size:11.5px;letter-spacing:.04em}
 .st-card b{color:var(--neu-navy);white-space:nowrap;letter-spacing:-.02em}
 .st-card.kpi b{font-size:30px}
 /* 합계 카드: 첫 번째는 블루 그라데이션 강조, 나머지는 눌린 홈 + 파란 숫자 */
-.st-card.tot{background:var(--neu-bg);box-shadow:var(--neu-in);border:0}
+.st-card.tot{background:var(--neu-card-in);box-shadow:var(--neu-in);border:0}
 .st-card.tot .k{color:#6B7590}
 .st-card.tot b{font-size:23px;color:var(--neu-blue)}
 .st-grid:not(.kpi2) .st-card.tot:nth-child(4){background:var(--neu-grad);box-shadow:8px 8px 20px rgba(47,128,237,.35),-8px -8px 20px var(--neu-hi)}
