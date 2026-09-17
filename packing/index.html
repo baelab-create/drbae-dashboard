@@ -902,6 +902,8 @@ function extraShopObj(k, v, histMap, svcByEnt, startKey, histEnd){
   const ent = ENT.find('A:'+skey);
   const o = {key:skey, extraKey:k, isExtra:true, include:true,
     name:v.name||v.recv||'(미상)', recv:v.recv||'', addr:v.addr||'',
+    // 연락처는 메모에 없으므로 같은 샵(엔티티)의 가장 최근 주문에서 가져온다
+    phone: String(((RAW.find(r=>ENT.find('A:'+addrKey(r))===ent && r[COLS.phone])||{})[COLS.phone])||'').trim(),
     msgs:new Set(), orders:new Set(),
     items:(v.products||[]).map(c=>({main:SKU_NAME[c]||c, sub:'', qty:(v.qty||{})[c]||1, amt:null, sku:c})),
     hist: histMap.get(ent)||null, histStart:startKey,
@@ -951,8 +953,9 @@ function buildHistAndSvc(baseKey){
 /* ── 공용: 행 1개를 샵 객체에 누적 (mapKey는 호출자 정의 — 검색 모드는 날짜|주소) ── */
 function accumShopRow(map, mapKey, r){
   if(!map.has(mapKey)) map.set(mapKey,{key: addrKey(r), name:null, recv:r[COLS.recv]||'', addr:r[COLS.addr]||'',
-    msgs:new Set(), orders:new Set(), items:new Map(), include:true, sid:''});
+    msgs:new Set(), orders:new Set(), items:new Map(), include:true, sid:'', phone:''});
   const s = map.get(mapKey);
+  if(!s.phone && r[COLS.phone]) s.phone = String(r[COLS.phone]).trim();   // 명세서에 표기할 수취인 연락처
   if(!s.sid && COLS.sid && r[COLS.sid]) s.sid = String(r[COLS.sid]).trim();
   const pn = parseShopName(r[COLS.opt]);
   if(!s.name && pn) s.name = pn;
@@ -1453,6 +1456,7 @@ function renderSheets(){
         ${MJ_BADGE(s)}
         <table class="meta">
           <tr><td class="k">수취인</td><td>${esc(s.recv)}</td></tr>
+          ${s.phone?`<tr><td class="k">연락처</td><td>${esc(s.phone)}</td></tr>`:''}
           <tr><td class="k">배송지</td><td>${esc(s.addr)}</td></tr>
         </table>
         ${msg?`<div class="msgBox"><span class="mk">배송 요청사항</span>${esc(msg)}</div>`:''}
