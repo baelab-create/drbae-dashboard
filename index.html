@@ -846,6 +846,46 @@ body.pg-mb{--accent:#1B2333;--accent-deep:#0F1420;--accent-soft:#E7E9EF}
   .toast{top:12px}
   .daterange{padding-top:4px}
 }
+
+/* ===== 뉴모피즘 스킨 (2026-09-17, 교수님 요청) — 바탕·상단바·탭·현황 페이지 ===== */
+:root{--neu-bg:#E6EAF2;--neu-hi:#FFFFFF;--neu-lo:#C2C9D6;--neu-lo2:#AEB6C6;
+  --neu-out:10px 10px 22px var(--neu-lo),-10px -10px 22px var(--neu-hi);
+  --neu-out-sm:5px 5px 11px var(--neu-lo),-5px -5px 11px var(--neu-hi);
+  --neu-in:inset 6px 6px 12px var(--neu-lo),inset -6px -6px 12px var(--neu-hi);
+  --neu-in-sm:inset 3px 3px 7px var(--neu-lo),inset -3px -3px 7px var(--neu-hi)}
+body{background:var(--neu-bg)}
+header{background:var(--neu-bg);border-bottom:0;box-shadow:0 10px 20px -14px var(--neu-lo2)}
+.brand .leaf{box-shadow:var(--neu-out-sm)}
+.tabs{background:var(--neu-bg);box-shadow:var(--neu-in);border-radius:16px;padding:6px;gap:2px}
+.tab{color:#5F6A7A;border-radius:12px;transition:box-shadow .15s,color .15s}
+.tab:hover{color:var(--ink)}
+.tab.on{background:var(--neu-bg);color:var(--accent-deep);box-shadow:var(--neu-out-sm)}
+.upbtn{border:0;box-shadow:var(--neu-out-sm);border-radius:12px}
+.upbtn.sec{background:var(--neu-bg);border:0;color:var(--ink)}
+.upbtn.sec:hover{background:var(--neu-bg);color:var(--accent-deep)}
+.upbtn:active{box-shadow:var(--neu-in-sm)}
+.hdr-file{color:#7A8494}
+/* 현황 페이지 */
+.stpage{background:var(--neu-bg)}
+.st-range{color:#5F6A7A}
+.st-card,.st-panel{background:var(--neu-bg);border:0;border-radius:22px;box-shadow:var(--neu-out)}
+.st-card{padding:18px 20px}
+.st-card .k{color:#6B7480}
+.st-card b{color:#2A3245}
+.st-card.tot{background:var(--neu-bg);box-shadow:var(--neu-in);border:0}
+.st-card.tot .k{color:#6B7480}
+.st-card.tot b{color:var(--accent-deep)}
+.st-panel{padding:20px 22px}
+.st-panel h3{color:#2A3245}
+.seg{background:var(--neu-bg);border:0;box-shadow:var(--neu-in-sm);border-radius:14px;padding:4px}
+.seg button{border-radius:11px;color:#5F6A7A;background:transparent}
+.seg button.on{background:var(--neu-bg);color:var(--accent-deep);box-shadow:var(--neu-out-sm)}
+.hbar .ht{height:16px;background:var(--neu-bg);box-shadow:var(--neu-in-sm);border-radius:9px;overflow:hidden}
+.hbar .ht i{border-radius:9px;background:linear-gradient(90deg,var(--accent),#7B89EE)}
+.hbar .hl{color:#2A3245}
+.st-chart svg line{opacity:.55}
+.spark{opacity:.75}
+.ttip{border-radius:12px}
 </style>
 </head>
 <body>
