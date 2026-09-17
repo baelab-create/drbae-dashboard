@@ -847,29 +847,30 @@ body.pg-mb{--accent:#1B2333;--accent-deep:#0F1420;--accent-soft:#E7E9EF}
   .daterange{padding-top:4px}
 }
 
-/* ===== 뉴모피즘 스킨 v2 (2026-09-18, 교수님 레퍼런스 반영: 그레이&화이트 그라데이션 바탕·깊은 소프트 섀도·블루 포인트·아이브로우 제목) ===== */
-:root{--neu-bg:#EDEFF2;--neu-hi:#FFFFFF;--neu-lo:#CBCFD5;--neu-lo2:#B9BEC6;--neu-navy:#2A2E36;--neu-blue:#2F80ED;--neu-blue2:#5EA8FF;
-  --neu-page:linear-gradient(160deg,#F8F9FB 0%,#ECEEF1 55%,#E4E6EA 100%);
-  --neu-card:linear-gradient(145deg,#F6F7F9 0%,#E8EAEE 100%);
-  --neu-card-in:linear-gradient(145deg,#E6E8EC 0%,#F3F4F6 100%);
-  --neu-out:12px 12px 26px var(--neu-lo),-12px -12px 26px var(--neu-hi);
-  --neu-out-sm:6px 6px 14px var(--neu-lo),-6px -6px 14px var(--neu-hi);
-  --neu-in:inset 7px 7px 14px var(--neu-lo),inset -7px -7px 14px var(--neu-hi);
-  --neu-in-sm:inset 3px 3px 7px var(--neu-lo),inset -3px -3px 7px var(--neu-hi);
+/* ===== 뉴모피즘 스킨 v3 (2026-09-18 확정: 바탕 화이트 · 뉴모픽 표면 그레이 그라데이션 · 입체감 강조 · 블루 포인트) ===== */
+:root{--neu-bg:#EEF0F3;--neu-hi:#FFFFFF;--neu-lo:#BFC5CD;--neu-lo2:#AAB1BB;--neu-navy:#2A2E36;--neu-blue:#2F80ED;--neu-blue2:#5EA8FF;
+  --neu-page:#FFFFFF;                                              /* 페이지 바탕: 화이트 */
+  --neu-card:linear-gradient(145deg,#F7F8FA 0%,#E6E9ED 100%);     /* 뉴모픽 표면: 그레이 그라데이션 */
+  --neu-card-in:linear-gradient(145deg,#DEE2E7 0%,#F0F2F5 100%);
+  /* 입체감 강조: 더 길고 진한 그림자 + 표면 가장자리 하이라이트 */
+  --neu-out:16px 16px 32px rgba(160,168,180,.55),-10px -10px 24px #FFFFFF,inset 1px 1px 0 rgba(255,255,255,.95),inset -1px -1px 0 rgba(170,178,190,.25);
+  --neu-out-sm:8px 8px 16px rgba(160,168,180,.5),-6px -6px 14px #FFFFFF,inset 1px 1px 0 rgba(255,255,255,.95);
+  --neu-in:inset 8px 8px 16px rgba(160,168,180,.55),inset -8px -8px 16px #FFFFFF;
+  --neu-in-sm:inset 4px 4px 8px rgba(160,168,180,.5),inset -4px -4px 8px #FFFFFF;
   --neu-grad:linear-gradient(135deg,#2F80ED 0%,#5EA8FF 100%)}
-body{background:var(--neu-page);background-attachment:fixed}
-header{background:var(--neu-bg);border-bottom:0;box-shadow:0 12px 24px -16px var(--neu-lo2)}
+body{background:var(--neu-page)}
+header{background:var(--neu-page);border-bottom:0;box-shadow:0 14px 28px -18px rgba(160,168,180,.6)}
 .brand h1{color:var(--neu-navy)}
 .brand .leaf{box-shadow:var(--neu-out-sm)}
-.tabs{background:var(--neu-bg);box-shadow:var(--neu-in);border-radius:18px;padding:6px;gap:2px;overflow-x:auto;scrollbar-width:none;max-width:60vw}
+.tabs{background:var(--neu-card-in);box-shadow:var(--neu-in);border-radius:18px;padding:6px;gap:2px;overflow-x:auto;scrollbar-width:none;max-width:60vw}
 .tabs::-webkit-scrollbar{display:none}
 .tab{white-space:nowrap;color:#6B7590;border-radius:13px;transition:box-shadow .15s,color .15s}
 .tab:hover{color:var(--neu-navy)}
 .tab.on{background:var(--neu-card);color:var(--neu-blue);box-shadow:var(--neu-out-sm)}
 .upbtn{border:0;border-radius:13px;background:var(--neu-grad);box-shadow:var(--neu-out-sm)}
 .upbtn:hover{background:var(--neu-grad);filter:brightness(1.05)}
-.upbtn.sec{background:var(--neu-bg);border:0;color:var(--neu-navy)}
-.upbtn.sec:hover{background:var(--neu-bg);color:var(--neu-blue);filter:none}
+.upbtn.sec{background:var(--neu-card);border:0;color:var(--neu-navy)}
+.upbtn.sec:hover{background:var(--neu-card);color:var(--neu-blue);filter:none}
 .upbtn:active{box-shadow:var(--neu-in-sm)}
 .hdr-file{color:#7A8494}
 /* 현황 페이지 */
@@ -894,16 +895,16 @@ header{background:var(--neu-bg);border-bottom:0;box-shadow:0 12px 24px -16px var
 .st-ph{margin-bottom:12px}
 .st-panel h3{display:flex;flex-direction:column-reverse;gap:3px;color:var(--neu-navy);font-size:17px;font-weight:900;letter-spacing:-.02em}
 .st-panel h3 small{margin:0;color:var(--neu-blue);font-size:11px;font-weight:700;letter-spacing:.08em}
-.seg{background:var(--neu-bg);border:0;box-shadow:var(--neu-in-sm);border-radius:14px;padding:4px}
+.seg{background:var(--neu-card-in);border:0;box-shadow:var(--neu-in-sm);border-radius:14px;padding:4px}
 .seg button{border-radius:11px;color:#6B7590;background:transparent}
 .seg button.on{background:var(--neu-grad);color:#fff;box-shadow:4px 4px 10px rgba(47,128,237,.35)}
 .hbars{gap:10px}
 .hbar .hl{color:var(--neu-navy)}
-.hbar .ht{height:18px;background:var(--neu-bg);box-shadow:var(--neu-in-sm);border-radius:10px;overflow:hidden}
+.hbar .ht{height:18px;background:var(--neu-card-in);box-shadow:var(--neu-in-sm);border-radius:10px;overflow:hidden}
 .hbar .ht i{border-radius:10px;background:var(--neu-grad);box-shadow:2px 2px 6px rgba(47,128,237,.35)}
 .hbar .hv{color:#6B7590}
 .st-chart svg line{opacity:.45}
-.st-chart svg .stb{fill:#3D8BFF;filter:drop-shadow(3px 4px 5px rgba(90,110,150,.35))}
+.st-chart svg .stb{fill:#3D8BFF;filter:drop-shadow(4px 6px 6px rgba(90,110,150,.45))}
 .st-chart svg .stc{fill:#2BB3A9;filter:drop-shadow(2px 3px 4px rgba(90,110,150,.3))}
 .st-chart svg text{fill:#6B7590}
 .spark{opacity:.8}
