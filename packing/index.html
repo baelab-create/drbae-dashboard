@@ -319,6 +319,74 @@
 
   /* ───── 인쇄 ───── */
   @page{size:A4; margin:0;}
+  /* ═══════════ 뉴모피즘 화면 스킨 (2026-09-17) ═══════════
+     테두리 대신 같은 바탕색 위의 두 그림자(왼쪽 위 밝게·오른쪽 아래 어둡게)로 입체감을 준다.
+     누른 상태·입력창은 안쪽 그림자로 파인 느낌. 명세서(.sheet)는 인쇄물이라 손대지 않는다
+     (인쇄 때 #panel 은 숨겨지므로 이 스킨은 화면 전용). */
+  :root{
+    --nm-bg:#ECE8E2; --nm-lo:#FFFFFF; --nm-hi:#C6C0B6;
+    --nm-out:6px 6px 12px var(--nm-hi), -6px -6px 12px var(--nm-lo);
+    --nm-out-sm:4px 4px 9px var(--nm-hi), -4px -4px 9px var(--nm-lo);
+    --nm-in:inset 4px 4px 9px var(--nm-hi), inset -4px -4px 9px var(--nm-lo);
+    --nm-in-sm:inset 3px 3px 6px var(--nm-hi), inset -3px -3px 6px var(--nm-lo);
+    --nm-press:inset 2px 2px 6px rgba(0,0,0,.28), inset -2px -2px 6px rgba(255,255,255,.18);
+  }
+  body{background:var(--nm-bg);}
+  #panel{background:var(--nm-bg); border-right:none; box-shadow:12px 0 26px rgba(150,140,125,.22); z-index:2;}
+  #panel .sub{color:#8C857A;}
+
+  #drop{background:var(--nm-bg); border:none; border-radius:18px; box-shadow:var(--nm-in); color:#7A746C;}
+  #drop.hover{color:var(--brand); background:var(--nm-bg); box-shadow:var(--nm-in), 0 0 0 2px var(--brand);}
+
+  /* 올라온 면 — 버튼류 */
+  .dateBtn, #cjBtn, #allCsvBtn, #reloadBtn, #extraBtn, .shopRow button, #searchClear, #extraQty button, #cjClose{
+    background:var(--nm-bg); border:none !important; border-radius:13px;
+    box-shadow:var(--nm-out-sm); transition:box-shadow .16s ease, color .16s ease;
+  }
+  .dateBtn:hover, #cjBtn:hover:not(:disabled), #allCsvBtn:hover:not(:disabled), #reloadBtn:hover:not(:disabled),
+  #extraBtn:hover, .shopRow button:hover, #searchClear:hover, #extraQty button:hover, #cjClose:hover{
+    background:var(--nm-bg); box-shadow:var(--nm-out); color:var(--brand);
+  }
+  .dateBtn:active, #cjBtn:active, #allCsvBtn:active, #reloadBtn:active, #extraBtn:active,
+  .shopRow button:active, #searchClear:active, #extraQty button:active{box-shadow:var(--nm-in-sm);}
+  .dateBtn{padding:11px 13px;}
+  .dateBtn.on{background:var(--brand); color:#fff; box-shadow:var(--nm-press);}
+  .dateBtn.on:hover{background:var(--brand); color:#fff; box-shadow:var(--nm-press);}
+  #extraBtn{background:var(--nm-bg); color:#C24A08;}
+  #extraBtn:hover{color:#E8590C;}
+  #cjBtn:disabled, #allCsvBtn:disabled{box-shadow:var(--nm-in-sm); color:#ADA69C;}
+
+  #printBtn{
+    background:linear-gradient(145deg,#D4AC55,#BC9440); color:#241F16; border:none; border-radius:15px;
+    box-shadow:5px 5px 11px var(--nm-hi), -5px -5px 11px var(--nm-lo); transition:box-shadow .16s ease;
+  }
+  #printBtn:hover:not(:disabled){background:linear-gradient(145deg,#DDB55F,#C49B44); box-shadow:var(--nm-out);}
+  #printBtn:active:not(:disabled){box-shadow:var(--nm-press);}
+  #printBtn:disabled{background:var(--nm-bg); color:#ADA69C; box-shadow:var(--nm-in-sm);}
+
+  /* 파인 면 — 입력창 */
+  #memoText, #memoShop, #searchBox{
+    background:var(--nm-bg); border:none !important; border-radius:13px; box-shadow:var(--nm-in-sm);
+  }
+  #memoText:focus, #memoShop:focus, #searchBox:focus{outline:none; box-shadow:var(--nm-in-sm), 0 0 0 2px #C9A24B66;}
+  #memoText{padding:11px 12px;}
+
+  .shopRow{border-radius:10px; padding:6px 8px;}
+  .shopRow:hover{background:transparent; box-shadow:var(--nm-in-sm);}
+
+  #svcChips .schip{border:none; box-shadow:var(--nm-out-sm); background:var(--nm-bg); padding:5px 11px; border-radius:99px;}
+  #svcChips .schip:hover{box-shadow:var(--nm-out);}
+  #svcChips .schip.on{box-shadow:var(--nm-press);}
+
+  #cjPanel{background:var(--nm-bg); border-radius:22px; box-shadow:14px 14px 34px rgba(90,80,65,.45), -6px -6px 18px rgba(255,255,255,.35);}
+  #cjHead{border-bottom:none; box-shadow:0 6px 12px -10px var(--nm-hi);}
+  #cjDl{background:linear-gradient(145deg,#D4AC55,#BC9440); border:none; border-radius:13px; box-shadow:var(--nm-out-sm);}
+  #cjDl:hover{background:linear-gradient(145deg,#DDB55F,#C49B44); box-shadow:var(--nm-out);}
+  #cjBody table{background:var(--paper);}
+
+  #panel::-webkit-scrollbar{width:10px;}
+  #panel::-webkit-scrollbar-thumb{background:var(--nm-bg); border-radius:99px; box-shadow:var(--nm-in-sm);}
+
   @media print{
     body{background:#fff;}
     #panel,#empty{display:none !important;}
@@ -350,7 +418,7 @@
       <input type="file" id="fileInput" accept=".xlsx,.xls" style="display:none">
     </div>
     <div id="fileInfo"></div>
-    <button id="reloadBtn" style="width:100%;margin-top:10px;background:#FFFFFF;color:#5A554E;border:1px solid #DDD6CC;border-radius:8px;padding:8px;font-size:12px;cursor:pointer;font-family:inherit;">🔄 최신 엑셀 다시 불러오기</button>
+    <button id="reloadBtn" style="width:100%;margin-top:10px;color:#5A554E;padding:9px;font-size:12px;cursor:pointer;font-family:inherit;">🔄 최신 엑셀 다시 불러오기</button>
 
     <div class="step">🔍 검색 <small style="font-weight:400;color:#8B857D">(샵·수취인·연락처·주소 → 과거 명세서 모아보기)</small></div>
     <div style="display:flex; gap:6px;">
