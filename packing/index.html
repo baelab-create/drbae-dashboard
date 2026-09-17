@@ -695,7 +695,10 @@ function ingest(header, label){
     // 주요 컬럼 유연 매핑
     const find = kw => header.find(h => h.replace(/\s/g,'').includes(kw)) || null;
     COLS = {
-      order: find('주문번호'),
+      // '주문번호'는 '상품주문번호'(품목 줄 단위)와 헤더가 겹친다 → 정확히 일치하는 컬럼을 먼저 쓴다.
+      // 겹쳐 쓰면 12개월 차트의 '주문 N건'이 품목 줄 수로 부풀고, 병합 신호②-b의 '주문 2건 이상'도
+      // 한 주문의 여러 줄을 2건으로 세어 shared/shop_merge.py 와 기준이 어긋났다 (2026-09-17).
+      order: header.find(h => h.replace(/\s/g,'') === '주문번호') || find('주문번호'),
       recv:  find('수취인명') || find('수취인'),
       prod:  find('상품명'),
       opt:   find('옵션정보') || find('옵션'),
