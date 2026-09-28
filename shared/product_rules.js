@@ -150,6 +150,7 @@ const GROUP_OF = {
    스킨부스터 박스로 세는 것 = '스킨부스터 N종 교차선택' 라인
        엑소토카인 블루 · 피디로엔 핑크 · 엑소토카인 블랙 · 토코포르테 · 리퀴드 필링 · 칼리파우더,
        구성 미표기 스킨부스터(SB_ETC), 더마커런트 세트 안의 '스킨부스터 … N박스'
+   박스 수 = 수량 × 옵션의 묶음 박스 수("(3+1)4박스" = 4박스, "3+3 (6박스)" = 6박스)
    세지 않는 것 = 에센스겔 · 테스트 구성 · 두피 샴푸/토닉/스칼프 부스터 · 크림/팩,
        서비스(무상) 제공분, 교육 과정·키트 주문 행(CASE n / 교육 과정 선택 / 교육 구성) */
 const MJ_RULE_SB = new Set(['EXO_BLUE','PDRN','EXO_BLACK','TOCO_LIQ','LIQMASK','CALCI','SB_ETC']);
@@ -158,8 +159,11 @@ function mjRuleCount(opt, nm, qty){
   if(/^\s*CASE\s*\d/.test(p) || /교육\s*과정\s*선택/.test(o) || /교육\s*구성/.test(p)) return {mj:0, sb:0};
   if(/^\s*\[서비스\]/.test(p) || /[:：]\s*서비스\s*$/.test(o.trim())) return {mj:0, sb:0};
   const cs = productsOfSku(o, p);
-  let sb = cs.filter(c=>MJ_RULE_SB.has(c)).length * q;
+  // 묶음 구성은 옵션에 적힌 박스 수로 센다: "(3+1)4박스" → 4, "3+3 (6박스/50%할인)" → 6, "10 vial (1박스…)" → 1
+  const po = o.split(/\s\/\s/).filter(x=>!/샵|인스타|성함/.test(x.split(/[:：]/)[0])).join(' / ');
+  const bm = po.match(/(\d+)\s*박스/), per = bm ? Math.max(1, Number(bm[1])) : 1;
+  let sb = cs.includes('DERMA') ? 0 : cs.filter(c=>MJ_RULE_SB.has(c)).length * q * per;
   const dm = o.match(/스킨부스터\)?\s*[:：][^/]*?(\d+)\s*박스/);          // 더마커런트 세트: "특별 구성 (스킨부스터): 피부 구성 4박스"
   if(cs.includes('DERMA') && dm) sb += Number(dm[1]) * q;
-  return {mj: cs.includes('MJ') ? q : 0, sb};
+  return {mj: cs.includes('MJ') ? q * (cs.length===1 ? per : 1) : 0, sb};
 }
