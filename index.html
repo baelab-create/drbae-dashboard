@@ -1253,8 +1253,8 @@ header{background:var(--neu-page);border-bottom:0;box-shadow:0 14px 28px -18px r
     <input id="ns-addr" type="text" placeholder="신규 입점 희망 주소를 입력하세요 (도로명 주소)">
     <button id="ns-go">위치 검토</button>
     <button id="ns-print" style="display:none">🖨 인쇄 / PDF 저장</button>
-    <button id="ns-mj" class="ns-toggle" title="ON: 최근 3개월 내 마이크로젝션 발주 38만원 이상 유지 샵만 입점 차단 기준으로 판정">
-      <span class="tgdot"></span>마이크로젝션 발주 · 3개월 내 <b id="ns-mj-state">OFF</b>
+    <button id="ns-mj" class="ns-toggle on" title="신규 전문점 등록을 검토할 분야 — 누를 때마다 피부 → 두피 → 피부+두피">
+      <span class="tgdot"></span>전문점 분야 <b id="ns-mj-state">피부</b>
     </button>
   </div>
   <div class="ns-body" id="nsreport">
@@ -1265,7 +1265,7 @@ header{background:var(--neu-page);border-bottom:0;box-shadow:0 14px 28px -18px r
       </div>
     </div>
     <div class="ns-side" id="ns-results">
-      <div class="rp-note">상단에 주소를 입력하고 <b>위치 검토</b>를 누르면<br>반경 1·2·3km 분석과 마이크로젝션 입점 판정이 표시됩니다.</div>
+      <div class="rp-note">상단에 주소를 입력하고 <b>위치 검토</b>를 누르면<br>반경 1·2·3km 분석과 마이크로젝션 전문점 지역 판정이 표시됩니다.</div>
     </div>
   </div>
 </div>
@@ -2826,8 +2826,7 @@ function selectReport(i){
 
 /* ---------- 신규샵 위치 리포트 ---------- */
 const MJ_RADIUS=2000;
-const MJ_ACTIVE_MIN=380000;                 // 3개월 내 발주 유지 기준액
-let nmap=null, nsPos=null, nsObjs=[], nsMjMode=false, nsLast=null;
+let nmap=null, nsPos=null, nsObjs=[], nsField='skin', nsLast=null;
 /* 최근 3개월 내 마이크로젝션 발주 내역 (일자별 원장 기반, 일 단위 정확) */
 function mjRecent(name){
   if(!DAYS.length||META.to==='–') return {sum:0,entries:[]};
@@ -2862,7 +2861,7 @@ function nsClear(){
 function nsReset(){
   nsClear(); nsLast=null;
   document.getElementById('ns-addr').value='';
-  document.getElementById('ns-results').innerHTML='<div class="rp-note">상단에 주소를 입력하고 <b>위치 검토</b>를 누르면<br>반경 1·2·3km 분석과 마이크로젝션 입점 판정이 표시됩니다.</div>';
+  document.getElementById('ns-results').innerHTML='<div class="rp-note">상단에 주소를 입력하고 <b>위치 검토</b>를 누르면<br>반경 1·2·3km 분석과 마이크로젝션 전문점 지역 판정이 표시됩니다.</div>';
 }
 function nsAnalyze(){
   const q=document.getElementById('ns-addr').value.trim();
@@ -2909,35 +2908,27 @@ function nsPlace(lat,lng,label){
   const dLat=3000/111320, dLng=3000/(111320*Math.cos(lat*Math.PI/180));
   b.extend(new kakao.maps.LatLng(lat-dLat,lng-dLng)); b.extend(new kakao.maps.LatLng(lat+dLat,lng+dLng));
   nmap.setBounds(b,30,30,30,30);
-  // ── 마이크로젝션 2km 판정 (토글: 전체 이력 vs 3개월 활성 발주) ──
-  const mjNear=withLL.filter(x=>x.s.mjTotal>0).sort((a,b)=>a.m-b.m);
-  const mjIn=mjNear.filter(x=>x.m<MJ_RADIUS);
+  // ── 운영규칙 v1.0: 같은 분야 '유지 중' 전문점(mj_sites)만 2km 판정. 일반 납품샵은 지역 제한 없음 ──
+  const FL={skin:'피부',scalp:'두피'}, fs=nsField==='both'?['skin','scalp']:[nsField];
+  const specs=Object.values(typeof MJ_SITES!=='undefined'?MJ_SITES:{}).filter(x=>x.lat!=null);
+  const perField=fs.map(f=>{ const near=specs.filter(x=>(x[f]||{}).status==='유지 중').map(x=>({x,m:haversine(lat,lng,x.lat,x.lng)})).sort((a,b)=>a.m-b.m);
+    return {f, near, inR:near.filter(n=>n.m<=MJ_RADIUS), edge:near.filter(n=>n.m>MJ_RADIUS&&n.m<=MJ_RADIUS+300)}; });
+  const supNear=withLL.filter(x=>x.s.mjTotal>0&&x.m<MJ_RADIUS).length;
+  const blocked=perField.filter(p=>p.inR.length), edgeF=perField.filter(p=>!p.inR.length&&p.edge.length);
+  const fLab=fs.map(f=>FL[f]).join('+');
+  const specRows=p=>p.inR.map((n,k)=>`<div class="mjrow"><span class="mn">${FL[p.f]} 전문점 ${k+1}</span><span class="md">${fmtDist(n.m)}</span><span class="ml"><span class="ent">${(n.x[p.f]||{}).since?'등록 '+n.x[p.f].since:''}</span></span><span class="ms"></span></div>`).join('');
+  const supNote=`<br><small style="font-weight:600">반경 2km 내 마이크로젝션 구매 이력 샵 ${supNear}곳 — 일반 납품샵은 전문점 등록을 제한하지 않습니다 (§2.3).</small>`;
+  const seminar=`<div class="ns-seminar"><b>📋 절차 안내</b><br><b>납품샵</b>: 지정 파트너 원장님 또는 배교수님 사전 교육·세미나 이수 후 마이크로젝션 첫 구매로 등록 (지역 제한 없음).<br><b>전문점</b>: 지역 심사 → 전문교육·키트(피부 150만 · 두피 150만 · 피부+두피 200만) → 교육 수료·수료증 → 본사 등록.</div>`;
   let verdict;
-  const seminar=`<div class="ns-seminar"><b>📋 입점 절차 안내</b><br>마이크로젝션 입점을 원하실 경우, <b>배교수님 오프라인 세미나</b> 참석 후 입점이 가능합니다.<br>세미나 구성: <b>의료법 · 의료광고법 · 공중위생관리법 · 화장품법</b> 이론 강의</div>`;
-  if(!nsMjMode){
-    const ok=mjIn.length===0;
-    verdict = ok
-      ? `<div class="ns-verdict ok">✅ <b>마이크로젝션 입점 가능</b> <small style="font-weight:600">· 기준: 마젝 구매 이력 전체</small><br>반경 2km 내 마이크로젝션 운영 파트너가 없습니다.${mjNear.length?` (최근접 마이크로젝션 파트너: ${fmtDist(mjNear[0].m)})`:''}</div>${seminar}`
-      : `<div class="ns-verdict no">⛔ <b>마이크로젝션 입점 불가</b> <small style="font-weight:600">· 기준: 마젝 구매 이력 전체</small><br>반경 2km 내 마이크로젝션 운영 파트너 <b>${mjIn.length}곳</b>이 있습니다 (최근접 ${fmtDist(mjIn[0].m)}).</div>`;
+  if(blocked.length){
+    verdict=`<div class="ns-verdict no">⛔ <b>${blocked.map(p=>FL[p.f]).join('·')} 전문점 신규 등록 불가</b> <small style="font-weight:600">· 기준: 같은 분야 유지 중 전문점 반경 2km</small><br>
+      ${blocked.map(p=>`반경 2km 내 <b>${FL[p.f]} 전문점 ${p.inR.length}곳</b> (최근접 ${fmtDist(p.inR[0].m)})${specRows(p)}`).join('<br>')}
+      ${perField.filter(p=>!p.inR.length).map(p=>`<br>✅ ${FL[p.f]} 분야는 2km 내 전문점이 없어 지역 심사 가능`).join('')}${supNote}</div>${seminar}`;
+  }else if(edgeF.length){
+    verdict=`<div class="ns-verdict ok">⚠️ <b>${fLab} 전문점 — 경계 확인 필요</b><br>${edgeF.map(p=>`${FL[p.f]} 전문점이 2km 경계 바깥 가까이 있습니다 (${fmtDist(p.edge[0].m)}). 주소·좌표를 확인하고 지역 심사로 확정하세요.`).join('<br>')}${supNote}</div>${seminar}`;
   }else{
-    const info=mjIn.map(x=>({...x, r:mjRecent(x.s.shop)}));
-    const active=info.filter(x=>x.r.sum>=MJ_ACTIVE_MIN);
-    const inactive=info.filter(x=>x.r.sum<MJ_ACTIVE_MIN);
-    const entLines=r=>r.entries.slice(0,4).map(e=>`<span class="ent">${e.d} · ${e.a.toLocaleString('ko-KR')}원</span>`).join('')
-                     +(r.entries.length>4?`<span class="ent">외 ${r.entries.length-4}건</span>`:'')
-                     ||'<span class="ent">3개월 내 발주 없음</span>';
-    if(active.length){
-      const rowsB=active.map((x,k)=>`<div class="mjrow"><span class="mn">마젝샵 ${k+1}</span>
-        <span class="md">${fmtDist(x.m)}</span>
-        <span class="ml">${entLines(x.r)}</span>
-        <span class="ms">${x.r.sum.toLocaleString('ko-KR')}원</span></div>`).join('');
-      verdict=`<div class="ns-verdict no">⛔ <b>마이크로젝션 입점 불가</b> <small style="font-weight:600">· 기준: 최근 3개월 발주 ${(MJ_ACTIVE_MIN/10000)}만원 이상 유지</small><br>
-        반경 2km 내 <b>활성 발주 유지 샵 ${active.length}곳</b>이 있습니다.<br><br>
-        <b>활성 마젝샵 발주 내역 (최근 3개월)</b>${rowsB}</div>`;
-    }else{
-      verdict=`<div class="ns-verdict ok">✅ <b>마이크로젝션 입점 가능</b> <small style="font-weight:600">· 기준: 최근 3개월 발주 ${(MJ_ACTIVE_MIN/10000)}만원 이상 유지</small><br>
-        반경 2km 내 활성 발주 유지 샵이 없습니다.${inactive.length?`<br><br><b>참고 — 2km 내 마젝 이력 샵 ${inactive.length}곳 (기준 미충족)</b>${inactive.map((x,k)=>`<div class="mjrow"><span class="mn">이력샵 ${k+1}</span><span class="md">${fmtDist(x.m)}</span><span class="ml">${entLines(x.r)}</span><span class="ms">${x.r.sum.toLocaleString('ko-KR')}원</span></div>`).join('')}`:''}</div>${seminar}`;
-    }
+    verdict=`<div class="ns-verdict ok">✅ <b>${fLab} 전문점 지역 심사 가능</b> <small style="font-weight:600">· 기준: 같은 분야 유지 중 전문점 반경 2km</small><br>
+      ${perField.map(p=>`${FL[p.f]}: 반경 2km 내 유지 중 전문점 없음${p.near.length?` (최근접 ${fmtDist(p.near[0].m)})`:''}`).join('<br>')}${supNote}</div>${seminar}`;
   }
   // ── 인근 5곳 (익명) ──
   const rows=near5.map((x,k)=>{
@@ -2959,9 +2950,8 @@ function nsPlace(lat,lng,label){
   toast('위치 검토 완료');
 }
 document.getElementById('ns-mj').onclick=()=>{
-  nsMjMode=!nsMjMode;
-  document.getElementById('ns-mj').classList.toggle('on',nsMjMode);
-  document.getElementById('ns-mj-state').textContent=nsMjMode?'ON':'OFF';
+  nsField = nsField==='skin'?'scalp':(nsField==='scalp'?'both':'skin');
+  document.getElementById('ns-mj-state').textContent={skin:'피부',scalp:'두피',both:'피부+두피'}[nsField];
   if(nsLast) nsPlace(nsLast.lat,nsLast.lng,nsLast.label);   // 즉시 재판정
 };
 document.getElementById('ns-go').onclick=nsAnalyze;
