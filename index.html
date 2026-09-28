@@ -1045,7 +1045,7 @@ header{background:var(--neu-page);border-bottom:0;box-shadow:0 14px 28px -18px r
         <button class="pf mst-pf on" data-pf="">전체</button>
         <button class="pf mst-pf" data-pf="__direct">본사 직거래</button>
         <select id="mst-partner"><option value="">파트너 선택…</option></select>
-        <label class="mst-chk" style="margin-left:6px"><input type="checkbox" id="mst-cert"> 전문점 교육 수료 샵만</label>
+        <label class="mst-chk" style="margin-left:6px"><input type="checkbox" id="mst-cert"> 교육 수료 샵만 (수료증)</label>
         <label class="mst-chk" style="margin-left:6px"><input type="checkbox" id="mst-mb"> <span class="ptag mbt" style="cursor:pointer">MB</span> 마이크로블랙 전문점만</label>
         <label class="mst-chk"><input type="checkbox" id="mst-merged"> 합쳐진 것도 보기</label>
       </div>
@@ -2619,7 +2619,7 @@ function buildMbList(){
   box.innerHTML=list.map(m=>{ const st=m.site, col=m.fSkin&&!m.fScalp?MB_CAT_COLOR['피부']:MB_CAT_COLOR['두피'], cert=mjxCert(m), ed=m.src==='edu'?m:m.edu;
     const eduB = ed ? ed.courses.map(c=>`<span class="mjx-st course${/\[두피\]/.test(c)&&!/\[피부\]/.test(c)?' scalp':''}">${mjxEsc(c)}</span>`).join('') : '';
     const pre = st&&st.edu&&st.edu.pre ? `<span class="mjx-st ord" title="파트너 관리대장 등록">납품점 · 멘토링 완료 ${mjxEsc(String(st.edu.pre.date).slice(2).replace(/-/g,'.'))}${st.edu.pre.partner?' · '+mjxEsc(String(st.edu.pre.partner).replace(/\s*\(.*?\)\s*/g,'')):''}</span>` : '';
-    const eduSt = st&&st.edu ? `<span class="mjx-st ${st.edu.status==='수료'?'cert':'none'}">전문점 교육 ${st.edu.status}${cert?' · '+(st.edu.kind&&st.edu.kind!=='닥터배 수료증'?mjxEsc(st.edu.kind)+' (수료증 미발급)':'수료증 '+cert.last.slice(2).replace(/-/g,'.')):''}</span>` : '';
+    const eduSt = st&&st.edu ? `<span class="mjx-st ${st.edu.status==='수료'?'cert':'none'}">교육 ${st.edu.status}${cert?' · '+(st.edu.kind&&st.edu.kind!=='닥터배 수료증'?mjxEsc(st.edu.kind)+' (수료증 미발급)':'수료증 '+cert.last.slice(2).replace(/-/g,'.')):''}</span>` : '';
     const sup = st&&st.supply ? `<span class="mjx-st ${st.supply.status==='가능'?'ord':'none'}" title="${mjxEsc(st.supply.basis||'')}">납품 ${st.supply.status}</span>` : '';
     const ref = st&&st.ref&&st.ref.mj90 ? `<span class="mjx-st none" title="${mjxEsc(st.ref.note||'')}">최근 90일 구매 ${Math.round(st.ref.mj90).toLocaleString('ko-KR')}원 (참고 · 판정 무관)</span>` : '';
     const rev = st&&(st.review||[]).length ? `<div class="mjx-rev">${st.review.map(r=>'⚠ '+mjxEsc(r.m)).join('<br>')}</div>` : '';
@@ -3178,7 +3178,7 @@ function renderMasterList(){
     <div class="rkcard"><small>최근 1년 합계</small><b>${fmt(y1sum)}원</b></div>
     <div class="rkcard"><small>기간 누적 총액</small><b>${fmt(grand)}원</b></div>
     <div class="rkcard"><small>파트너 관리 / 직거래</small><b>${withPt} / ${live.length-withPt}</b></div>
-    <div class="rkcard"><small>전문점 교육 수료 샵</small><b>${live.filter(m=>m.cert&&m.cert.last).length}곳</b></div>
+    <div class="rkcard"><small>교육 수료 샵 (수료증)</small><b>${live.filter(m=>m.cert&&m.cert.last).length}곳</b></div>
     <div class="rkcard c-mb"><small>마이크로블랙 전문점</small><b>${live.filter(m=>m.mb).length}곳</b></div>
     <div class="rkcard${MASTER_REVIEWS.length?' c-warn':''}"><small>확인 대기</small><b>${MASTER_REVIEWS.length}건</b></div>`;
   document.getElementById('mst-list-sub').textContent=live.length+'곳 중 '+items.length+'곳 표시';
@@ -3190,7 +3190,7 @@ function renderMasterList(){
     const badge = sh ? ptag(sh) : (x.pt?`<span class="ptag p">${msEsc(String(x.pt.partnerName||'').replace(/\s*\(.*\)$/,''))}</span>`:'<span class="ptag d">직거래</span>');
     return `<div class="mrow${m.mergedInto?' merged':''}" data-id="${m.id}" data-i="${sh?sh._i:''}">
       <span class="id"><span class="rknum">${idx+1}</span>${m.id}</span>
-      <span class="nm">${msEsc(m.name)}${m.mb?`<span class="ptag mbt" title="마이크로블랙 전문점${m.mb.no?' No.'+m.mb.no:''}${m.mb.name?' · '+msEsc(m.mb.name):''}">◆ MICRO BLACK</span>`:''}${badge}${m.cert&&m.cert.last?`<span class="ptag cert" title="전문점 교육 수료증 ${m.cert.count}건 · 최근 ${msEsc(m.cert.last)}${m.cert.name?' · '+msEsc(m.cert.name):''}">◆ 전문점 교육 수료 ${msEsc(String(m.cert.last).slice(2))}</span>`:''}${m.partnerEdu&&m.partnerEdu.date?`<span class="ptag pedu" title="파트너 멘토링 완료 ${msEsc(m.partnerEdu.date)} · ${msEsc(m.partnerEdu.partner||'')} — 관리대장에서 등록">✓ 납품점 · 멘토링 ${msEsc(String(m.partnerEdu.date).slice(2))}</span>`:''}${m.mergedInto?' <span style="color:#9A3B33;font-weight:400;font-size:11px">→ '+msEsc(masterName(m.mergedInto))+' 에 합쳐짐</span>':''}
+      <span class="nm">${msEsc(m.name)}${m.mb?`<span class="ptag mbt" title="마이크로블랙 전문점${m.mb.no?' No.'+m.mb.no:''}${m.mb.name?' · '+msEsc(m.mb.name):''}">◆ MICRO BLACK</span>`:''}${badge}${m.cert&&m.cert.last?`<span class="ptag cert" title="닥터배 수료증 ${m.cert.count}건 (교육 수료 — 전문점 여부와 별개) · 최근 ${msEsc(m.cert.last)}${m.cert.name?' · '+msEsc(m.cert.name):''}">✓ 교육 수료 ${msEsc(String(m.cert.last).slice(2))}</span>`:''}${m.partnerEdu&&m.partnerEdu.date?`<span class="ptag pedu" title="파트너 멘토링 완료 ${msEsc(m.partnerEdu.date)} · ${msEsc(m.partnerEdu.partner||'')} — 관리대장에서 등록">✓ 납품점 · 멘토링 ${msEsc(String(m.partnerEdu.date).slice(2))}</span>`:''}${m.mergedInto?' <span style="color:#9A3B33;font-weight:400;font-size:11px">→ '+msEsc(masterName(m.mergedInto))+' 에 합쳐짐</span>':''}
         <span class="al">${x.region?msEsc(x.region)+' · ':''}${(m.aliases||[]).length?msEsc((m.aliases||[]).join(' · ')):'<span style="color:#C4CBCF">별칭 없음</span>'}</span></span>
       <span class="bar"><span class="rkbar"><i style="width:${w}%"></i></span></span>
       <span class="st"><b>${money>0?fmt(money)+'원':'–'}</b><br><span class="rkpill b-${bd[1]}">${bd[0]}</span> <span style="color:#9AA7AE">${x.last||''}</span></span>
@@ -3247,7 +3247,7 @@ function openMasterEdit(id){
       <button type="button" id="me-mb" style="margin-left:auto;font-family:inherit;font-size:12px;border:1px solid #DFDCD2;background:#fff;border-radius:4px;padding:4px 9px;cursor:pointer">${m.mb?'MICRO BLACK 명단 해제':'MICRO BLACK 명단 수동 지정'}</button></div>
     <label>마이크로젝션 납품점 (파트너 멘토링)</label>
     <div style="font-size:12.5px">${m.partnerEdu&&m.partnerEdu.date?`✓ 멘토링 완료 ${msEsc(m.partnerEdu.date)} · ${msEsc(m.partnerEdu.partner||'')} <span style="color:#7A8B93;font-size:11.5px">(파트너 관리대장에서 등록·취소)</span>`:'<span style="color:#7A8B93">등록 없음 — 담당 파트너가 관리대장 멘토링 기록에서 "마이크로젝션 납품점 · 멘토링 완료"로 등록</span>'}</div>
-    <label>마이크로젝션 전문점 교육 수료</label>
+    <label>교육 수료 (닥터배 수료증 — 전문점 여부와 별개)</label>
     <div style="font-size:12.5px">${m.cert&&m.cert.last?`✓ 수료증 ${m.cert.count}건 · 최근 ${msEsc(m.cert.last)}${m.cert.name?' · '+msEsc(m.cert.name)+' 원장님':''}<div style="font-size:11px;color:#7A8B93;margin-top:2px">${(m.cert.records||[]).map(r=>msEsc(r.date+' '+r.shop+(r.name?' ('+r.name+')':''))).join('<br>')}</div>`:'<span style="color:#9A3B33">기록 없음</span> <span style="font-size:11px;color:#7A8B93">— 수료증 발급 사이트 명부에 이 거래처 이름·별칭과 맞는 기록이 없습니다. 명부 표기가 다르면 그 표기를 별칭으로 추가하세요</span>'}</div>
     <label>주소 ${(m.addrKeys||[]).length}곳 · 주문 ${(m.stats||{}).rows||0}행 · ${msWon((m.stats||{}).amount)}원</label>
     <div style="font-size:11.5px;color:#7A8B93">${(m.addrKeys||[]).slice(0,4).map(a=>msEsc(a)).join('<br>')}${(m.addrKeys||[]).length>4?'<br>…':''}</div>
