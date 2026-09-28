@@ -1226,7 +1226,7 @@ const isLightColor = hex => { const n=parseInt(hex.slice(1),16);
   return (0.299*(n>>16)+0.587*((n>>8)&255)+0.114*(n&255)) > 150; };
 
 /* ══════════════ 마이크로젝션 교육 수료 확인 ══════════════
-   판매 정책: 마이크로젝션은 전문점 교육 수료(수료증) 또는 납품점 · 멘토링 완료(파트너 등록) 샵에만 납품한다.
+   판매 정책: 마이크로젝션은 교육 수료(수료증) 또는 납품점 · 멘토링 완료(파트너 등록) 샵에만 납품한다.
    수료 명부(drbae-map cert_roster.json — /api/certs)를 받아, 마이크로젝션이 포함된
    주문의 명세서에 수료 여부 뱃지를 찍어 포장 단계에서 걸러낼 수 있게 한다. */
 let CERTS = [], CERT_SOURCE = '';
@@ -1354,8 +1354,9 @@ function peduOf(s){
   }
   return null;
 }
-/* 명세서 마이크로젝션 표시 — 두 태그를 구분한다.
-   ◆ 마이크로젝션 전문점 교육 수료 : 150만/200만 교육 구매 후 발급된 수료증 (수료 명부 → 거래처 마스터 cert)
+/* 명세서 마이크로젝션 표시 — 인쇄되므로 사실만 적는다 (2026-09-29 교수님 지적: 수료증 = 전문점 아님).
+   ◆ 마이크로젝션 전문점 · 분야 : 운영규칙 v1.0 '유지 중' 전문점 (거래처 마스터 사용 구분 use 의 specialist — 전문교육·키트 + 수료증 또는 본사 지정)
+   ✓ 마이크로젝션 교육 수료      : 닥터배 수료증이 있는 샵 (수료 명부 → 거래처 마스터 cert). 대부분 일반 교육 수료이며 전문점이 아니다
    ✓ 마이크로젝션 납품점 · 멘토링 완료 : 파트너가 관리대장에서 등록 (거래처 마스터 partnerEdu → pedu, 첫 주문은 peduShops)
    마이크로젝션은 둘 중 하나가 있어야 살 수 있다 — 마이크로젝션 주문인데 둘 다 없으면 경고(화면 전용, 인쇄 안 됨).
    표시는 마이크로젝션이 든 명세서에만. MICRO BLACK 전문점은 위 MB 뱃지로 충분하므로 표시하지 않는다.
@@ -1367,12 +1368,15 @@ const MJ_BADGE = s => {
   const spec = mm && (mm.use||[]).find(t=>t.k==='specialist');
   const fl = spec && spec.f && spec.f.length ? ' · '+spec.f.map(x=>USE_F[x]||x).join('·') : '';
   let h = '';
-  if(c) h += `<div class="mjBadge ok">◆ 마이크로젝션 전문점 교육 수료${fl}: ${esc(dfmt(String(c.date)))}`
+  if(spec) h += `<div class="mjBadge ok">◆ 마이크로젝션 전문점${fl}${c?` · 수료 ${esc(dfmt(String(c.date)))}`:''}`
+           + `${c&&c.name?` · ${esc(c.name)} 원장님`:''}`
+           + `${c&&c.viaMaster&&s.sid?` <small>(거래처 ${esc(s.sid)})</small>`:''}</div>`;
+  else if(c) h += `<div class="mjBadge ok">✓ 마이크로젝션 교육 수료: ${esc(dfmt(String(c.date)))}`
            + `${c.name?` · ${esc(c.name)} 원장님`:''}`
            + `${c.viaMaster?(s.sid?` <small>(거래처 ${esc(s.sid)})</small>`:''):(normName(c.shop)!==normName(s.name)?` <small>(수료 명부: ${esc(c.shop)})</small>`:'')}</div>`;
   if(p) h += `<div class="useBadge">✓ 마이크로젝션 납품점 · 멘토링 완료: ${esc(dfmt(String(p.date)))}`
            + `${p.partner?` · ${esc(String(p.partner).replace(/\s*\(.*?\)\s*/g,'').trim())}`:''}</div>`;
-  if(!c && !p) h +=`<div class="mjBadge warn">⚠ 마이크로젝션 멘토링·수료 기록 없음 — 납품 전 확인!!`
+  if(!spec && !c && !p) h +=`<div class="mjBadge warn">⚠ 마이크로젝션 멘토링·수료 기록 없음 — 납품 전 확인!!`
            + `${CERT_SOURCE==='none'?' (명부를 불러오지 못함)':''}</div>`;
   return h;
 };
