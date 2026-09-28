@@ -913,6 +913,50 @@ header{background:var(--neu-page);border-bottom:0;box-shadow:0 14px 28px -18px r
 .ttip{border-radius:12px}
 .st-cols{gap:22px}
 @media(max-width:1100px){.st-card b{font-size:22px}.st-card.tot b{font-size:19px}.st-card.kpi b{font-size:26px}}
+
+/* ===== 마이크로젝션 전문점 분포 ===== */
+.mjxpage{flex:1 1 auto;min-height:0;flex-direction:row;background:var(--neu-page,#fff)}
+.mjx-side{flex:0 0 470px;display:flex;flex-direction:column;min-height:0;padding:20px 12px 0 22px;gap:14px}
+.mjx-head small{display:block;font-size:11px;font-weight:800;letter-spacing:.08em;color:#6B7590}
+.mjx-head h3{font-size:19px;font-weight:900;color:#111214;letter-spacing:-.02em;margin-top:2px}
+.mjx-head h3 b{font-family:var(--mono);color:#111214;margin-left:4px}
+.mjx-cards{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.mjx-card{background:var(--neu-card);box-shadow:var(--neu-out-sm);border-radius:18px;padding:12px 14px}
+.mjx-card small{display:block;font-size:10.5px;font-weight:700;color:#6B7590}
+.mjx-card b{display:block;font-size:22px;font-weight:800;color:#2A2E36;font-family:var(--mono);margin-top:3px}
+.mjx-card.blk{background:linear-gradient(135deg,#0B0B0C,#3A3B3E)}.mjx-card.blk small{color:#C9CBD0}.mjx-card.blk b{color:#fff}
+.mjx-card.blu{background:linear-gradient(135deg,#2F80ED,#5EA8FF)}.mjx-card.blu small{color:rgba(255,255,255,.85)}.mjx-card.blu b{color:#fff}
+.mjx-card.ex{background:var(--neu-card-in);box-shadow:var(--neu-in-sm)}
+.mjx-tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.mjx-seg{display:flex;gap:2px;background:var(--neu-card-in);box-shadow:var(--neu-in-sm);border-radius:14px;padding:4px}
+.mjx-seg button{border:0;background:transparent;font-family:inherit;font-size:12px;font-weight:700;padding:6px 11px;border-radius:11px;color:#6B7590;cursor:pointer;white-space:nowrap}
+.mjx-seg button.on{background:var(--neu-card);box-shadow:var(--neu-out-sm);color:#111214}
+#mjx-q{flex:1 1 120px;min-width:0;font-family:inherit;font-size:12.5px;padding:8px 12px;border:0;border-radius:12px;background:var(--neu-card-in);box-shadow:var(--neu-in-sm);outline:none}
+.mjx-list{flex:1 1 auto;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:12px;padding:6px 10px 30px 4px}
+.mjx-row{background:var(--neu-card);box-shadow:var(--neu-out-sm);border-radius:16px;padding:11px 13px;cursor:pointer;transition:box-shadow .15s}
+.mjx-row:hover{box-shadow:var(--neu-out)}
+.mjx-row.on{box-shadow:var(--neu-out),inset 0 0 0 2px #111214}
+.mjx-r1{display:flex;align-items:center;gap:8px;min-width:0}
+.mjx-r1 .no{flex:0 0 auto;font-family:var(--mono);font-size:11px;font-weight:800;color:#fff;background:var(--c);border-radius:8px;padding:3px 7px}
+.mjx-r1 b{font-size:13.5px;color:#111214;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mjx-r1 .own{font-size:11px;color:#6B7590;white-space:nowrap}
+.mjx-r1 .cat{margin-left:auto;font-family:inherit;font-size:11.5px;font-weight:700;border:0;border-radius:10px;padding:4px 6px;background:var(--neu-card-in);box-shadow:var(--neu-in-sm);color:#111214;cursor:pointer}
+.mjx-r2{display:flex;flex-wrap:wrap;gap:4px;margin-top:7px;align-items:center}
+.mjx-st{font-size:10px;font-weight:800;padding:2px 8px;border-radius:9px}
+.mjx-st.ex{background:#111214;color:#fff}.mjx-st.ord{background:#E6EEF9;color:#2F80ED}.mjx-st.none{background:#EEF0F3;color:#8A93A3}
+.mjx-r3{margin-top:6px;font-size:11.5px;color:#6B7590;line-height:1.55}
+.mjx-r3 em{color:#C0392B;font-style:normal;font-weight:700}
+.mjx-r3 a{font-family:var(--mono);color:#6B7590;text-decoration:none}.mjx-r3 a:hover{color:#2F80ED;text-decoration:underline}
+.mjx-empty{font-size:12.5px;color:#8A93A3;padding:20px 4px}
+.mjx-mapwrap{flex:1 1 auto;position:relative;margin:20px 22px 22px 10px;border-radius:24px;overflow:hidden;box-shadow:var(--neu-out)}
+#mjx-map{position:absolute;inset:0}
+.mjx-legend{position:absolute;left:14px;bottom:14px;z-index:5;background:rgba(255,255,255,.95);border-radius:14px;box-shadow:0 6px 18px rgba(120,130,145,.35);padding:10px 12px;font-size:11.5px;color:#2A2E36;display:flex;flex-direction:column;gap:5px}
+.mjx-legend div{display:flex;align-items:center;gap:7px}
+.mjx-legend i{width:12px;height:12px;border-radius:50%;background:var(--c);border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.3)}
+.mjx-legend i.ring{background:transparent;border:1.5px dashed #111214;box-shadow:none;width:14px;height:14px}
+.mjxdot{transform:translate(-50%,-50%);min-width:22px;height:22px;padding:0 5px;border-radius:11px;background:var(--c);color:#fff;font-family:var(--mono);font-size:10.5px;font-weight:800;display:flex;align-items:center;justify-content:center;border:2.5px solid #fff;box-shadow:0 2px 7px rgba(0,0,0,.45);cursor:pointer}
+.mjxdot.ex{box-shadow:0 0 0 3px var(--c),0 3px 9px rgba(0,0,0,.5)}
+@media(max-width:900px){.mjxpage{flex-direction:column;overflow-y:auto}.mjx-side{flex:0 0 auto;padding:16px}.mjx-list{max-height:none;overflow:visible}.mjx-mapwrap{flex:0 0 60vh;margin:0 16px 20px}}
 </style>
 </head>
 <body>
@@ -935,10 +979,10 @@ header{background:var(--neu-page);border-bottom:0;box-shadow:0 14px 28px -18px r
   <nav class="tabs">
     <button class="tab on" data-pg="status">현황</button>
     <button class="tab" data-pg="packing">발송 명세서</button>
-    <button class="tab" data-pg="map">지도</button>
+    <button class="tab" data-pg="map">전체 납품샵 분포</button>
     <button class="tab" data-pg="report">샵 리포트</button>
     <button class="tab" data-pg="newshop">신규샵 위치 리포트</button>
-    <button class="tab" data-pg="mb">마이크로 블랙</button>
+    <button class="tab" data-pg="mb">마이크로젝션 전문점 분포</button>
     <button class="tab" data-pg="master">거래처 관리 <span class="tabn" id="mst-n" hidden>0</span></button>
     <button class="tab" data-pg="cert">수료증 발급</button>
     <button class="tab" data-pg="links">파트너 포털</button>
@@ -1273,12 +1317,31 @@ header{background:var(--neu-page);border-bottom:0;box-shadow:0 14px 28px -18px r
   </div>
   <iframe id="linksFrame" title="닥터배 파트너 포털" loading="lazy"></iframe>
 </div>
-<div class="page-el mbpage" id="page-mb">
-  <div class="mb-top">
-    <div class="mb-title">⚫ 마이크로 블랙 전문점 <b>27곳</b></div>
-    <div class="mb-hint">고정 파트너 리스트 · 행의 [지도] 버튼 또는 지도 탭 툴바의 「⚫ 블랙 전문점」으로 지도에 검정 점으로 표시됩니다</div>
+<div class="page-el mjxpage" id="page-mb">
+  <div class="mjx-side">
+    <div class="mjx-head">
+      <small>MICRO BLACK · 본사 전용 명단</small>
+      <h3>마이크로젝션 전문점 분포 <b id="mjx-total">0곳</b></h3>
+    </div>
+    <div class="mjx-cards" id="mjx-cards"></div>
+    <div class="mjx-tools">
+      <div class="mjx-seg" id="mjx-seg">
+        <button data-f="all" class="on">전체</button>
+        <button data-f="두피">전문점 - 두피</button>
+        <button data-f="피부">전문점 - 피부</button>
+      </div>
+      <input id="mjx-q" type="text" placeholder="🔍 이름·상호·주소" autocomplete="off">
+    </div>
+    <div class="mjx-list" id="mb-list"></div>
   </div>
-  <div class="mb-list" id="mb-list"></div>
+  <div class="mjx-mapwrap">
+    <div id="mjx-map"></div>
+    <div class="mjx-legend">
+      <div><i style="--c:#111214"></i>마이크로젝션 전문점 - 두피</div>
+      <div><i style="--c:#2F80ED"></i>마이크로젝션 전문점 - 피부</div>
+      <div><i class="ring"></i>3개월 마이크로젝션 38만 원↑ · 반경 2km 신규 입점 불가</div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -1711,35 +1774,7 @@ async function readFile(file){
 /* ================== /DATA LAYER ================== */
 
 /* ── 마이크로 블랙 전문점 (고정 리스트) ── g: 지오코딩 보정 주소 */
-const MB_SHOPS=[
- {nm:'권민경',ph:'01073136956',svc:'두피관리',addr:'서울 강남구 선릉로 711 2층'},
- {nm:'강청림',ph:'01092295028',svc:'두피문신, 기타 뷰티',addr:'충남 홍성군 홍북읍 충남대로 50 국제아르페온2차 141호 아우라헤어'},
- {nm:'박세은',ph:'01037260340',svc:'두피문신',addr:'전북특별자치도 완산구 우전로 250 문학빌딩 1층 젊어지다',g:'전북특별자치도 전주시 완산구 우전로 250'},
- {nm:'유병웅',ph:'01080002920',svc:'두피관리, 두피문신',addr:'경기도 부천시 길주로 91 비잔티움상동 416호'},
- {nm:'빈수현',ph:'01038470096',svc:'두피문신',addr:'경기도 수원시 팔달구 인계동 1031-14 정석빌딩 7층'},
- {nm:'명주성',ph:'01046136568',svc:'두피관리, 두피문신',addr:'광주광역시 서구 상무중앙로 43 BYC빌딩 414호 탈모왕광주'},
- {nm:'박정철',ph:'01051750234',svc:'피부관리, 두피관리, 두피문신',addr:'대구 중구 달구벌대로 2094 대구메디스퀘어 4층 401호 마이크로청담대구'},
- {nm:'정채안',ph:'01023498894',svc:'두피문신',addr:'울산광역시 중구 성남동 먹자거리 2, 1층 마이크로청담 울산',g:'울산광역시 중구 성남동'},
- {nm:'나혁',ph:'01963698462',svc:'두피문신',addr:'강남구 역삼동 783-18 4층',g:'서울 강남구 역삼동 783-18'},
- {nm:'김현준',ph:'01023521051',svc:'두피문신',addr:'서울 송파구 위례송파로 40 호반써밋 1차 1205동 704호'},
- {nm:'정재연',ph:'01067609772',svc:'두피문신',addr:'경기도 남양주시 호평로46번길 8 홍조프라자 811호 픽스칼프'},
- {nm:'양윤호',ph:'01050387696',svc:'두피문신',addr:'부산 부산진구 가야대로703번길 15, 5층 킨크스칼프'},
- {nm:'이정은',ph:'01068527025',svc:'두피문신',addr:'경남 진주시 충무공동 에나로 130 베네비앙 9층 907호 티안나도트'},
- {nm:'정지혜',ph:'01080703195',svc:'피부관리, 두피관리, 속눈썹, 반영구문신',addr:'경기도 광주시 태전동2길 9 101호 하이글림'},
- {nm:'최소연',ph:'01046464961',svc:'피부관리',addr:'경기도 고양시 덕양구 지정로 17, 618호 아크네스킨랩'},
- {nm:'이설희',ph:'01092966707',svc:'피부관리, 반영구문신',addr:'서울시 송파구 백제고분로7길 49 311호 안나뷰띠끄'},
- {nm:'공지온',ph:'01089475021',svc:'반영구문신, 두피문신',addr:'서울시 송파구 문정동 639-5 힐스테이트 에코송파 1층 134호 (세론)'},
- {nm:'오영례',ph:'01067557334',svc:'두피관리',addr:'월드컵4강로28번길 17 아우라헤어살롱',g:'광주광역시 서구 월드컵4강로28번길 17'},
- {nm:'최서하',ph:'01063742104',svc:'두피관리, 두피문신',addr:'전북 정읍시 정읍남로 1447-14'},
- {nm:'공진서',ph:'01041528486',svc:'속눈썹, 반영구문신, 두피문신',addr:'광주광역시 첨단중앙로182번길 90 어썸시티 상가2층 205호',g:'광주광역시 광산구 첨단중앙로182번길 90'},
- {nm:'이주미',ph:'01065241424',svc:'피부관리, 두피관리, 속눈썹, 반영구문신, 두피문신',addr:'광주광역시 동구 구성로152번길 20 아송빌딩 2층 더미인나라'},
- {nm:'이서현',ph:'01063940477',svc:'두피문신, 기타 뷰티',addr:'인천 서구 청라에메랄드로 99 지젤엠 2층 252호 리브헤어'},
- {nm:'김채원',ph:'01052024788',svc:'반영구문신, 두피문신',addr:'경기도 고양시 일산서구 킨텍스로 240 포레나킨텍스 105동 2804호'},
- {nm:'김종규 (사업자 백현주)',ph:'01075631882',svc:'두피문신',addr:'서울시 금천구 시흥대로 315 지하1층 08호'},
- {nm:'정지혜',ph:'01020038453',svc:'반영구문신, 두피문신',addr:'신사동 511-7 2층 도트앤라인',g:'서울 강남구 신사동 511-7'},
- {nm:'장현진',ph:'01098949847',svc:'속눈썹, 반영구문신',addr:'대구 달서구 조암남로 85 1층 121호 이프먼트'},
- {nm:'이명자',ph:'01067869163',svc:'반영구문신, 두피문신, 기타 뷰티',addr:'대구 남구 명덕로14길 17 (세니떼뷰티)'}
-];
+let MB_SHOPS=[];   // 명단 원본: Firestore private/mbshops (본사 전용) — loadMbShops() 가 로그인 후 채운다
 
 const fmt = n => n>=10000 ? (n/10000).toLocaleString('ko-KR',{maximumFractionDigits:0})+'만' : n.toLocaleString('ko-KR');
 const fmtWon = n => n.toLocaleString('ko-KR')+'원';
@@ -2474,7 +2509,7 @@ let curPage='status', rankSort='annual', recentDesc=true, reportIdx=null;
 function switchPage(pg){
   curPage=pg;
   document.body.classList.remove('pg-rank','pg-report','pg-newshop','pg-mb','pg-master');
-  if(pg==='mb') document.body.classList.add('pg-mb');
+  if(pg==='mb'){ document.body.classList.add('pg-mb'); mjxOpen(); }
   if(pg==='master'){ document.body.classList.add('pg-master'); try{ renderMaster(); }catch(e){ console.error(e); } }
   if(pg==='cert'){ const f=document.getElementById('certFrame'); if(!f.src) f.src='https://baelab-create.github.io/drbae-certificate/'; }   // 처음 열 때만 로드
   if(pg==='links'){ const f=document.getElementById('linksFrame'); if(!f.src) f.src='https://baelab-create.github.io/drbae-links/'; }
@@ -2970,18 +3005,109 @@ function mbSvcChips(svc){
   return svc.split(',').map(s=>s.trim()).filter(Boolean)
     .map(s=>`<span class="svcchip${s==='두피문신'?' tattoo':''}">${s}</span>`).join('');
 }
+/* ===== 마이크로젝션 전문점 분포 (MICRO BLACK) ===== */
+let MB_DOC=null, MB_STAT={}, mjxFilter='all', mjxMap=null, mjxMarks=[], mjxCircles=[], mjxInfo=null, mjxSel=null;
+const MB_CAT_COLOR={'두피':'#111214','피부':'#2F80ED'};
+const mjxEsc=v=>String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function mbFmtPh(p){ const d=String(p||'').replace(/\D/g,''); return d.replace(/^(\d{3})(\d{3,4})(\d{4})$/,'$1-$2-$3'); }
+async function loadMbShops(){
+  const d=await fdb.collection('private').doc('mbshops').get();
+  MB_DOC=d.exists?d.data():{shops:[]};
+  MB_SHOPS=(MB_DOC.shops||[]).slice().sort((a,b)=>a.no-b.no).map(e=>({no:e.no, nm:e.name, shop:e.shop||'', ph:e.ph||'', svc:e.svc||'',
+    addr:e.addr||'', g:e.g||'', cat:e.cat||'두피', lat:e.lat||null, lng:e.lng||null, masterId:e.masterId||null}));
+  MB_STAT={};
+  try{ const x=await fdb.collection('private').doc('mjshops').get();
+    if(x.exists){ (x.data().shops||[]).forEach(t=>{ if(t.mb) MB_STAT[t.mb]={mj90:t.mj90||0, mj180:t.mj180||0, expert:!!t.expert, last:t.last||''}; }); MB_STAT._at=x.data().at||''; } }catch(e){}
+  mbGeo=false; mbMarks.forEach(o=>o.setMap(null)); mbMarks=[];
+  buildMbList(); if(mjxMap) mjxDraw();
+}
+async function mbSaveGeo(){        // 새로 좌표를 얻은 샵만 Firestore 에 반영 (입점 가능 격자가 이 좌표를 씀)
+  if(!MB_DOC) return; let ch=0;
+  (MB_DOC.shops||[]).forEach(e=>{ const m=MB_SHOPS.find(x=>x.no===e.no); if(m&&m.lat&&!e.lat){ e.lat=+(+m.lat).toFixed(6); e.lng=+(+m.lng).toFixed(6); ch++; } });
+  if(ch) try{ await fdb.collection('private').doc('mbshops').set({shops:MB_DOC.shops},{merge:true}); }catch(e){ console.warn('전문점 좌표 저장 실패',e); }
+}
+async function mbSetCat(no,cat){
+  const e=(MB_DOC&&MB_DOC.shops||[]).find(x=>x.no===no); if(!e) return;
+  e.cat=cat;
+  try{ await fdb.collection('private').doc('mbshops').set({shops:MB_DOC.shops},{merge:true}); }catch(err){ toast('저장 실패: '+err.message); return; }
+  const m=MB_SHOPS.find(x=>x.no===no); if(m) m.cat=cat;
+  toast('No.'+no+' → 마이크로젝션 전문점 - '+cat); buildMbList(); if(mjxMap) mjxDraw();
+}
 function buildMbList(){
-  const box=document.getElementById('mb-list'); box.innerHTML='';
-  MB_SHOPS.forEach((m,i)=>{
-    const r=document.createElement('div'); r.className='mb-row';
-    r.innerHTML=`<span class="no">${i+1}</span>
-      <span class="who"><b>${m.nm}</b><a href="tel:${m.ph}">${m.ph.replace(/(\d{3})(\d{3,4})(\d{4})/,'$1-$2-$3')}</a></span>
-      <span class="svcs">${mbSvcChips(m.svc)}</span>
-      <span class="maddr">${m.addr}</span>
-      <button class="mgo">📍 지도</button>`;
-    r.querySelector('.mgo').onclick=()=>mbLocate(i);
-    box.appendChild(r);
+  const box=document.getElementById('mb-list'); if(!box) return;
+  const all=MB_SHOPS, q=(document.getElementById('mjx-q').value||'').trim().toLowerCase();
+  const nScalp=all.filter(m=>m.cat==='두피').length, nSkin=all.filter(m=>m.cat==='피부').length;
+  const nOrd=all.filter(m=>MB_STAT[m.no]&&MB_STAT[m.no].last).length, nEx=all.filter(m=>MB_STAT[m.no]&&MB_STAT[m.no].expert).length;
+  document.getElementById('mjx-total').textContent=all.length+'곳';
+  document.getElementById('mjx-cards').innerHTML=`
+    <div class="mjx-card blk"><small>전문점 - 두피</small><b>${nScalp}곳</b></div>
+    <div class="mjx-card blu"><small>전문점 - 피부</small><b>${nSkin}곳</b></div>
+    <div class="mjx-card"><small>6개월 내 마이크로젝션 주문</small><b>${nOrd}곳</b></div>
+    <div class="mjx-card ex"><small>3개월 38만 원↑ (2km 입점 보호)</small><b>${nEx}곳</b></div>`;
+  document.querySelectorAll('#mjx-seg button').forEach(b=>{ const f=b.dataset.f; const n=f==='all'?all.length:(f==='두피'?nScalp:nSkin);
+    b.textContent=(f==='all'?'전체':'전문점 - '+f)+' '+n; b.classList.toggle('on',f===mjxFilter); });
+  const list=all.filter(m=>(mjxFilter==='all'||m.cat===mjxFilter) && (!q||(m.nm+' '+m.shop+' '+m.addr+' '+m.svc).toLowerCase().includes(q)));
+  if(!all.length){ box.innerHTML='<div class="mjx-empty">로그인 후 명단을 불러옵니다.</div>'; return; }
+  box.innerHTML=list.map(m=>{ const st=MB_STAT[m.no]||{}; const col=MB_CAT_COLOR[m.cat]||'#111214';
+    const badge = st.expert ? `<span class="mjx-st ex">3개월 ${Math.round(st.mj90).toLocaleString('ko-KR')}원 · 입점 보호</span>`
+                : st.last ? `<span class="mjx-st ord">최근 주문 ${st.last.slice(2).replace(/-/g,'.')}</span>`
+                : `<span class="mjx-st none">주문 이력 없음</span>`;
+    return `<div class="mjx-row${mjxSel===m.no?' on':''}" data-no="${m.no}">
+      <div class="mjx-r1"><span class="no" style="--c:${col}">${String(m.no).padStart(2,'0')}</span>
+        <b>${mjxEsc(m.shop||m.nm)}</b>${m.shop?`<span class="own">${mjxEsc(m.nm)} 원장</span>`:''}
+        <select class="cat" data-no="${m.no}" title="두피/피부 구분 — 바꾸면 바로 저장됩니다"><option${m.cat==='두피'?' selected':''}>두피</option><option${m.cat==='피부'?' selected':''}>피부</option></select></div>
+      <div class="mjx-r2">${mbSvcChips(m.svc)}${badge}</div>
+      <div class="mjx-r3">${mjxEsc(m.addr)}${m.lat?'':' <em>· 지도 위치 없음</em>'}<br><a href="tel:${mjxEsc(m.ph)}">${mjxEsc(mbFmtPh(m.ph))}</a></div>
+    </div>`; }).join('') || '<div class="mjx-empty">검색 결과가 없습니다.</div>';
+}
+document.getElementById('mjx-q').addEventListener('input',()=>buildMbList());
+document.getElementById('mjx-seg').addEventListener('click',e=>{ const b=e.target.closest('button[data-f]'); if(!b) return; mjxFilter=b.dataset.f; buildMbList(); if(mjxMap) mjxDraw(true); });
+document.getElementById('mb-list').addEventListener('change',e=>{ const sel=e.target.closest('select.cat'); if(sel) mbSetCat(+sel.dataset.no, sel.value); });
+document.getElementById('mb-list').addEventListener('click',e=>{ if(e.target.closest('select,a')) return; const r=e.target.closest('.mjx-row'); if(r) mjxFocus(+r.dataset.no); });
+function mjxOpen(){
+  let tries=0;
+  (function go(){
+    if(!(window.kakao&&kakao.maps&&kakao.maps.Map&&typeof geocoder!=='undefined'&&geocoder)){ if(++tries<50) return setTimeout(go,300); toast('지도를 불러오지 못했습니다'); return; }
+    if(!mjxMap){ mjxMap=new kakao.maps.Map(document.getElementById('mjx-map'),{center:new kakao.maps.LatLng(36.3,127.8),level:13});
+      mjxMap.addControl(new kakao.maps.ZoomControl(), kakao.maps.ControlPosition.RIGHT); }
+    setTimeout(()=>{ mjxMap.relayout(); mbGeocodeAll(()=>mjxDraw(true)); },60);
+  })();
+}
+function mjxDraw(fit){
+  if(!mjxMap) return;
+  mjxMarks.forEach(o=>o.setMap(null)); mjxCircles.forEach(c=>c.setMap(null)); mjxMarks=[]; mjxCircles=[];
+  const b=new kakao.maps.LatLngBounds(); let k=0;
+  MB_SHOPS.forEach(m=>{
+    if(!m.lat||(mjxFilter!=='all'&&m.cat!==mjxFilter)) return;
+    const st=MB_STAT[m.no]||{}, col=MB_CAT_COLOR[m.cat]||'#111214', pos=new kakao.maps.LatLng(m.lat,m.lng);
+    if(st.expert){ const c=new kakao.maps.Circle({center:pos,radius:2000,strokeWeight:1.5,strokeColor:col,strokeOpacity:.75,strokeStyle:'dash',fillColor:col,fillOpacity:.07}); c.setMap(mjxMap); mjxCircles.push(c); }
+    const el=document.createElement('div'); el.className='mjxdot'+(st.expert?' ex':''); el.style.setProperty('--c',col);
+    el.textContent=m.no; el.title=(m.shop||m.nm)+' · 전문점 - '+m.cat;
+    el.onclick=e=>{ e.stopPropagation(); mjxShow(m); };
+    const ov=new kakao.maps.CustomOverlay({position:pos,content:el,yAnchor:.5,xAnchor:.5,zIndex:st.expert?30:20,clickable:true});
+    ov.setMap(mjxMap); mjxMarks.push(ov); b.extend(pos); k++;
   });
+  if(fit&&k) mjxMap.setBounds(b);
+}
+function mjxShow(m){
+  if(mjxInfo){ mjxInfo.setMap(null); mjxInfo=null; }
+  const st=MB_STAT[m.no]||{};
+  const el=document.createElement('div'); el.className='mbinfo';
+  el.innerHTML=`<button class="x">&times;</button><h4>No.${m.no} ${mjxEsc(m.shop||m.nm)}</h4>
+    <div class="sv">마이크로젝션 전문점 - ${m.cat} · ${mjxEsc(m.nm)} 원장</div><div class="sv">${mjxEsc(m.svc)}</div>
+    <div class="ad">${mjxEsc(m.addr)}</div>
+    <div class="sv">${st.expert?'3개월 마이크로젝션 '+Math.round(st.mj90).toLocaleString('ko-KR')+'원 · 반경 2km 신규 입점 불가':(st.last?'최근 마이크로젝션 주문 '+st.last:'네이버 주문 이력 없음')}</div>
+    <a href="tel:${mjxEsc(m.ph)}">${mjxEsc(mbFmtPh(m.ph))}</a>`;
+  el.querySelector('.x').onclick=()=>{ if(mjxInfo){ mjxInfo.setMap(null); mjxInfo=null; } };
+  mjxInfo=new kakao.maps.CustomOverlay({position:new kakao.maps.LatLng(m.lat,m.lng),content:el,yAnchor:0,xAnchor:0,zIndex:40,clickable:true});
+  mjxInfo.setMap(mjxMap);
+}
+function mjxFocus(no){
+  const m=MB_SHOPS.find(x=>x.no===no); if(!m) return;
+  mjxSel=no; document.querySelectorAll('.mjx-row').forEach(r=>r.classList.toggle('on',+r.dataset.no===no));
+  if(!mjxMap) return;
+  if(!m.lat){ toast('주소가 확정되지 않아 지도에 없습니다'); return; }
+  mjxMap.setLevel(6); mjxMap.setCenter(new kakao.maps.LatLng(m.lat,m.lng)); mjxShow(m);
 }
 function mbCloseInfo(){ if(mbInfoOv){ mbInfoOv.setMap(null); mbInfoOv=null; } }
 function mbShowInfo(m){
@@ -3002,10 +3128,13 @@ function mbGeocodeAll(cb){
     if(k>=MB_SHOPS.length){
       mbGeo=true;
       try{ localStorage.setItem('drbae_geo_v1', JSON.stringify(GEO)); }catch(e){}
+      mbSaveGeo();
       if(failed.length){ toast(`블랙 전문점 ${done}곳 표시 · 위치 미확인 ${failed.length}곳`); console.warn('블랙 미매칭:',failed); }
       if(cb)cb(); return;
     }
     const m=MB_SHOPS[k], q=m.g||m.addr;
+    if(m.lat&&m.lng){ mbAddMark(m); done++; next(k+1); return; }
+    if(!q||/준비중|미정/.test(q)){ failed.push(m.nm+' / 주소 미정'); next(k+1); return; }
     const c=GEO['MB:'+m.addr];
     const place=(lat,lng,save)=>{ m.lat=lat; m.lng=lng; if(save) GEO['MB:'+m.addr]=[lat,lng];
       mbAddMark(m); done++; };
@@ -3344,6 +3473,7 @@ async function initData(){
   try{
     toast('데이터 불러오는 중…');
     try{ await loadMaster(); }catch(e){ console.error(e); toast('거래처 마스터를 불러오지 못했습니다'); }
+    try{ await loadMbShops(); }catch(e){ console.error(e); toast('마이크로젝션 전문점 명단을 불러오지 못했습니다'); }
     const m=await loadMapCSV();
     if(m && m.text){
       const rows=parseBuf('data.csv', new TextEncoder().encode(m.text).buffer);
