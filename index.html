@@ -3127,7 +3127,7 @@ function buildMbList(){
   const list=all.filter(m=>mjxInSrc(m)&&mjxInFld(m)&&(!q||(m.nm+' '+m.shop+' '+m.addr+' '+(m.svc||'')+' '+((m.edu||m).courses||[]).join(' ')+' '+((m.edu||m).partner||'')).toLowerCase().includes(q)));
   box.innerHTML=list.map(m=>{ const st=m.site, col=m.fSkin&&!m.fScalp?MB_CAT_COLOR['피부']:MB_CAT_COLOR['두피'], cert=mjxCert(m), ed=m.src==='edu'?m:m.edu;
     const eduB = ed ? ed.courses.map(c=>`<span class="mjx-st course${/\[두피\]/.test(c)&&!/\[피부\]/.test(c)?' scalp':''}">${mjxEsc(c)}</span>`).join('') : '';
-    const eduSt = st&&st.edu ? `<span class="mjx-st ${st.edu.status==='수료'?'cert':'none'}">교육 ${st.edu.status}${cert?' · 수료증 '+cert.last.slice(2).replace(/-/g,'.'):''}</span>` : '';
+    const eduSt = st&&st.edu ? `<span class="mjx-st ${st.edu.status==='수료'?'cert':'none'}">교육 ${st.edu.status}${cert?' · '+(st.edu.kind&&st.edu.kind!=='닥터배 수료증'?mjxEsc(st.edu.kind)+' (수료증 미발급)':'수료증 '+cert.last.slice(2).replace(/-/g,'.')):''}</span>` : '';
     const sup = st&&st.supply ? `<span class="mjx-st ${st.supply.status==='가능'?'ord':'none'}" title="${mjxEsc(st.supply.basis||'')}">납품 ${st.supply.status}</span>` : '';
     const ref = st&&st.ref&&st.ref.mj90 ? `<span class="mjx-st none" title="${mjxEsc(st.ref.note||'')}">3개월 구매 ${Math.round(st.ref.mj90).toLocaleString('ko-KR')}원 (참고)</span>` : '';
     const rev = st&&(st.review||[]).length ? `<div class="mjx-rev">${st.review.map(r=>'⚠ '+mjxEsc(r.m)).join('<br>')}</div>` : '';
