@@ -2533,7 +2533,7 @@ async function mbSaveGeo(){        // 새로 좌표를 얻은 샵만 반영 (전
   try{ await mbPatch(e=>{ const m=got.find(x=>x.no===e.no); if(m&&!e.lat){ e.lat=+(+m.lat).toFixed(6); e.lng=+(+m.lng).toFixed(6); return true; } return false; }); }
   catch(e){ console.warn('전문점 좌표 저장 실패',e); toast('전문점 좌표 저장 실패: '+e.message); }
 }
-async /* 본사 확인 필요(검토 사유가 있거나 심사 중인 사업장) 수 → 탭 배지·'확인 필요' 버튼 */
+/* 본사 확인 필요(검토 사유가 있거나 심사 중인 사업장) 수 → 탭 배지·'확인 필요' 버튼 */
 function mjxBadge(){
   const n=Object.values(MJ_SITES).filter(x=>(x.review||[]).length || ['skin','scalp'].some(f=>(x[f]||{}).status==='심사 중')).length;
   const b=document.getElementById('mb-n'); if(b){ b.textContent=n; b.hidden=!n; b.closest('button').title=n?'본사 확인 필요 '+n+'곳':''; }
