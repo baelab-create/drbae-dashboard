@@ -262,6 +262,11 @@
   .sheet.mb .sh-foot{border-top-color:#111214;}
   .sheet.mb::before{content:''; position:absolute; left:0; top:0; bottom:0; width:3.5mm;
     background:linear-gradient(180deg,#0B0B0C,#6B6E73); -webkit-print-color-adjust:exact; print-color-adjust:exact;}
+  /* 마이크로젝션 사용 구분(거래처 마스터 use·pedu) — 납품샵 / 전문점 */
+  .useBadge{display:table; margin:1.5mm 0 2mm; padding:1.1mm 3mm; border-radius:1.2mm; font-size:11px; font-weight:800; letter-spacing:-.2px;
+    background:#EAF2FE; color:#1D4E9E; border:1.5px solid #3B82F6; -webkit-print-color-adjust:exact; print-color-adjust:exact;}
+  .useBadge.spec{background:#FDECEA; color:#9B1C1C; border-color:#E5303A;}
+  .useBadge small{font-weight:700; opacity:.8; margin-left:1mm;}
   /* 마이크로젝션 교육 수료 뱃지 — 포장 전 납품 가능 여부 확인용 */
   .mjBadge{
     display:table; margin:1.5mm 0 2mm; padding:1.2mm 3mm; border-radius:1.2mm;
@@ -1339,12 +1344,35 @@ function certOf(shop){
   }
   return best;
 }
+/* 마이크로젝션 사용 구분 — 거래처 마스터의 use(본사 분류 태그)·pedu(파트너 사전 교육 완료).
+   파트너가 관리대장에서 '마이크로젝션 교육 완료/납품샵'을 누르면 pedu 가 생기고, 교육·키트(150만/200만) 구매 + 수료증이면 분류기가 전문점(use specialist)으로 바꾼다. */
+function masterOfShop(s){
+  let mm = s.sid && MASTER[s.sid];
+  if(!mm){
+    if(!MASTER_BY_ADDR){ MASTER_BY_ADDR = new Map(); for(const m of Object.values(MASTER)) for(const a of (m.addrKeys||[])) MASTER_BY_ADDR.set(a, m); }
+    mm = MASTER_BY_ADDR.get(String(s.addr||'').replace(/\s+/g,''));
+  }
+  return mm || null;
+}
+const USE_F = {skin:'피부', scalp:'두피'};
+const USE_BADGE = s => {
+  if(mbOf(s)) return '';                                   // MICRO BLACK 전문점은 위 뱃지로 충분
+  const mm = masterOfShop(s); if(!mm) return '';
+  const tags = mm.use || [], spec = tags.find(t=>t.k==='specialist'), sup = tags.find(t=>t.k==='supply');
+  const fl = t => (t && t.f && t.f.length) ? ' · '+t.f.map(x=>USE_F[x]||x).join('·') : '';
+  if(spec) return `<div class="useBadge spec">◆ 마이크로젝션 전문점${fl(spec)}</div>`;
+  if(sup || mm.pedu) return `<div class="useBadge">마이크로젝션 납품샵${fl(sup)}${mm.pedu?` <small>사전 교육 완료 ${esc(dfmt(mm.pedu.date))}${mm.pedu.partner?' · '+esc(String(mm.pedu.partner).replace(/\s*\(.*?\)\s*/g,'').trim()):''}</small>`:''}</div>`;
+  return '';
+};
 const MJ_BADGE = s => {
   if(!s.items.some(it=>it.sku==='MJ')) return '';        // 마이크로젝션 주문에만 표시
   const c = certOf(s);
   if(c) return `<div class="mjBadge ok">✓ 마이크로젝션 교육 수료: ${dfmt(String(c.date))}`
              + `${c.name?` · ${esc(c.name)} 원장님`:''}`
              + `${c.viaMaster?` <small>(거래처 ${esc(s.sid)})</small>`:(normName(c.shop)!==normName(s.name)?` <small>(수료 명부: ${esc(c.shop)})</small>`:'')}</div>`;
+  const pm = masterOfShop(s);
+  if(pm && pm.pedu && pm.pedu.date) return `<div class="mjBadge ok">✓ 마이크로젝션 사전 교육 완료: ${dfmt(String(pm.pedu.date))}`
+             + `${pm.pedu.partner?` · ${esc(String(pm.pedu.partner).replace(/\s*\(.*?\)\s*/g,'').trim())} 등록`:''} <small>(수료증은 교육 구매 시)</small></div>`;
   return `<div class="mjBadge warn">⚠ 마이크로젝션 수료증 정보 없음 — 주의!!`
        + `${CERT_SOURCE==='none'?' (명부를 불러오지 못함)':''}</div>`;
 };
@@ -1607,6 +1635,7 @@ function renderSheets(){
         <div class="label">SHIP TO</div>
         <div class="name">${esc(s.name)} <span class="heart">❤️</span></div>
         ${MB_BADGE(s)}
+        ${USE_BADGE(s)}
         ${MJ_BADGE(s)}
         ${MJ_RULE_BADGE(s)}
         <table class="meta">
