@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>닥터배 발송 명세서 — 택배 포장 프로그램</title>
 <script src="vendor/xlsx.full.min.js"></script>
-<script src="../shared/product_rules.js"></script>
+<script src="../shared/product_rules.js?v=20260928"></script>
 <style>
   :root{
     --brand:#8E1F2F;          /* 닥터배 딥 버건디 */
@@ -1349,6 +1349,8 @@ const MJ_BADGE = s => {
        + `${CERT_SOURCE==='none'?' (명부를 불러오지 못함)':''}</div>`;
 };
 
+/* 공유 규칙 파일이 옛 버전(캐시)이라 mjRuleCount 가 없어도 프로그램은 멈추지 않게 — 경고만 생략 */
+if(typeof mjRuleCount !== 'function') window.mjRuleCount = function(){ return {mj:0, sb:0}; };
 /* 마이크로젝션 구매 규칙 경고 (shared/product_rules.js mjRuleCount) — 본사 확인용, 인쇄 안 됨
    crit: 이번 발송도, 최근 90일 누적도 마이크로젝션 ≥ 스킨부스터
    warn: 이번 발송만 위반 (최근 90일 누적으로는 스킨부스터가 더 많음) */
