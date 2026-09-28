@@ -142,3 +142,24 @@ const GROUP_OF = {
   SUMMER_SET:'etc', TEST_SKIN:'etc', TEST_SCALP:'etc', DEMO:'etc', BANNER:'etc',
   SEMINAR:'etc', EDU:'etc', SB_ETC:'etc', BASE:'etc'
 };
+
+/* ══════════════ 마이크로젝션 구매 규칙 (교수님 확정 2026-09-28) ══════════════
+   ▶ 마이크로젝션만 사는 것은 불가능하다. 반드시  마이크로젝션 박스 수 < 스킨부스터 박스 수.
+     이유: 마이크로젝션만 사고 닥터배 스킨부스터를 쓰지 않는 경우를 막기 위함.
+   ▶ 위반이면 발송 명세서 화면에 경고(본사 확인용, 인쇄물에는 나오지 않음).
+   스킨부스터 박스로 세는 것 = '스킨부스터 N종 교차선택' 라인
+       엑소토카인 블루 · 피디로엔 핑크 · 엑소토카인 블랙 · 토코포르테 · 리퀴드 필링 · 칼리파우더,
+       구성 미표기 스킨부스터(SB_ETC), 더마커런트 세트 안의 '스킨부스터 … N박스'
+   세지 않는 것 = 에센스겔 · 테스트 구성 · 두피 샴푸/토닉/스칼프 부스터 · 크림/팩,
+       서비스(무상) 제공분, 교육 과정·키트 주문 행(CASE n / 교육 과정 선택 / 교육 구성) */
+const MJ_RULE_SB = new Set(['EXO_BLUE','PDRN','EXO_BLACK','TOCO_LIQ','LIQMASK','CALCI','SB_ETC']);
+function mjRuleCount(opt, nm, qty){
+  const o = String(opt||''), p = String(nm||''), q = Number(qty)||1;
+  if(/^\s*CASE\s*\d/.test(p) || /교육\s*과정\s*선택/.test(o) || /교육\s*구성/.test(p)) return {mj:0, sb:0};
+  if(/^\s*\[서비스\]/.test(p) || /[:：]\s*서비스\s*$/.test(o.trim())) return {mj:0, sb:0};
+  const cs = productsOfSku(o, p);
+  let sb = cs.filter(c=>MJ_RULE_SB.has(c)).length * q;
+  const dm = o.match(/스킨부스터\)?\s*[:：][^/]*?(\d+)\s*박스/);          // 더마커런트 세트: "특별 구성 (스킨부스터): 피부 구성 4박스"
+  if(cs.includes('DERMA') && dm) sb += Number(dm[1]) * q;
+  return {mj: cs.includes('MJ') ? q : 0, sb};
+}

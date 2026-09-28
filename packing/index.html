@@ -292,6 +292,13 @@
   }
   .sheet.fit2 .mentorBox{font-size:11px; padding:2mm 3.5mm;}
   .sheet.fit3 .mentorBox{font-size:10.5px;}
+  .ruleWarn{margin:3mm 0 1mm; padding:8px 12px; border-radius:8px; font-size:12.5px; line-height:1.5;
+    display:flex; flex-direction:column; gap:2px;}
+  .ruleWarn.crit{background:#C0261B; color:#fff;}
+  .ruleWarn.warn{background:#FFF1DC; color:#8A4B00; border:1.5px dashed #E08A00;}
+  .ruleWarn small{opacity:.85; font-size:11px;}
+  .ruleDot{font-weight:900; font-size:12px;}
+  .ruleDot.crit{color:#C0261B;} .ruleDot.warn{color:#E08A00;}
   .mjBadge.ok{background:#E7F5EC; color:#186A3B; border:1.5px solid #2F9E44;}
   .mjBadge.warn{background:#FDECEA; color:#9B1C1C; border:1.5px solid #C0261B;}
 
@@ -425,6 +432,7 @@
     body.printOne .sheet{display:none;}
     body.printOne .sheet.target{display:flex;}
     #cjOverlay{display:none !important;}
+    .ruleWarn{display:none !important;}   /* 마이크로젝션 구매 규칙 경고는 본사 화면 전용 */
   }
   @media (max-width:900px){
     #app{flex-direction:column;}
@@ -1028,6 +1036,7 @@ function buildHistAndSvc(baseKey){
       const h = histMap.get(key);
       const amt = Number(r[COLS.amt])||0;
       h.byDate.set(k, (h.byDate.get(k)||0) + amt);
+      { const rc = mjRuleCount(r[COLS.opt], r[COLS.prod], r[COLS.qty]); if(rc.mj || rc.sb){ h.rule = h.rule || []; h.rule.push({k, mj:rc.mj, sb:rc.sb}); } }
       h.orders.add(String(r[COLS.order]));
       // 월별 × SKU 누적 (12개월 제품군별 차트용) — 납품처 앱과 동일하게
       // 한 행에서 SKU 여러 개가 나오면 금액을 균등 분할해 배분
@@ -1082,6 +1091,7 @@ function accumShopRow(map, mapKey, r){
     sub  = (optTxt && optTxt !== prodTxt) ? optTxt : '';
   }
   const qty  = Number(r[COLS.qty]) || 1;
+  { const rc = mjRuleCount(r[COLS.opt], r[COLS.prod], qty); s.rule = s.rule || {mj:0, sb:0}; s.rule.mj += rc.mj; s.rule.sb += rc.sb; }
   const ik = main+'|'+sub;
   if(!s.items.has(ik)) s.items.set(ik,{main, sub:(sub!==main?sub:''), qty:0, amt:0, sku:skusOf(r)[0]});
   const it = s.items.get(ik);
@@ -1174,7 +1184,9 @@ function renderShopList(){
     const q = s.items.reduce((a,b)=>a+b.qty,0);
     const dp = s.sheetDate ? `<span class="qty">${s.sheetDate.slice(5).replace('-','.')}</span> ` : '';
     const xb = s.isExtra ? '<span style="color:#C24A08;font-weight:800">➕</span> ' : '';
-    return `<div class="shopRow">
+    const rv = mjRuleOf(s);
+    const rb = rv ? `<span class="ruleDot ${rv.lv}" title="마이크로젝션 ${rv.mj}박스 · 스킨부스터 ${rv.sb}박스 (최근 90일 ${rv.mj90} · ${rv.sb90})">⚠</span>` : '';
+    return `<div class="shopRow">${rb}
       ${dp}${xb}<span class="nm" title="${s.name}">${s.name}</span>
       <span class="qty">${q}개</span>
       <button data-p="${i}">인쇄</button></div>`;
@@ -1335,6 +1347,28 @@ const MJ_BADGE = s => {
              + `${c.viaMaster?` <small>(거래처 ${esc(s.sid)})</small>`:(normName(c.shop)!==normName(s.name)?` <small>(수료 명부: ${esc(c.shop)})</small>`:'')}</div>`;
   return `<div class="mjBadge warn">⚠ 마이크로젝션 수료증 정보 없음 — 주의!!`
        + `${CERT_SOURCE==='none'?' (명부를 불러오지 못함)':''}</div>`;
+};
+
+/* 마이크로젝션 구매 규칙 경고 (shared/product_rules.js mjRuleCount) — 본사 확인용, 인쇄 안 됨
+   crit: 이번 발송도, 최근 90일 누적도 마이크로젝션 ≥ 스킨부스터
+   warn: 이번 발송만 위반 (최근 90일 누적으로는 스킨부스터가 더 많음) */
+function mjRuleOf(s){
+  const r = s.rule; if(s.isExtra || !r || !r.mj || r.mj < r.sb) return null;
+  const endK = s.sheetDate || (curDate===UNSHIPPED ? dkey(new Date()) : curDate);
+  const d0 = new Date(endK+'T00:00:00'); d0.setDate(d0.getDate()-90); const fromK = dkey(d0);
+  let mj90 = 0, sb90 = 0;
+  ((s.hist && s.hist.rule) || []).forEach(x=>{ if(x.k > fromK && x.k <= endK){ mj90 += x.mj; sb90 += x.sb; } });
+  if(curDate===UNSHIPPED){ mj90 += r.mj; sb90 += r.sb; }          // 미발송 주문은 이력(발송일 기준)에 아직 없음
+  mj90 = Math.max(mj90, r.mj); sb90 = Math.max(sb90, r.sb);
+  return {lv: mj90 >= sb90 ? 'crit' : 'warn', mj:r.mj, sb:r.sb, mj90, sb90};
+}
+const MJ_RULE_BADGE = s => {
+  const v = mjRuleOf(s); if(!v) return '';
+  const head = v.lv==='crit' ? '⚠ 마이크로젝션 구매 규칙 위반 — 스킨부스터 없이 마이크로젝션 위주 구매'
+                             : '⚠ 이번 발송은 마이크로젝션이 스킨부스터보다 많거나 같음';
+  return `<div class="ruleWarn ${v.lv}"><b>${head}</b>`
+       + `<span>이번 발송 마이크로젝션 ${v.mj}박스 · 스킨부스터 ${v.sb}박스 &nbsp;|&nbsp; 최근 90일 마이크로젝션 ${v.mj90} · 스킨부스터 ${v.sb90}박스</span>`
+       + `<small>규칙: 마이크로젝션 수량은 반드시 스킨부스터 박스 수량보다 적어야 합니다 · 본사 확인용 표시(인쇄되지 않음)</small></div>`;
 };
 
 let memoUnsub = null;
@@ -1572,6 +1606,7 @@ function renderSheets(){
         <div class="name">${esc(s.name)} <span class="heart">❤️</span></div>
         ${MB_BADGE(s)}
         ${MJ_BADGE(s)}
+        ${MJ_RULE_BADGE(s)}
         <table class="meta">
           <tr><td class="k">수취인</td><td>${esc(s.recv)}</td></tr>
           ${s.phone?`<tr><td class="k">연락처</td><td>${esc(s.phone)}</td></tr>`:''}
