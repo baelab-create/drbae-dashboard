@@ -957,6 +957,17 @@ header{background:var(--neu-page);border-bottom:0;box-shadow:0 14px 28px -18px r
 .mjxdot{transform:translate(-50%,-50%);min-width:22px;height:22px;padding:0 5px;border-radius:11px;background:var(--c);color:#fff;font-family:var(--mono);font-size:10.5px;font-weight:800;display:flex;align-items:center;justify-content:center;border:2.5px solid #fff;box-shadow:0 2px 7px rgba(0,0,0,.45);cursor:pointer}
 .mjxdot.ex{box-shadow:0 0 0 3px var(--c),0 3px 9px rgba(0,0,0,.5)}
 @media(max-width:900px){.mjxpage{flex-direction:column;overflow-y:auto}.mjx-side{flex:0 0 auto;padding:16px}.mjx-list{max-height:none;overflow:visible}.mjx-mapwrap{flex:0 0 60vh;margin:0 16px 20px}}
+
+.mjx-cards{grid-template-columns:repeat(3,1fr)}
+.mjx-card b{font-size:19px}
+.mjx-r1 .no.edu{background:#fff;color:var(--c);box-shadow:inset 0 0 0 2px var(--c)}
+.mjx-r1 .catfix{margin-left:auto;font-size:11px;font-weight:800;color:var(--c);background:var(--neu-card-in);box-shadow:var(--neu-in-sm);border-radius:10px;padding:4px 8px;white-space:nowrap}
+.mjx-st.course{background:#2F80ED;color:#fff}.mjx-st.course.scalp{background:#111214}
+.mjx-st.cert{background:#E7F5EC;color:#186A3B}
+.mjx-r3.edu{margin-top:4px;color:#2F80ED;font-weight:600}
+.mjx-row.is-edu{box-shadow:var(--neu-out-sm),inset 3px 0 0 #2F80ED}
+.mjxdot.edu{background:#fff;color:var(--c);border-color:var(--c)}
+.mjx-legend i.edu{background:#fff;box-shadow:0 0 0 2px #2F80ED}
 </style>
 </head>
 <body>
@@ -1320,7 +1331,7 @@ header{background:var(--neu-page);border-bottom:0;box-shadow:0 14px 28px -18px r
 <div class="page-el mjxpage" id="page-mb">
   <div class="mjx-side">
     <div class="mjx-head">
-      <small>MICRO BLACK · 본사 전용 명단</small>
+      <small>MICRO BLACK 명단 + 교육 과정 주문 · 본사 전용</small>
       <h3>마이크로젝션 전문점 분포 <b id="mjx-total">0곳</b></h3>
     </div>
     <div class="mjx-cards" id="mjx-cards"></div>
@@ -1330,7 +1341,12 @@ header{background:var(--neu-page);border-bottom:0;box-shadow:0 14px 28px -18px r
         <button data-f="두피">전문점 - 두피</button>
         <button data-f="피부">전문점 - 피부</button>
       </div>
-      <input id="mjx-q" type="text" placeholder="🔍 이름·상호·주소" autocomplete="off">
+      <div class="mjx-seg" id="mjx-src">
+        <button data-s="all" class="on">전체</button>
+        <button data-s="mb">MICRO BLACK</button>
+        <button data-s="edu">교육 과정 주문</button>
+      </div>
+      <input id="mjx-q" type="text" placeholder="🔍 이름·상호·주소·과정" autocomplete="off">
     </div>
     <div class="mjx-list" id="mb-list"></div>
   </div>
@@ -1339,6 +1355,7 @@ header{background:var(--neu-page);border-bottom:0;box-shadow:0 14px 28px -18px r
     <div class="mjx-legend">
       <div><i style="--c:#111214"></i>마이크로젝션 전문점 - 두피</div>
       <div><i style="--c:#2F80ED"></i>마이크로젝션 전문점 - 피부</div>
+      <div><i class="edu"></i>교육 과정 주문 (C2 피부 심화 · C2+ 피부+두피 기초 · C3 두피 심화)</div>
       <div><i class="ring"></i>3개월 마이크로젝션 38만 원↑ · 반경 2km 신규 입점 불가</div>
     </div>
   </div>
@@ -3006,7 +3023,7 @@ function mbSvcChips(svc){
     .map(s=>`<span class="svcchip${s==='두피문신'?' tattoo':''}">${s}</span>`).join('');
 }
 /* ===== 마이크로젝션 전문점 분포 (MICRO BLACK) ===== */
-let MB_DOC=null, MB_STAT={}, mjxFilter='all', mjxMap=null, mjxMarks=[], mjxCircles=[], mjxInfo=null, mjxSel=null;
+let MB_DOC=null, MB_STAT={}, MB_STAT_ID={}, mjxSrc='all', mjxEduCache=null, mjxFilter='all', mjxMap=null, mjxMarks=[], mjxCircles=[], mjxInfo=null, mjxSel=null;
 const MB_CAT_COLOR={'두피':'#111214','피부':'#2F80ED'};
 const mjxEsc=v=>String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function mbFmtPh(p){ const d=String(p||'').replace(/\D/g,''); return d.replace(/^(\d{3})(\d{3,4})(\d{4})$/,'$1-$2-$3'); }
@@ -3015,9 +3032,9 @@ async function loadMbShops(){
   MB_DOC=d.exists?d.data():{shops:[]};
   MB_SHOPS=(MB_DOC.shops||[]).slice().sort((a,b)=>a.no-b.no).map(e=>({no:e.no, nm:e.name, shop:e.shop||'', ph:e.ph||'', svc:e.svc||'',
     addr:e.addr||'', g:e.g||'', cat:e.cat||'두피', lat:e.lat||null, lng:e.lng||null, masterId:e.masterId||null}));
-  MB_STAT={};
+  MB_STAT={}; MB_STAT_ID={};
   try{ const x=await fdb.collection('private').doc('mjshops').get();
-    if(x.exists){ (x.data().shops||[]).forEach(t=>{ if(t.mb) MB_STAT[t.mb]={mj90:t.mj90||0, mj180:t.mj180||0, expert:!!t.expert, last:t.last||''}; }); MB_STAT._at=x.data().at||''; } }catch(e){}
+    if(x.exists){ (x.data().shops||[]).forEach(t=>{ const v={mj90:t.mj90||0, mj180:t.mj180||0, expert:!!t.expert, last:t.last||''}; if(t.mb) MB_STAT[t.mb]=v; if(t.id) MB_STAT_ID[t.id]=v; }); MB_STAT._at=x.data().at||''; } }catch(e){}
   mbGeo=false; mbMarks.forEach(o=>o.setMap(null)); mbMarks=[];
   buildMbList(); if(mjxMap) mjxDraw();
 }
@@ -3033,56 +3050,119 @@ async function mbSetCat(no,cat){
   const m=MB_SHOPS.find(x=>x.no===no); if(m) m.cat=cat;
   toast('No.'+no+' → 마이크로젝션 전문점 - '+cat); buildMbList(); if(mjxMap) mjxDraw();
 }
+/* 주문 데이터(window.__rows)에서 교육 과정 주문을 찾는다 — 상품명 'CASE n …' 또는 옵션 '교육 과정 선택: …'.
+   같은 주문의 '[닥터배 (공인 파트너)] 교육 구성' 행에서 수료증용 이름·담당 파트너를 읽는다. 거래처ID 로 묶는다. */
+function mjxEduEntries(){
+  const rows=window.__rows||[];
+  if(mjxEduCache&&mjxEduCache.n===rows.length) return mjxEduCache.list;
+  const by=new Map();
+  rows.forEach(r=>{
+    const opt=String(r['옵션정보']||''), prod=String(r['상품명']||'');
+    let course=(opt.match(/교육\s*과정\s*선택\s*[:：]\s*([^/]+)/)||[])[1]||(/^\s*CASE\s*\d/.test(prod)?prod:'');
+    const hdr=/교육\s*구성/.test(prod);
+    if(!course&&!hdr) return;
+    const key=String(r['거래처ID']||r['대표샵명']||r['통합배송지']||'').trim(); if(!key) return;
+    let e=by.get(key);
+    if(!e){ e={src:'edu', k:'edu:'+key, sid:String(r['거래처ID']||''), nm:String(r['수취인명']||'').replace(/\(.*?\)/g,'').trim(), shop:String(r['대표샵명']||''),
+               addr:String(r['통합배송지']||''), courses:[], partner:'', certName:'', date:'', amt:0}; by.set(key,e); }
+    const d=String(r['발송일']||'').slice(0,10); if(d>e.date) e.date=d;
+    if(course){ course=course.replace(/\(\+[\d,]+원\)/,'').trim(); if(!e.courses.includes(course)) e.courses.push(course); e.amt+=numOf(r['최종 상품별 총 주문금액']); }
+    const p=(opt.match(/파트너\s*원장님\s*선택\s*[:：]\s*([^/]+)/)||[])[1]; if(p) e.partner=p.trim();
+    const cn=(opt.match(/수료증용[^:：]*[:：]\s*([^/]+)/)||[])[1]; if(cn) e.certName=cn.trim();
+  });
+  const list=[...by.values()].filter(e=>e.courses.length).map(e=>{
+    const c=e.courses.join(' · ');
+    e.cat=/\[두피\]/.test(c)&&!/\[피부\]/.test(c)?'두피':'피부';
+    e.label='C'+((c.match(/CASE\s*(\d)/)||[])[1]||'')+(/\+/.test(c)?'+':'');
+    e.basic=/기초/.test(c)&&!/심화|\+/.test(c);
+    return e; }).sort((a,b)=>a.date<b.date?1:-1);
+  mjxEduCache={n:rows.length, list}; return list;
+}
+/* MICRO BLACK 명단 + 교육 과정 주문을 한 목록으로. 같은 거래처면 MICRO BLACK 행에 교육 정보를 붙인다 */
+function mjxItems(){
+  const edu=mjxEduEntries(), used=new Set();
+  const out=MB_SHOPS.map(m=>{ const e=m.masterId?edu.find(x=>x.sid===m.masterId):null; if(e) used.add(e.k);
+    return Object.assign(m,{src:'mb', k:'mb:'+m.no, sid:m.masterId||'', edu:e||null}); });
+  edu.forEach(e=>{ if(used.has(e.k)) return;
+    if(!e.lat){ const sh=(typeof SHOPS!=='undefined'?SHOPS:[]).find(x=>x.sid&&x.sid===e.sid&&x.lat); const g=GEO[e.addr];
+      if(sh){ e.lat=sh.lat; e.lng=sh.lng; } else if(g){ e.lat=g[0]; e.lng=g[1]; } }
+    out.push(e); });
+  return out;
+}
+function mjxStat(it){ return (it.sid&&MB_STAT_ID[it.sid]) || (it.src==='mb'&&MB_STAT[it.no]) || {}; }
+function mjxCert(it){ const mm=it.sid&&window.MASTER&&window.MASTER[it.sid]; return mm&&mm.cert&&mm.cert.last?mm.cert:null; }
 function buildMbList(){
   const box=document.getElementById('mb-list'); if(!box) return;
-  const all=MB_SHOPS, q=(document.getElementById('mjx-q').value||'').trim().toLowerCase();
+  const all=mjxItems(), q=(document.getElementById('mjx-q').value||'').trim().toLowerCase();
   const nScalp=all.filter(m=>m.cat==='두피').length, nSkin=all.filter(m=>m.cat==='피부').length;
-  const nOrd=all.filter(m=>MB_STAT[m.no]&&MB_STAT[m.no].last).length, nEx=all.filter(m=>MB_STAT[m.no]&&MB_STAT[m.no].expert).length;
+  const nMb=all.filter(m=>m.src==='mb').length, nEdu=all.filter(m=>m.src==='edu'||m.edu).length;
+  const nCert=all.filter(m=>mjxCert(m)).length, nEx=all.filter(m=>mjxStat(m).expert).length;
   document.getElementById('mjx-total').textContent=all.length+'곳';
   document.getElementById('mjx-cards').innerHTML=`
     <div class="mjx-card blk"><small>전문점 - 두피</small><b>${nScalp}곳</b></div>
     <div class="mjx-card blu"><small>전문점 - 피부</small><b>${nSkin}곳</b></div>
-    <div class="mjx-card"><small>6개월 내 마이크로젝션 주문</small><b>${nOrd}곳</b></div>
-    <div class="mjx-card ex"><small>3개월 38만 원↑ (2km 입점 보호)</small><b>${nEx}곳</b></div>`;
-  document.querySelectorAll('#mjx-seg button').forEach(b=>{ const f=b.dataset.f; const n=f==='all'?all.length:(f==='두피'?nScalp:nSkin);
+    <div class="mjx-card"><small>MICRO BLACK 명단</small><b>${nMb}곳</b></div>
+    <div class="mjx-card"><small>교육 과정 주문</small><b>${nEdu}곳</b></div>
+    <div class="mjx-card"><small>수료증 발급</small><b>${nCert}곳</b></div>
+    <div class="mjx-card ex"><small>3개월 38만↑ · 2km 보호</small><b>${nEx}곳</b></div>`;
+  const inSrc=m=>mjxSrc==='all'||(mjxSrc==='mb'?m.src==='mb':(m.src==='edu'||!!m.edu));
+  document.querySelectorAll('#mjx-seg button').forEach(b=>{ const f=b.dataset.f; const n=all.filter(m=>inSrc(m)&&(f==='all'||m.cat===f)).length;
     b.textContent=(f==='all'?'전체':'전문점 - '+f)+' '+n; b.classList.toggle('on',f===mjxFilter); });
-  const list=all.filter(m=>(mjxFilter==='all'||m.cat===mjxFilter) && (!q||(m.nm+' '+m.shop+' '+m.addr+' '+m.svc).toLowerCase().includes(q)));
+  document.querySelectorAll('#mjx-src button').forEach(b=>b.classList.toggle('on',b.dataset.s===mjxSrc));
   if(!all.length){ box.innerHTML='<div class="mjx-empty">로그인 후 명단을 불러옵니다.</div>'; return; }
-  box.innerHTML=list.map(m=>{ const st=MB_STAT[m.no]||{}; const col=MB_CAT_COLOR[m.cat]||'#111214';
+  const list=all.filter(m=>inSrc(m)&&(mjxFilter==='all'||m.cat===mjxFilter)&&(!q||(m.nm+' '+m.shop+' '+m.addr+' '+(m.svc||'')+' '+((m.edu||m).courses||[]).join(' ')+' '+((m.edu||m).partner||'')).toLowerCase().includes(q)));
+  box.innerHTML=list.map(m=>{ const st=mjxStat(m), col=MB_CAT_COLOR[m.cat]||'#111214', cert=mjxCert(m), ed=m.src==='edu'?m:m.edu;
     const badge = st.expert ? `<span class="mjx-st ex">3개월 ${Math.round(st.mj90).toLocaleString('ko-KR')}원 · 입점 보호</span>`
                 : st.last ? `<span class="mjx-st ord">최근 주문 ${st.last.slice(2).replace(/-/g,'.')}</span>`
-                : `<span class="mjx-st none">주문 이력 없음</span>`;
-    return `<div class="mjx-row${mjxSel===m.no?' on':''}" data-no="${m.no}">
-      <div class="mjx-r1"><span class="no" style="--c:${col}">${String(m.no).padStart(2,'0')}</span>
-        <b>${mjxEsc(m.shop||m.nm)}</b>${m.shop?`<span class="own">${mjxEsc(m.nm)} 원장</span>`:''}
-        <select class="cat" data-no="${m.no}" title="두피/피부 구분 — 바꾸면 바로 저장됩니다"><option${m.cat==='두피'?' selected':''}>두피</option><option${m.cat==='피부'?' selected':''}>피부</option></select></div>
-      <div class="mjx-r2">${mbSvcChips(m.svc)}${badge}</div>
-      <div class="mjx-r3">${mjxEsc(m.addr)}${m.lat?'':' <em>· 지도 위치 없음</em>'}<br><a href="tel:${mjxEsc(m.ph)}">${mjxEsc(mbFmtPh(m.ph))}</a></div>
+                : m.src==='mb' ? `<span class="mjx-st none">주문 이력 없음</span>` : '';
+    const certB = cert ? `<span class="mjx-st cert">수료증 ${cert.last.slice(2).replace(/-/g,'.')}</span>` : (ed?`<span class="mjx-st none">수료증 미발급</span>`:'');
+    const eduB = ed ? ed.courses.map(c=>`<span class="mjx-st course${/\[두피\]/.test(c)&&!/\[피부\]/.test(c)?' scalp':''}">${mjxEsc(c)}</span>`).join('') : '';
+    const chip = m.src==='mb' ? `<span class="no" style="--c:${col}">${String(m.no).padStart(2,'0')}</span>` : `<span class="no edu" style="--c:${col}">${mjxEsc(m.label)}</span>`;
+    const sel = m.src==='mb' ? `<select class="cat" data-no="${m.no}" title="두피/피부 구분 — 바꾸면 바로 저장됩니다"><option${m.cat==='두피'?' selected':''}>두피</option><option${m.cat==='피부'?' selected':''}>피부</option></select>`
+                             : `<span class="catfix" style="--c:${col}">전문점 - ${m.cat}</span>`;
+    const line3 = m.src==='mb' ? `${mjxEsc(m.addr)}${m.lat?'':' <em>· 지도 위치 없음</em>'}<br><a href="tel:${mjxEsc(m.ph)}">${mjxEsc(mbFmtPh(m.ph))}</a>`
+                               : `${mjxEsc(m.addr)}${m.lat?'':' <em>· 위치 확인 중</em>'}`;
+    const eduLine = ed ? `<div class="mjx-r3 edu">교육 주문 ${ed.date.slice(2).replace(/-/g,'.')} · ${Math.round(ed.amt).toLocaleString('ko-KR')}원${ed.partner?' · 담당 파트너 '+mjxEsc(ed.partner):''}${ed.certName?' · 수료증용 이름 "'+mjxEsc(ed.certName)+'"':''}</div>` : '';
+    return `<div class="mjx-row${mjxSel===m.k?' on':''}${m.src==='edu'?' is-edu':''}" data-k="${mjxEsc(m.k)}">
+      <div class="mjx-r1">${chip}<b>${mjxEsc(m.shop||m.nm)}</b>${m.nm&&m.shop&&m.shop!==m.nm?`<span class="own">${mjxEsc(m.nm)} 원장</span>`:''}${sel}</div>
+      <div class="mjx-r2">${eduB}${m.src==='mb'?mbSvcChips(m.svc):''}${badge}${certB}</div>
+      <div class="mjx-r3">${line3}</div>${eduLine}
     </div>`; }).join('') || '<div class="mjx-empty">검색 결과가 없습니다.</div>';
 }
 document.getElementById('mjx-q').addEventListener('input',()=>buildMbList());
 document.getElementById('mjx-seg').addEventListener('click',e=>{ const b=e.target.closest('button[data-f]'); if(!b) return; mjxFilter=b.dataset.f; buildMbList(); if(mjxMap) mjxDraw(true); });
+document.getElementById('mjx-src').addEventListener('click',e=>{ const b=e.target.closest('button[data-s]'); if(!b) return; mjxSrc=b.dataset.s; buildMbList(); if(mjxMap) mjxDraw(true); });
 document.getElementById('mb-list').addEventListener('change',e=>{ const sel=e.target.closest('select.cat'); if(sel) mbSetCat(+sel.dataset.no, sel.value); });
-document.getElementById('mb-list').addEventListener('click',e=>{ if(e.target.closest('select,a')) return; const r=e.target.closest('.mjx-row'); if(r) mjxFocus(+r.dataset.no); });
+document.getElementById('mb-list').addEventListener('click',e=>{ if(e.target.closest('select,a')) return; const r=e.target.closest('.mjx-row'); if(r) mjxFocus(r.dataset.k); });
 function mjxOpen(){
   let tries=0;
   (function go(){
     if(!(window.kakao&&kakao.maps&&kakao.maps.Map&&typeof geocoder!=='undefined'&&geocoder)){ if(++tries<50) return setTimeout(go,300); toast('지도를 불러오지 못했습니다'); return; }
     if(!mjxMap){ mjxMap=new kakao.maps.Map(document.getElementById('mjx-map'),{center:new kakao.maps.LatLng(36.3,127.8),level:13});
       mjxMap.addControl(new kakao.maps.ZoomControl(), kakao.maps.ControlPosition.RIGHT); }
-    setTimeout(()=>{ mjxMap.relayout(); mbGeocodeAll(()=>mjxDraw(true)); },60);
+    setTimeout(()=>{ mjxMap.relayout(); mbGeocodeAll(()=>{ mjxDraw(true); mjxGeocodeEdu(); }); },60);
   })();
+}
+/* 교육 주문 샵 중 전체 지도에서 아직 좌표가 없는 곳만 주소로 찾는다 */
+function mjxGeocodeEdu(){
+  const todo=mjxEduEntries().filter(e=>!e.lat&&e.addr); if(!todo.length) return;
+  (function next(k){
+    if(k>=todo.length){ try{ localStorage.setItem('drbae_geo_v1', JSON.stringify(GEO)); }catch(e){} buildMbList(); mjxDraw(); return; }
+    const e=todo[k];
+    geocoder.addressSearch(e.addr,(r,st)=>{ if(st===kakao.maps.services.Status.OK&&r[0]){ e.lat=+r[0].y; e.lng=+r[0].x; GEO[e.addr]=[e.lat,e.lng]; } setTimeout(()=>next(k+1),35); });
+  })(0);
 }
 function mjxDraw(fit){
   if(!mjxMap) return;
   mjxMarks.forEach(o=>o.setMap(null)); mjxCircles.forEach(c=>c.setMap(null)); mjxMarks=[]; mjxCircles=[];
   const b=new kakao.maps.LatLngBounds(); let k=0;
-  MB_SHOPS.forEach(m=>{
-    if(!m.lat||(mjxFilter!=='all'&&m.cat!==mjxFilter)) return;
-    const st=MB_STAT[m.no]||{}, col=MB_CAT_COLOR[m.cat]||'#111214', pos=new kakao.maps.LatLng(m.lat,m.lng);
+  const inSrc=m=>mjxSrc==='all'||(mjxSrc==='mb'?m.src==='mb':(m.src==='edu'||!!m.edu));
+  mjxItems().forEach(m=>{
+    if(!m.lat||!inSrc(m)||(mjxFilter!=='all'&&m.cat!==mjxFilter)) return;
+    const st=mjxStat(m), col=MB_CAT_COLOR[m.cat]||'#111214', pos=new kakao.maps.LatLng(m.lat,m.lng);
     if(st.expert){ const c=new kakao.maps.Circle({center:pos,radius:2000,strokeWeight:1.5,strokeColor:col,strokeOpacity:.75,strokeStyle:'dash',fillColor:col,fillOpacity:.07}); c.setMap(mjxMap); mjxCircles.push(c); }
-    const el=document.createElement('div'); el.className='mjxdot'+(st.expert?' ex':''); el.style.setProperty('--c',col);
-    el.textContent=m.no; el.title=(m.shop||m.nm)+' · 전문점 - '+m.cat;
+    const el=document.createElement('div'); el.className='mjxdot'+(st.expert?' ex':'')+(m.src==='edu'?' edu':''); el.style.setProperty('--c',col);
+    el.textContent=m.src==='mb'?m.no:m.label; el.title=(m.shop||m.nm)+' · 전문점 - '+m.cat+(m.src==='edu'?' · 교육 과정 주문':'');
     el.onclick=e=>{ e.stopPropagation(); mjxShow(m); };
     const ov=new kakao.maps.CustomOverlay({position:pos,content:el,yAnchor:.5,xAnchor:.5,zIndex:st.expert?30:20,clickable:true});
     ov.setMap(mjxMap); mjxMarks.push(ov); b.extend(pos); k++;
@@ -3091,22 +3171,25 @@ function mjxDraw(fit){
 }
 function mjxShow(m){
   if(mjxInfo){ mjxInfo.setMap(null); mjxInfo=null; }
-  const st=MB_STAT[m.no]||{};
+  const st=mjxStat(m), cert=mjxCert(m), ed=m.src==='edu'?m:m.edu;
   const el=document.createElement('div'); el.className='mbinfo';
-  el.innerHTML=`<button class="x">&times;</button><h4>No.${m.no} ${mjxEsc(m.shop||m.nm)}</h4>
-    <div class="sv">마이크로젝션 전문점 - ${m.cat} · ${mjxEsc(m.nm)} 원장</div><div class="sv">${mjxEsc(m.svc)}</div>
+  el.innerHTML=`<button class="x">&times;</button><h4>${m.src==='mb'?'No.'+m.no:mjxEsc(m.label)} ${mjxEsc(m.shop||m.nm)}</h4>
+    <div class="sv">마이크로젝션 전문점 - ${m.cat}${m.nm?' · '+mjxEsc(m.nm)+' 원장':''}</div>
+    ${m.svc?`<div class="sv">${mjxEsc(m.svc)}</div>`:''}
+    ${ed?`<div class="sv">교육 과정: ${mjxEsc(ed.courses.join(' · '))} (${ed.date})${ed.partner?' · 담당 파트너 '+mjxEsc(ed.partner):''}</div>`:''}
+    <div class="sv">${cert?'수료증 발급 '+cert.last:(ed?'수료증 미발급':'')}</div>
     <div class="ad">${mjxEsc(m.addr)}</div>
-    <div class="sv">${st.expert?'3개월 마이크로젝션 '+Math.round(st.mj90).toLocaleString('ko-KR')+'원 · 반경 2km 신규 입점 불가':(st.last?'최근 마이크로젝션 주문 '+st.last:'네이버 주문 이력 없음')}</div>
-    <a href="tel:${mjxEsc(m.ph)}">${mjxEsc(mbFmtPh(m.ph))}</a>`;
+    <div class="sv">${st.expert?'3개월 마이크로젝션 '+Math.round(st.mj90).toLocaleString('ko-KR')+'원 · 반경 2km 신규 입점 불가':(st.last?'최근 마이크로젝션 주문 '+st.last:(m.src==='mb'?'네이버 주문 이력 없음':''))}</div>
+    ${m.ph?`<a href="tel:${mjxEsc(m.ph)}">${mjxEsc(mbFmtPh(m.ph))}</a>`:''}`;
   el.querySelector('.x').onclick=()=>{ if(mjxInfo){ mjxInfo.setMap(null); mjxInfo=null; } };
   mjxInfo=new kakao.maps.CustomOverlay({position:new kakao.maps.LatLng(m.lat,m.lng),content:el,yAnchor:0,xAnchor:0,zIndex:40,clickable:true});
   mjxInfo.setMap(mjxMap);
 }
-function mjxFocus(no){
-  const m=MB_SHOPS.find(x=>x.no===no); if(!m) return;
-  mjxSel=no; document.querySelectorAll('.mjx-row').forEach(r=>r.classList.toggle('on',+r.dataset.no===no));
+function mjxFocus(k){
+  const m=mjxItems().find(x=>x.k===k); if(!m) return;
+  mjxSel=k; document.querySelectorAll('.mjx-row').forEach(r=>r.classList.toggle('on',r.dataset.k===k));
   if(!mjxMap) return;
-  if(!m.lat){ toast('주소가 확정되지 않아 지도에 없습니다'); return; }
+  if(!m.lat){ toast('아직 지도 위치가 없습니다'); return; }
   mjxMap.setLevel(6); mjxMap.setCenter(new kakao.maps.LatLng(m.lat,m.lng)); mjxShow(m);
 }
 function mbCloseInfo(){ if(mbInfoOv){ mbInfoOv.setMap(null); mbInfoOv=null; } }
@@ -3489,6 +3572,7 @@ async function initData(){
   if(!remote){ document.getElementById('upov').style.display='flex'; return; }
   setData(remote.shops,remote.products,remote.meta,remote.label,remote.diag,remote.days);
   computeAssign(); buildList(); try{ buildRank(); }catch(e){}
+  try{ mjxEduCache=null; buildMbList(); if(mjxMap) mjxDraw(); }catch(e){ console.error(e); }
   if(location.hash==='#master') switchPage('master');
   if(location.hash==='#cert') switchPage('cert');
   if(location.hash==='#links') switchPage('links');
