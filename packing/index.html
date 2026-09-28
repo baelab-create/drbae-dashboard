@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>닥터배 발송 명세서 — 택배 포장 프로그램</title>
 <script src="vendor/xlsx.full.min.js"></script>
-<script src="../shared/product_rules.js?v=20260928b"></script>
+<script src="../shared/product_rules.js?v=20260929"></script>
 <style>
   :root{
     --brand:#8E1F2F;          /* 닥터배 딥 버건디 */
@@ -262,11 +262,9 @@
   .sheet.mb .sh-foot{border-top-color:#111214;}
   .sheet.mb::before{content:''; position:absolute; left:0; top:0; bottom:0; width:3.5mm;
     background:linear-gradient(180deg,#0B0B0C,#6B6E73); -webkit-print-color-adjust:exact; print-color-adjust:exact;}
-  /* 마이크로젝션 사용 구분(거래처 마스터 use·pedu) — 납품샵 / 전문점 */
+  /* ✓ 마이크로젝션 납품점 · 멘토링 완료 (거래처 마스터 partnerEdu → pedu) */
   .useBadge{display:table; margin:1.5mm 0 2mm; padding:1.2mm 3mm; border-radius:1.2mm; font-size:11px; font-weight:800; letter-spacing:-.2px;
     background:#EAF2FE; color:#1D4E9E; border:1.5px solid #3B82F6; -webkit-print-color-adjust:exact; print-color-adjust:exact;}
-  .useBadge.spec{background:#FDECEA; color:#9B1C1C; border-color:#E5303A;}
-  .useBadge small{font-weight:700; opacity:.8; margin-left:1mm;}
   /* 마이크로젝션 교육 수료 뱃지 — 포장 전 납품 가능 여부 확인용 */
   .mjBadge{
     display:table; margin:1.5mm 0 2mm; padding:1.2mm 3mm; border-radius:1.2mm;
@@ -438,6 +436,7 @@
     body.printOne .sheet.target{display:flex;}
     #cjOverlay{display:none !important;}
     .ruleWarn{display:none !important;}   /* 마이크로젝션 구매 규칙 경고는 본사 화면 전용 */
+    .mjBadge.warn, .mjBadge small{display:none !important;}   /* 멘토링·수료 기록 없음 경고·거래처ID·명부 표기는 본사 화면 전용 (고객이 받는 인쇄물 제외) */
   }
   @media (max-width:900px){
     #app{flex-direction:column;}
@@ -1227,8 +1226,8 @@ const isLightColor = hex => { const n=parseInt(hex.slice(1),16);
   return (0.299*(n>>16)+0.587*((n>>8)&255)+0.114*(n&255)) > 150; };
 
 /* ══════════════ 마이크로젝션 교육 수료 확인 ══════════════
-   판매 정책: 마이크로젝션은 교육 수료(수료증) 샵에만 납품한다.
-   수료증 발급 사이트(drbae-certificate)의 명부를 받아, 마이크로젝션이 포함된
+   판매 정책: 마이크로젝션은 전문점 교육 수료(수료증) 또는 납품점 · 멘토링 완료(파트너 등록) 샵에만 납품한다.
+   수료 명부(drbae-map cert_roster.json — /api/certs)를 받아, 마이크로젝션이 포함된
    주문의 명세서에 수료 여부 뱃지를 찍어 포장 단계에서 걸러낼 수 있게 한다. */
 let CERTS = [], CERT_SOURCE = '';
 /* 거래처 마스터(shop_master.json) — 컨트롤 타워가 수료 명부를 거래처ID 에 연결해 둔 결과.
@@ -1259,10 +1258,10 @@ async function loadMasterFromServer(){
     MASTER = d.shops || {}; MASTER_AT = d.generated || ''; MB_SHOPS = d.mbShops || []; PEDU_SHOPS = d.peduShops || []; MASTER_BY_ADDR = null;
   }catch(e){ console.warn('거래처 마스터 로딩 실패:', e.message); }
 }
-/* 멘토링 담당 파트너 — 거래처 마스터의 partner (파트너 관리대장 연결, 컨트롤 타워가 채움).
-   거래처ID 가 없는 시트(추가발송 등)는 배송지 주소키로 찾는다. 표시는 괄호(지점) 뺀 파트너 이름. */
+/* 시트 → 거래처 마스터 항목. 거래처ID 가 없는 시트(추가발송 등)는 배송지 주소키로 찾는다. */
 let MASTER_BY_ADDR = null;
-function mentorOf(s){
+function masterOfShop(s){
+  if(!s) return null;
   let mm = s.sid && MASTER[s.sid];
   if(!mm){
     if(!MASTER_BY_ADDR){
@@ -1271,6 +1270,11 @@ function mentorOf(s){
     }
     mm = MASTER_BY_ADDR.get(String(s.addr||'').replace(/\s+/g,''));
   }
+  return mm || null;
+}
+/* 멘토링 담당 파트너 — 거래처 마스터의 partner (파트너 관리대장 연결, 컨트롤 타워가 채움). 표시는 괄호(지점) 뺀 파트너 이름. */
+function mentorOf(s){
+  const mm = masterOfShop(s);
   return mm && mm.partner ? String(mm.partner).replace(/\s*\(.*?\)\s*/g,'').trim() : '';
 }
 /* 받침에 맞는 조사: 미네일은 / 에밀리는 (한글이 아니면 '은(는)') */
@@ -1285,16 +1289,7 @@ function MENTOR_BOX(s){
   return `<div class="mentorBox"><b>${esc(s.name)}</b>${josaEunNeun(s.name)} 현재 <b class="partner">${esc(p)}</b> <span class="penMark">멘토링</span> 담당 샵입니다.<br>`
        + `제품 사용 등 문의 사항이 있으면 언제든지 편하게 <b class="partner">${esc(p)}</b>에 문의 바랍니다.</div>`;
 }
-/* 수료 명부에 영문·로마자로 등재된 샵 ↔ 주문서의 한글 상호 연결표.
-   명부는 회차에 따라 "Whitewitch / Baek So Ra"처럼 영문으로 적힌 항목이 있어
-   자동 대조가 안 된다. 새로 발견되면 '주문 상호(또는 원장명)': '명부 상호' 로 한 줄 추가.
-   ※ 여기에 없고 명부에도 없으면 실제 미수료로 보고 빨간 뱃지가 뜬다. */
-const CERT_ALIASES = {
-  '왁싱현': 'WAXING HYUN',
-  '화이트위치': 'Whitewitch',
-  '오늘에스테틱': 'ONUL Aesthetic',
-  'onul_skincare': 'ONUL Aesthetic',
-};
+/* 영문·로마자로 등재된 명부 항목 ↔ 한글 상호 연결은 거래처 마스터(대시보드 별칭 → cert)가 맡는다 (옛 CERT_ALIASES 표 제거). */
 async function loadCertsFromServer(){
   try{
     const d = CLOUD ? (CDB ? await cloudJson('certs') : null)
@@ -1309,16 +1304,13 @@ async function loadCertsFromServer(){
    상호가 다르면 원장 성함(수취인명)으로도 대조한다. 여러 번 수료했으면 가장 최근 날짜. */
 function certOf(shop){
   if(!shop) return null;
-  // 1순위: 거래처 마스터의 수료 연결 (거래처ID 기준)
-  const mm = shop.sid && MASTER[shop.sid];
+  // 1순위: 거래처 마스터의 수료 연결 (거래처ID, 없으면 배송지 주소키)
+  const mm = masterOfShop(shop);
   if(mm && mm.cert && mm.cert.last) return {date: mm.cert.last, shop: mm.name, name: mm.cert.name||'', viaMaster: true};
   if(!CERTS.length) return null;
   // 동일샵(엔티티) 전체의 표기를 모아 대조 — 주소마다 상호가 달라도 한 샵으로 본다
   const info = ENT_INFO.get(ENT.find('A:'+shop.key)) || {names:new Set(), recvs:new Set()};
-  const raw   = [shop.name, ...info.names].filter(Boolean);
-  // 별칭표에 등록된 상호는 명부 표기(영문 등)로도 함께 대조
-  const mapped = raw.map(n=>CERT_ALIASES[n]).filter(Boolean);
-  const cand  = [...raw, ...mapped].map(normName);
+  const cand  = [shop.name, ...info.names].filter(Boolean).map(normName);
   const recvs = [...info.recvs, shop.recv].filter(Boolean).map(normName);
   const escRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   // 오래된 주문은 수취인명이 '신*지'처럼 가려져 온다 — 글자 수가 같으면 와일드카드로 대조
@@ -1344,16 +1336,8 @@ function certOf(shop){
   }
   return best;
 }
-/* 마이크로젝션 사용 구분 — 거래처 마스터의 use(본사 분류 태그)·pedu(파트너 사전 교육 완료).
-   파트너가 관리대장에서 '마이크로젝션 교육 완료/납품샵'을 누르면 pedu 가 생기고, 교육·키트(150만/200만) 구매 + 수료증이면 분류기가 전문점(use specialist)으로 바꾼다. */
-function masterOfShop(s){
-  let mm = s.sid && MASTER[s.sid];
-  if(!mm){
-    if(!MASTER_BY_ADDR){ MASTER_BY_ADDR = new Map(); for(const m of Object.values(MASTER)) for(const a of (m.addrKeys||[])) MASTER_BY_ADDR.set(a, m); }
-    mm = MASTER_BY_ADDR.get(String(s.addr||'').replace(/\s+/g,''));
-  }
-  return mm || null;
-}
+/* 마이크로젝션 사용 구분 — 거래처 마스터의 use(본사 분류 태그)·pedu(납품점 · 멘토링 완료).
+   파트너가 관리대장에서 '마이크로젝션 납품점 · 멘토링 완료'를 누르면 pedu 가 생기고, 교육·키트(150만/200만) 구매 + 수료증이면 분류기가 전문점(use specialist)으로 바꾼다. */
 const USE_F = {skin:'피부', scalp:'두피'};
 /* 도로명 + 건물번호 조각 (예: '서초대로396', '중앙로1275번길60-21') — 거래처 마스터 내보내기(shop_resolve addrFrags)와 같은 규칙 */
 const addrFragsOf = a => { const out = []; String(a||'').replace(/\([^)]*\)/g,' ').replace(/([가-힣A-Za-z0-9]+(?:로|길))\s*(\d+(?:-\d+)?)/g, (x,r,n)=>{ out.push(r+n); return x; }); return out; };
@@ -1373,20 +1357,22 @@ function peduOf(s){
 /* 명세서 마이크로젝션 표시 — 두 태그를 구분한다.
    ◆ 마이크로젝션 전문점 교육 수료 : 150만/200만 교육 구매 후 발급된 수료증 (수료 명부 → 거래처 마스터 cert)
    ✓ 마이크로젝션 납품점 · 멘토링 완료 : 파트너가 관리대장에서 등록 (거래처 마스터 partnerEdu → pedu, 첫 주문은 peduShops)
-   마이크로젝션은 둘 중 하나가 있어야 살 수 있다 — 마이크로젝션 주문인데 둘 다 없으면 경고. */
+   마이크로젝션은 둘 중 하나가 있어야 살 수 있다 — 마이크로젝션 주문인데 둘 다 없으면 경고(화면 전용, 인쇄 안 됨).
+   표시는 마이크로젝션이 든 명세서에만. MICRO BLACK 전문점은 위 MB 뱃지로 충분하므로 표시하지 않는다.
+   마이크로젝션 여부 = 구매 규칙 집계(s.rule.mj) — 교육 과정(CASE n)·서비스 행은 빠진다. 추가발송 시트는 품목 SKU로. */
+const hasMJOf = s => s.isExtra ? s.items.some(it=>it.sku==='MJ') : !!(s.rule && s.rule.mj > 0);
 const MJ_BADGE = s => {
-  const hasMJ = s.items.some(it=>it.sku==='MJ'), mm = masterOfShop(s);
-  const c = hasMJ ? certOf(s) : ((mm && mm.cert && mm.cert.last) ? {date: mm.cert.last, shop: mm.name, name: mm.cert.name||'', viaMaster: true} : null);
-  const p = peduOf(s);
+  if(!hasMJOf(s) || mbOf(s)) return '';
+  const mm = masterOfShop(s), c = certOf(s), p = peduOf(s);
   const spec = mm && (mm.use||[]).find(t=>t.k==='specialist');
   const fl = spec && spec.f && spec.f.length ? ' · '+spec.f.map(x=>USE_F[x]||x).join('·') : '';
   let h = '';
-  if(c) h += `<div class="mjBadge ok">◆ 마이크로젝션 전문점 교육 수료${fl}: ${dfmt(String(c.date))}`
+  if(c) h += `<div class="mjBadge ok">◆ 마이크로젝션 전문점 교육 수료${fl}: ${esc(dfmt(String(c.date)))}`
            + `${c.name?` · ${esc(c.name)} 원장님`:''}`
            + `${c.viaMaster?(s.sid?` <small>(거래처 ${esc(s.sid)})</small>`:''):(normName(c.shop)!==normName(s.name)?` <small>(수료 명부: ${esc(c.shop)})</small>`:'')}</div>`;
   if(p) h += `<div class="useBadge">✓ 마이크로젝션 납품점 · 멘토링 완료: ${esc(dfmt(String(p.date)))}`
            + `${p.partner?` · ${esc(String(p.partner).replace(/\s*\(.*?\)\s*/g,'').trim())}`:''}</div>`;
-  if(hasMJ && !c && !p) h += `<div class="mjBadge warn">⚠ 마이크로젝션 멘토링·수료 기록 없음 — 납품 전 확인!!`
+  if(!c && !p) h +=`<div class="mjBadge warn">⚠ 마이크로젝션 멘토링·수료 기록 없음 — 납품 전 확인!!`
            + `${CERT_SOURCE==='none'?' (명부를 불러오지 못함)':''}</div>`;
   return h;
 };

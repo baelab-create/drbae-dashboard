@@ -162,7 +162,9 @@ function mjRuleCount(opt, nm, qty){
   // 묶음 구성은 옵션에 적힌 박스 수로 센다: "(3+1)4박스" → 4, "3+3 (6박스/50%할인)" → 6, "10 vial (1박스…)" → 1
   const po = o.split(/\s\/\s/).filter(x=>!/샵|인스타|성함/.test(x.split(/[:：]/)[0])).join(' / ');
   const bm = po.match(/(\d+)\s*박스/), per = bm ? Math.max(1, Number(bm[1])) : 1;
-  let sb = cs.includes('DERMA') ? 0 : cs.filter(c=>MJ_RULE_SB.has(c)).length * q * per;
+  // 박스 수가 적힌 묶음은 SKU 가 여럿이어도(예: "엑소3+피디3 (6박스)") 적힌 박스 수 그대로 — SKU 수를 곱하면 이중 계상
+  const nsb = cs.filter(c=>MJ_RULE_SB.has(c)).length;
+  let sb = (cs.includes('DERMA') || !nsb) ? 0 : (bm ? per : nsb) * q;
   const dm = o.match(/스킨부스터\)?\s*[:：][^/]*?(\d+)\s*박스/);          // 더마커런트 세트: "특별 구성 (스킨부스터): 피부 구성 4박스"
   if(cs.includes('DERMA') && dm) sb += Number(dm[1]) * q;
   return {mj: cs.includes('MJ') ? q * (cs.length===1 ? per : 1) : 0, sb};
