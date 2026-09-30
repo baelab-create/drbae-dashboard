@@ -781,6 +781,7 @@ header{background:var(--neu-page);border-bottom:0;box-shadow:0 14px 28px -18px r
 .mjx-r1 .catfix{margin-left:auto;font-size:11px;font-weight:800;color:var(--c);background:var(--neu-card-in);box-shadow:var(--neu-in-sm);border-radius:10px;padding:4px 8px;white-space:nowrap}
 .mjx-st.course{background:#2F80ED;color:#fff}.mjx-st.course.scalp{background:#111214}
 .mjx-st.cert{background:#2E8B57;color:#fff}
+.ptag.own{background:#3F4A5A;color:#fff;border-color:#3F4A5A}
 .mjx-r3.edu{margin-top:4px;color:#2F80ED;font-weight:600}
 .mjx-row.is-edu{box-shadow:var(--neu-out-sm),inset 3px 0 0 #2F80ED}
 .mjxdot.edu{background:#fff;color:var(--c);border-color:var(--c)}
@@ -3190,7 +3191,7 @@ function renderMasterList(){
     const badge = sh ? ptag(sh) : (x.pt?`<span class="ptag p">${msEsc(String(x.pt.partnerName||'').replace(/\s*\(.*\)$/,''))}</span>`:'<span class="ptag d">직거래</span>');
     return `<div class="mrow${m.mergedInto?' merged':''}" data-id="${m.id}" data-i="${sh?sh._i:''}">
       <span class="id"><span class="rknum">${idx+1}</span>${m.id}</span>
-      <span class="nm">${msEsc(m.name)}${m.mb?`<span class="ptag mbt" title="마이크로블랙 전문점${m.mb.no?' No.'+m.mb.no:''}${m.mb.name?' · '+msEsc(m.mb.name):''}">◆ MICRO BLACK</span>`:''}${badge}${m.cert&&m.cert.last?`<span class="ptag cert" title="닥터배 수료증 ${m.cert.count}건 (교육 수료 — 전문점 여부와 별개) · 최근 ${msEsc(m.cert.last)}${m.cert.name?' · '+msEsc(m.cert.name):''}">✓ 교육 수료 ${msEsc(String(m.cert.last).slice(2))}</span>`:''}${m.partnerEdu&&m.partnerEdu.date?`<span class="ptag pedu" title="파트너 멘토링 완료 ${msEsc(m.partnerEdu.date)} · ${msEsc(m.partnerEdu.partner||'')} — 관리대장에서 등록">✓ 납품샵 · 멘토링 ${msEsc(String(m.partnerEdu.date).slice(2))}</span>`:''}${m.mergedInto?' <span style="color:#9A3B33;font-weight:400;font-size:11px">→ '+msEsc(masterName(m.mergedInto))+' 에 합쳐짐</span>':''}
+      <span class="nm">${msEsc(m.name)}${m.partnerOwn?`<span class="ptag own" title="파트너 원장님 본인 샵">★ 파트너 ${msEsc(String(m.partnerOwn.partnerName||'').replace(/\s*\(.*\)$/,''))}</span>`:''}${m.mb?`<span class="ptag mbt" title="마이크로블랙 전문점${m.mb.no?' No.'+m.mb.no:''}${m.mb.name?' · '+msEsc(m.mb.name):''}">◆ MICRO BLACK</span>`:''}${badge}${m.cert&&m.cert.last?`<span class="ptag cert" title="닥터배 수료증 ${m.cert.count}건 (교육 수료 — 전문점 여부와 별개) · 최근 ${msEsc(m.cert.last)}${m.cert.name?' · '+msEsc(m.cert.name):''}">✓ 교육 수료 ${msEsc(String(m.cert.last).slice(2))}</span>`:''}${m.partnerEdu&&m.partnerEdu.date?`<span class="ptag pedu" title="파트너 멘토링 완료 ${msEsc(m.partnerEdu.date)} · ${msEsc(m.partnerEdu.partner||'')} — 관리대장에서 등록">✓ 납품샵 · 멘토링 ${msEsc(String(m.partnerEdu.date).slice(2))}</span>`:''}${m.mergedInto?' <span style="color:#9A3B33;font-weight:400;font-size:11px">→ '+msEsc(masterName(m.mergedInto))+' 에 합쳐짐</span>':''}
         <span class="al">${x.region?msEsc(x.region)+' · ':''}${(m.aliases||[]).length?msEsc((m.aliases||[]).join(' · ')):'<span style="color:#C4CBCF">별칭 없음</span>'}</span></span>
       <span class="bar"><span class="rkbar"><i style="width:${w}%"></i></span></span>
       <span class="st"><b>${money>0?fmt(money)+'원':'–'}</b><br><span class="rkpill b-${bd[1]}">${bd[0]}</span> <span style="color:#9AA7AE">${x.last||''}</span></span>
