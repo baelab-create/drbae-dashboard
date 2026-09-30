@@ -2605,7 +2605,7 @@ function buildMbList(){
   const all=mjxItems(), q=(document.getElementById('mjx-q').value||'').trim().toLowerCase(), P=MJ_PROG||{};
   document.getElementById('mjx-total').textContent=all.length+'곳';
   document.getElementById('mjx-cards').innerHTML=`
-    <div class="mjx-card"><small>납품샵 (납품자격 가능)</small><b>${P.supply!=null?P.supply:'–'}곳</b></div>
+    <div class="mjx-card"><small>MJ 납품샵</small><b>${P.supply!=null?P.supply:'–'}곳</b></div>
     <div class="mjx-card"><small>전문점 사업장</small><b>${P.specialistSites!=null?P.specialistSites:'–'}곳</b></div>
     <div class="mjx-card blu"><small>MJ 전문점 - 피부</small><b>${P.skin!=null?P.skin:'–'}</b></div>
     <div class="mjx-card blk"><small>MJ 전문점 - 두피</small><b>${P.scalp!=null?P.scalp:'–'}</b></div>
@@ -3245,7 +3245,7 @@ function openMasterEdit(id){
     <label>마이크로블랙 전문점</label>
     <div style="font-size:12.5px;display:flex;align-items:center;gap:8px">${m.mb?`<span class="ptag mbt">◆ MICRO BLACK${m.mb.no?' No.'+m.mb.no:''}</span> <span style="color:#7A8B93;font-size:11.5px">${msEsc(m.mb.name||'')}${m.mb.manual?' · 수동 지정':''}</span>`:'<span style="color:#7A8B93">아님</span>'}
       <button type="button" id="me-mb" style="margin-left:auto;font-family:inherit;font-size:12px;border:1px solid #DFDCD2;background:#fff;border-radius:4px;padding:4px 9px;cursor:pointer">${m.mb?'MICRO BLACK 명단 해제':'MICRO BLACK 명단 수동 지정'}</button></div>
-    <label>마이크로젝션 납품샵 (파트너 멘토링)</label>
+    <label>MJ 납품샵 (파트너 멘토링)</label>
     <div style="font-size:12.5px">${m.partnerEdu&&m.partnerEdu.date?`✓ 멘토링 완료 ${msEsc(m.partnerEdu.date)} · ${msEsc(m.partnerEdu.partner||'')} <span style="color:#7A8B93;font-size:11.5px">(파트너 관리대장에서 등록·취소)</span>`:'<span style="color:#7A8B93">등록 없음 — 담당 파트너가 관리대장 멘토링 기록에서 "마이크로젝션 납품샵 · 멘토링 완료"로 등록</span>'}</div>
     <label>교육 수료 (닥터배 수료증 — 전문점 여부와 별개)</label>
     <div style="font-size:12.5px">${m.cert&&m.cert.last?`✓ 수료증 ${m.cert.count}건 · 최근 ${msEsc(m.cert.last)}${m.cert.name?' · '+msEsc(m.cert.name)+' 원장님':''}<div style="font-size:11px;color:#7A8B93;margin-top:2px">${(m.cert.records||[]).map(r=>msEsc(r.date+' '+r.shop+(r.name?' ('+r.name+')':''))).join('<br>')}</div>`:'<span style="color:#9A3B33">기록 없음</span> <span style="font-size:11px;color:#7A8B93">— 수료증 발급 사이트 명부에 이 거래처 이름·별칭과 맞는 기록이 없습니다. 명부 표기가 다르면 그 표기를 별칭으로 추가하세요</span>'}</div>
