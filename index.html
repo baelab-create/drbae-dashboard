@@ -1092,8 +1092,8 @@ header{background:var(--neu-page);border-bottom:0;box-shadow:0 14px 28px -18px r
     <div class="mjx-tools">
       <div class="mjx-seg" id="mjx-seg">
         <button data-f="all" class="on">전체</button>
-        <button data-f="피부">피부 전문점</button>
-        <button data-f="두피">두피 전문점</button>
+        <button data-f="피부">MJ 전문점 - 피부</button>
+        <button data-f="두피">MJ 전문점 - 두피</button>
       </div>
       <div class="mjx-seg" id="mjx-src">
         <button data-s="all" class="on">전체</button>
@@ -1108,7 +1108,7 @@ header{background:var(--neu-page);border-bottom:0;box-shadow:0 14px 28px -18px r
   <div class="mjx-mapwrap">
     <div id="mjx-map"></div>
     <div class="mjx-legend">
-      <div><i style="--c:#111214"></i>두피 전문점 · <i style="--c:#2F80ED"></i>피부 전문점</div>
+      <div><i style="--c:#111214"></i>MJ 전문점 - 두피 · <i style="--c:#2F80ED"></i>MJ 전문점 - 피부</div>
       <div><i class="edu"></i>전문교육·키트 주문 (C2 피부 · C2+ 피부+두피 · C3 두피)</div>
       <div><i class="ring"></i>유지 중 전문점의 같은 분야 반경 2km 보호 (일반 납품샵은 제한 없음)</div>
     </div>
@@ -2542,7 +2542,7 @@ function mjxBadge(){
 async function mbSetCat(no,cat){
   try{ const ch=await mbPatch(e=>{ if(e.no!==no||e.cat===cat) return false; e.cat=cat; return true; }); if(!ch){ toast('바뀐 내용이 없습니다'); return; } }catch(err){ toast('저장 실패: '+err.message); return; }
   const m=MB_SHOPS.find(x=>x.no===no); if(m) m.cat=cat;
-  toast('No.'+no+' → 마이크로젝션 전문점 - '+cat); buildMbList(); if(mjxMap) mjxDraw();
+  toast('No.'+no+' → MJ 전문점 - '+cat); buildMbList(); if(mjxMap) mjxDraw();
 }
 /* 주문 데이터(window.__rows)에서 교육 과정 주문을 찾는다 — 상품명 'CASE n …' 또는 옵션 '교육 과정 선택: …'.
    같은 주문의 '[닥터배 (공인 파트너)] 교육 구성' 행에서 수료증용 이름·담당 파트너를 읽는다. 거래처ID 로 묶는다. */
@@ -2596,7 +2596,7 @@ function mjxCert(it){ const st=it.site; if(st&&st.edu&&st.edu.cert) return {last
 function mjxTitleBadges(st){
   if(!st) return '<span class="mjx-st none">분류 전 (다음 게시 때 계산)</span>';
   return ['skin','scalp'].map(f=>{ const t=st[f]||{}; const s2=t.status||'미등록'; if(s2==='미등록') return '';
-    return `<span class="mjx-st t-${MJ_ST_CLS[s2]||'off'} ${f}" title="${mjxEsc((t.basis||'')+(t.manual?' · 본사 결정':''))}">${f==='skin'?'피부':'두피'} 전문점 ${s2}${t.since?' · '+t.since.slice(2).replace(/-/g,'.'):''}${t.manual?' ✎':''}</span>`; }).join('');
+    return `<span class="mjx-st t-${MJ_ST_CLS[s2]||'off'} ${f}" title="${mjxEsc((t.basis||'')+(t.manual?' · 본사 결정':''))}">MJ 전문점 - ${f==='skin'?'피부':'두피'} · ${s2}${t.since?' · '+t.since.slice(2).replace(/-/g,'.'):''}${t.manual?' ✎':''}</span>`; }).join('');
 }
 function mjxInSrc(m){ return mjxSrc==='all'||(mjxSrc==='mb'?m.src==='mb':mjxSrc==='edu'?(m.src==='edu'||!!m.edu):(m.site&&(m.site.review||[]).length)); }
 function mjxInFld(m){ return mjxFilter==='all'||(mjxFilter==='두피'?m.fScalp:m.fSkin); }
@@ -2607,12 +2607,12 @@ function buildMbList(){
   document.getElementById('mjx-cards').innerHTML=`
     <div class="mjx-card"><small>납품샵 (납품자격 가능)</small><b>${P.supply!=null?P.supply:'–'}곳</b></div>
     <div class="mjx-card"><small>전문점 사업장</small><b>${P.specialistSites!=null?P.specialistSites:'–'}곳</b></div>
-    <div class="mjx-card blu"><small>피부 전문점 타이틀</small><b>${P.skin!=null?P.skin:'–'}</b></div>
-    <div class="mjx-card blk"><small>두피 전문점 타이틀</small><b>${P.scalp!=null?P.scalp:'–'}</b></div>
+    <div class="mjx-card blu"><small>MJ 전문점 - 피부</small><b>${P.skin!=null?P.skin:'–'}</b></div>
+    <div class="mjx-card blk"><small>MJ 전문점 - 두피</small><b>${P.scalp!=null?P.scalp:'–'}</b></div>
     <div class="mjx-card ex"><small>심사 중 · 확인 필요</small><b>${P.pending||0} · ${P.review||0}</b></div>
     <div class="mjx-card"><small>적용 정책</small><b style="font-size:13px">${P.policy==='S1'?'시즌 1 · ~2027.01.31':mjxEsc(P.policy||'–')}</b></div>`;
   document.querySelectorAll('#mjx-seg button').forEach(b=>{ const f=b.dataset.f; const n=all.filter(m=>mjxInSrc(m)&&(f==='all'||(f==='두피'?m.fScalp:m.fSkin))).length;
-    b.textContent=(f==='all'?'전체':f+' 전문점')+' '+n; b.classList.toggle('on',f===mjxFilter); });
+    b.textContent=(f==='all'?'전체':'MJ 전문점 - '+f)+' '+n; b.classList.toggle('on',f===mjxFilter); });
   document.querySelectorAll('#mjx-src button').forEach(b=>b.classList.toggle('on',b.dataset.s===mjxSrc));
   if(!all.length){ box.innerHTML='<div class="mjx-empty">로그인 후 명단을 불러옵니다.</div>'; return; }
   const list=all.filter(m=>mjxInSrc(m)&&mjxInFld(m)&&(!q||(m.nm+' '+m.shop+' '+m.addr+' '+(m.svc||'')+' '+((m.edu||m).courses||[]).join(' ')+' '+((m.edu||m).partner||'')).toLowerCase().includes(q)));
@@ -2640,8 +2640,8 @@ function mjxEditTitle(k){
   const opt=(cur)=>['미등록','심사 중','유지 중','종료'].map(v=>`<option${v===cur?' selected':''}>${v}</option>`).join('');
   d.innerHTML=`<div class="box"><h4>${mjxEsc(st.name)} <span style="font-family:monospace;font-size:11px;color:#7A8B93">${mjxEsc(st.id)}</span></h4>
     <div style="font-size:12px;color:#7A8B93;margin-bottom:6px">본사 결정으로 저장하면 자동 분류가 이 분야 상태를 바꾸지 않습니다. 종료해도 교육 이력·납품자격은 유지됩니다(§3.6).</div>
-    <label>피부 전문점</label><select id="mt-skin">${opt((st.skin||{}).status||'미등록')}</select>
-    <label>두피 전문점</label><select id="mt-scalp">${opt((st.scalp||{}).status||'미등록')}</select>
+    <label>MJ 전문점 - 피부</label><select id="mt-skin">${opt((st.skin||{}).status||'미등록')}</select>
+    <label>MJ 전문점 - 두피</label><select id="mt-scalp">${opt((st.scalp||{}).status||'미등록')}</select>
     <label>시작일 (유지 중으로 바꿀 때)</label><input type="text" id="mt-since" placeholder="YYYY-MM-DD" value="${new Date(Date.now()+9*3600e3).toISOString().slice(0,10)}">
     <label>사유 · 근거 (필수)</label><input type="text" id="mt-why" placeholder="예: 지역 심사 완료 / 홍보 기준 미달로 종료">
     <div class="row"><button id="mt-auto">자동 분류로 되돌리기</button><span style="flex:1"></span><button id="mt-x">닫기</button><button class="k" id="mt-ok">저장</button></div></div>`;
