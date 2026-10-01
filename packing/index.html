@@ -1900,15 +1900,29 @@ async function fileStamp(){
     return res.ok ? (res.headers.get('Last-Modified') || res.headers.get('Content-Length')) : null;
   }catch(e){ return null; }
 }
+/* 노트북(대시보드)에서 쓴 서비스 메모를 포장 PC 화면에 반영 — 15초마다 로컬 서버(/api/memos)를 다시 읽는다.
+   (클라우드 동기화 cloud_sync 가 15초마다 Firestore → data/service_memos.json 으로 내려받음. 대시보드는 실시간 구독이라 해당 없음)
+   2026-10-01 수정: 예전에는 메모 입력칸에 커서가 있으면 갱신을 통째로 건너뛰어, 입력칸에 커서가 남아 있는 포장 PC에서는
+   대시보드 메모가 계속 안 보였다. 이제는 입력 중인 그 메모 하나만 건드리지 않고 나머지는 반영한다. */
+async function refreshMemosLocal(){
+  if(CLOUD) return;
+  const editing = document.activeElement === $('#memoText');
+  const s0 = editing ? selectedMemoShop() : null;
+  const keepKey = s0 ? (s0.extraKey || memoKeyFor(s0.key, s0.sheetDate) || memoKey(s0.key, s0.sheetDate)) : null;
+  const keep = keepKey ? MEMOS[keepKey] : undefined;
+  const before = JSON.stringify(MEMOS);
+  await loadMemosFromServer();
+  if(keepKey){ if(keep) MEMOS[keepKey] = keep; else delete MEMOS[keepKey]; }
+  if(JSON.stringify(MEMOS) === before) return;
+  const searching = $('#searchInfo').style.display === 'block';
+  if(editing || searching){ if(shops.length) renderSheets(); }   // 입력 중인 메모 상자·검색 결과는 그대로 두고 명세서만 다시 그림
+  else if(curDate) buildShops();
+}
+let memoPollTimer = null;
 async function checkForUpdate(){
-  // 메모 입력 중이거나 검색·인쇄 중이면 방해하지 않는다
+  // 메모 입력 중이거나 검색·인쇄 중이면 새 주문 파일 재로딩은 미룬다 (메모 반영은 refreshMemosLocal 이 따로 15초마다)
   if(document.activeElement === $('#memoText') || document.activeElement === $('#searchBox')) return;
   if($('#searchInfo').style.display === 'block' || $('#cjOverlay').classList.contains('open')) return;
-  if(!CLOUD){   // 노트북(대시보드)에서 쓴 메모가 포장 PC 화면에도 1분 안에 보이도록 (클라우드 모드는 실시간 구독)
-    const before = JSON.stringify(MEMOS);
-    await loadMemosFromServer();
-    if(curDate && JSON.stringify(MEMOS) !== before) buildShops();
-  }
   const s = await fileStamp();
   if(!s || !lastStamp){ lastStamp = s || lastStamp; return; }
   if(s === lastStamp) return;
@@ -1928,6 +1942,7 @@ function startAutoWatch(){
   clearInterval(autoWatchTimer);
   fileStamp().then(s=>lastStamp = s);
   autoWatchTimer = setInterval(checkForUpdate, 60000);   // 1분 간격
+  if(!CLOUD){ clearInterval(memoPollTimer); memoPollTimer = setInterval(refreshMemosLocal, 15000); }   // 대시보드 메모 15초 내 반영
 }
 
 /* ══════════════ 🔄 최신화: 수집기 실행 → 파일 재로딩 (선택 날짜 유지) ══════════════ */
