@@ -1173,6 +1173,7 @@ function createExtraShipment(){
   const key = today + '|' + s0.key + '|X';
   if(!MEMOS[key])
     MEMOS[key] = {date:today, name:s0.name, recv:s0.recv, addr:s0.addr, memo:'', products:[], qty:{}, type:'extra'};
+  PENDING_EXTRA[key] = MEMOS[key];      // 저장 전까지 새로고침에 지워지지 않게
   clearSearch(true);
   curDate = today;
   renderDates();
@@ -1218,6 +1219,10 @@ function renderShopList(){
 }
 
 /* ══════════════ 서비스·메모 (제품은 구조화 저장 → 명세서 인쇄 + 전체 CSV '서비스' 행 + 차트 마커) ══════════════ */
+/* 아직 서버에 저장되지 않은 추가발송 자리표시 — 메모·제품을 넣기 전에는 서버에 없어서,
+   1분 주기 메모 새로고침(클라우드는 실시간 구독)이 MEMOS 를 덮어쓰면 방금 만든 시트가 사라졌다 (2026-10-01) */
+const PENDING_EXTRA = {};
+function mergePendingExtras(){ for(const k in PENDING_EXTRA) if(!MEMOS[k]) MEMOS[k] = PENDING_EXTRA[k]; }
 let MEMOS = {};   // key = "YYYY-MM-DD|샵키" → {date,name,recv,addr,memo,products:[SKU코드,...]}
 const memoDateKey = () => (curDate && curDate!==UNSHIPPED) ? curDate : dkey(new Date());   // 미발송·미선택=오늘
 const memoKey = (shopKey, dk) => (dk || memoDateKey()) + '|' + shopKey;
@@ -1413,10 +1418,11 @@ async function loadMemosFromServer(){
     if(!CDB || memoUnsub) return;
     await new Promise(resolve=>{
       memoUnsub = CDB.collection('packing_memos').onSnapshot(snap=>{
-        const m = {};
+        const m0 = MEMOS, m = {};
         snap.forEach(d=>{ const x = d.data(); if(x.key && !x.deleted && x.entry) m[x.key] = x.entry; });
-        const changed = JSON.stringify(m) !== JSON.stringify(MEMOS);
-        MEMOS = m; resolve();
+        MEMOS = m; mergePendingExtras();
+        const changed = JSON.stringify(MEMOS) !== JSON.stringify(m0);
+        resolve();
         if(changed && curDate) buildShops();
       }, e=>{ console.warn('메모 구독 실패:', e.message); memoSaveWarn(true); resolve(); });
     });
@@ -1424,7 +1430,7 @@ async function loadMemosFromServer(){
   }
   try{
     const res = await fetch('/api/memos', {cache:'no-store'});
-    if(res.ok) MEMOS = await res.json() || {};
+    if(res.ok){ MEMOS = await res.json() || {}; mergePendingExtras(); }
   }catch(e){ console.warn('메모 로딩 실패(서버 미지원?):', e.message); }
 }
 let memoSaveTimer = null;
@@ -1567,10 +1573,10 @@ function persistMemo(s, text, products, qty){
         headers:{'Content-Type':'application/json'}, body:payload});
       if(!res.ok) throw new Error('HTTP '+res.status);
     };
-    try{ await post(); memoSaveWarn(false); }
+    try{ await post(); memoSaveWarn(false); delete PENDING_EXTRA[k]; }
     catch(e1){
       await new Promise(r=>setTimeout(r,1500));            // 1회 재시도
-      try{ await post(); memoSaveWarn(false); }
+      try{ await post(); memoSaveWarn(false); delete PENDING_EXTRA[k]; }
       catch(e2){ memoSaveWarn(true); console.warn('메모 저장 실패:', e2.message); }
     }
     buildShops();   // 명세서 메모 박스 + 차트 '서비스 제공' 마커 갱신
