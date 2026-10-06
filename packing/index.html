@@ -777,9 +777,14 @@ function buildEntities(){
   Object.entries(MASTER).forEach(([sid, m])=>{
     (m.addrKeys||[]).forEach(a=>{ if(a) union('A:'+a, 'M:'+sid); });
   });
+  const ADDR_OWNER = new Map();                      // 주소키 → 그 주소를 가진 거래처ID (마스터가 우선)
+  Object.entries(MASTER).forEach(([sid, m])=>{ (m.addrKeys||[]).forEach(a=>{ if(a) ADDR_OWNER.set(a, sid); }); });
   RAW.forEach(r=>{                                   // 엑셀의 거래처ID 컬럼(수집기가 채움)으로도 연결
-    const sid = String(r[COLS.sid]||'').trim();
-    if(sid && MASTER[sid]) union('A:'+addrKey(r), 'M:'+sid);
+    const sid = String(r[COLS.sid]||'').trim();      // 단, 그 주소의 주인이 다른 거래처면 무시 (분리한 지점이 옛 ID 로 다시 붙지 않게)
+    if(!sid || !MASTER[sid]) return;
+    const a = addrKey(r);
+    if((ADDR_OWNER.get(a) || sid) !== sid) return;
+    union('A:'+a, 'M:'+sid);
   });
   ENT = { find: k => parent.has(k) ? find(k) : k };
   // 엔티티 → 거래처ID — 아직 거래처ID 컬럼이 없는 새 주문(수집기가 ID를 채우기 전)도 마스터 이름·수료 정보를 쓸 수 있게
