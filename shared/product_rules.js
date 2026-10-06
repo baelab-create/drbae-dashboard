@@ -34,13 +34,23 @@ const SKU_COLOR = {
   BASE:'#B0AAA2',                // 기타는 따뜻한 회색으로 구분
   TOCO_BRN:'#7A4A1E'             // 구버전 코드 호환용 별칭
 };
+/* 네이버 옵션명 오타 교정 — 스토어 옵션에 오타가 있으면 분류가 '기타'로 빠지고 명세서에도 그대로 찍힌다.
+   (2026-10-06: '에소토카인-블랙(두피용)' 2건). 스토어에서 옵션명을 고쳐도 지난 주문 텍스트는 그대로이므로 여기서 교정한다. */
+const PRODUCT_TYPOS = [[/에소토카인/g, '엑소토카인']];
+function fixProductTypos(s){
+  let t = String(s == null ? '' : s);
+  for(const [re, to] of PRODUCT_TYPOS) t = t.replace(re, to);
+  return t;
+}
 function optPairs(o){
   if(typeof o!=='string') return [];
+  o = fixProductTypos(o);
   return o.split(' / ').filter(p=>p.includes(':')).map(p=>{
     const i=p.indexOf(':'); return [p.slice(0,i).trim(), p.slice(i+1).trim()];
   });
 }
 function productsOfSku(opt, nm){
+  nm = fixProductTypos(nm);
   const ps=new Set();
   for(const [k,v] of optPairs(opt)){
     if(k.includes('샵')) continue;

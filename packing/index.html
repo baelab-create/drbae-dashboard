@@ -963,7 +963,7 @@ function productParts(optStr){
   // 옵션정보에서 샵 정보를 제외한 제품 부분 추출.
   // key가 제품명인 경우(예: "토코포르테 (갈색): 1박스")와 value가 제품명인 경우
   // (예: "스킨부스터 4종: 엑소토카인-블루")가 혼재하므로 key — value 전체를 유지한다.
-  return String(optStr||'').split(/\s\/\s/)
+  return fixProductTypos(optStr).split(/\s\/\s/)
     .filter(p=>!/샵\s*상호|인스타|샵\s*이름|성함/.test(p.split(/[:：]/)[0]))
     .map(p=>p.replace(/\[필수\]\s*/g,'').replace(/\(필수[^)]*\)\s*/g,'').trim())
     .filter(Boolean)
@@ -976,7 +976,7 @@ function productParts(optStr){
 }
 // 노이즈 태그([26년도 결제창], [26년도 납품], [필수])만 제거.
 // [칼리파우더], [여름 피부열 관리 3종 세트 구성] 등 제품 정보 대괄호는 보존한다.
-const cleanProd = s => String(s||'')
+const cleanProd = s => fixProductTypos(s)
   .replace(/\[\d{2}년도[^\]]*\]\s*/g,'')
   .replace(/\[필수\]\s*/g,'')
   .trim();
