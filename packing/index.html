@@ -1075,7 +1075,8 @@ function accumShopRow(map, mapKey, r){
   if(!s.sid && COLS.sid && r[COLS.sid]) s.sid = String(r[COLS.sid]).trim();
   const pn = parseShopName(r[COLS.opt]);
   if(!s.name && pn) s.name = pn;
-  if(!s.sid){ const es = ENT_SID.get(ENT.find('A:'+s.key)); if(es) s.sid = es; }   // 새 주문(거래처ID 미부여)도 같은 샵이면 연결
+  // 거래처ID 가 없거나(새 주문) 합쳐져 사라진 옛 ID 면 엔티티의 대표 거래처ID로 바꿔 쓴다 (이름·수료 정보가 끊기지 않게)
+  if(!s.sid || !MASTER[s.sid]){ const es = ENT_SID.get(ENT.find('A:'+s.key)); if(es) s.sid = es; }
   const mm = s.sid && MASTER[s.sid];
   if(mm && mm.name) s.name = mm.name;      // 표시 이름은 거래처 마스터가 정한 이름 (오타·표기 흔들림 통일)
   if(r[COLS.msg]) s.msgs.add(String(r[COLS.msg]).trim());
