@@ -1115,7 +1115,7 @@ header{background:var(--neu-page);border-bottom:0;box-shadow:0 14px 28px -18px r
       <div><i style="--c:#111214"></i>MJ-전문점-두피 · <i style="--c:#2F80ED"></i>MJ-전문점-피부</div>
       <div><i class="edu"></i>전문교육·키트 주문 (C2 피부 · C2+ 피부+두피 · C3 두피)</div>
       <div><i class="ring"></i>유지 중 전문점의 같은 분야 반경 2km 보호 (일반 납품샵은 제한 없음)</div>
-      <div>전문점 표시(구성 결제)와 교육 완료 확인은 별개 — "교육 확인 전"은 MJ 발송 보류 (MJ-EDU-001)</div>
+      <div><i style="--c:#D2691E"></i>전문점 표시(구성 결제)와 교육 완료 확인은 별개 — "교육 확인 전"은 MJ 발송 보류 (MJ-EDU-001)</div>
     </div>
   </div>
 </div>
@@ -2558,14 +2558,14 @@ function mjxEduEntries(){
   rows.forEach(r=>{
     const opt=String(r['옵션정보']||''), prod=String(r['상품명']||'');
     let course=(opt.match(/교육\s*과정\s*선택\s*[:：]\s*([^/]+)/)||[])[1]||(/^\s*CASE\s*\d/.test(prod)?prod:'');
-    const hdr=/교육\s*구성|전문점.?할인\s*세트/.test(prod)||/파트너\s*원장님\s*선택|수료증용/.test(opt);   // 2026-10 표기 '[닥터배 파트너] 전문점-할인 세트 구성'
+    const hdr=/교육\s*구성|전문점.?할인\s*세트/.test(prod)||/파트너\s*원장님\s*선택/.test(opt);   // 2026-10 표기 '[닥터배 파트너] 전문점-할인 세트 구성' (세미나 주문의 '성함(수료증용)' 행은 아님)
     if(!course&&!hdr) return;
     const key=String(r['거래처ID']||r['대표샵명']||r['통합배송지']||'').trim(); if(!key) return;
     let e=by.get(key);
     if(!e){ e={src:'edu', k:'edu:'+key, sid:String(r['거래처ID']||''), nm:String(r['수취인명']||'').replace(/\(.*?\)/g,'').trim(), shop:String(r['대표샵명']||''),
                addr:String(r['통합배송지']||''), courses:[], partner:'', certName:'', date:'', amt:0}; by.set(key,e); }
-    const d=String(r['발송일']||'').slice(0,10); if(d>e.date) e.date=d;
-    if(course){ course=course.replace(/\(\+[\d,]+원\)/,'').trim(); if(!e.courses.includes(course)) e.courses.push(course); e.amt+=numOf(r['최종 상품별 총 주문금액']); }
+    const d=String(r['발송일']||'').slice(0,10);
+    if(course){ course=course.replace(/\(\+[\d,]+원\)/,'').trim(); if(!e.courses.includes(course)) e.courses.push(course); e.amt+=numOf(r['최종 상품별 총 주문금액']); if(d>e.date) e.date=d; }   // 결제일은 교육 과정 행 기준
     const p=(opt.match(/파트너\s*원장님\s*선택\s*[:：]\s*([^/]+)/)||[])[1]; if(p) e.partner=p.trim();
     const cn=(opt.match(/수료증용[^:：]*[:：]\s*([^/]+)/)||[])[1]; if(cn) e.certName=cn.trim();
   });
@@ -2626,14 +2626,14 @@ function buildMbList(){
     const eduB = ed ? ed.courses.map(c=>`<span class="mjx-st course${/\[두피\]/.test(c)&&!/\[피부\]/.test(c)?' scalp':''}">${mjxEsc(c)}</span>`).join('') : '';
     const pre = st&&st.edu&&st.edu.pre ? `<span class="mjx-st ord" title="파트너 관리대장 등록">납품샵 · 멘토링 완료 ${mjxEsc(String(st.edu.pre.date).slice(2).replace(/-/g,'.'))}${st.edu.pre.partner?' · '+mjxEsc(String(st.edu.pre.partner).replace(/\s*\(.*?\)\s*/g,'')):''}</span>` : '';
     const eduSt = st&&st.edu ? `<span class="mjx-st ${st.edu.status==='수료'?'cert':st.edu.status==='교육 확인 전'?'t-hold':'none'}" title="${mjxEsc(st.edu.basis||'')}">교육 ${st.edu.status}${st.edu.status==='교육 확인 전'?' · MJ 발송 보류':''}${cert?' · '+(st.edu.kind&&st.edu.kind!=='닥터배 수료증'?mjxEsc(st.edu.kind)+' (수료증 미발급)':'수료증 '+cert.last.slice(2).replace(/-/g,'.')):''}${st.edu.eduBy?' · 본사 직접 교육('+mjxEsc(st.edu.eduBy)+')':''}</span>` : '';
-    const bund = st&&(st.bundles||[]).length ? `<span class="mjx-st none" title="최근 발송 묶음별 마이크로젝션·스킨부스터 박스 (MJ-SHIP-001/002)">발송 ${st.bundles.slice(-3).map(b=>`${b.d.slice(5).replace('-','.')} MJ${b.mj}·SB${b.sb}${b.sb===0?'⛔':b.mj>b.sb?'⚠':''}`).join(' / ')}</span>` : '';
+    const bund = st&&(st.bundles||[]).length ? `<span class="mjx-st none" title="최근 발송 묶음별 마이크로젝션·스킨부스터 박스 (MJ-SHIP-001/002)">발송 ${st.bundles.filter(b=>b&&b.d).slice(-3).map(b=>`${String(b.d).slice(5).replace('-','.')} MJ${b.mj|0}·SB${b.sb|0}${(b.sb|0)===0?'⛔':(b.mj|0)>(b.sb|0)?'⚠':''}`).join(' / ')}</span>` : '';
     const sup = st&&st.supply ? `<span class="mjx-st ${st.supply.status==='가능'?'ord':'none'}" title="${mjxEsc(st.supply.basis||'')}">납품 ${st.supply.status}</span>` : '';
     const ref = st&&st.ref&&st.ref.mj90 ? `<span class="mjx-st none" title="${mjxEsc(st.ref.note||'')}">최근 90일 구매 ${Math.round(st.ref.mj90).toLocaleString('ko-KR')}원 (참고 · 판정 무관)</span>` : '';
-    const rev = st&&(st.review||[]).length ? `<div class="mjx-rev">${st.review.map(r=>`<div class="mjx-rev-r">⚠ ${mjxEsc(r.m)}${/^(pending|addr)$/.test(r.t)?'':` <button class="mjx-done" data-id="${mjxEsc(st.id)}" data-k="${mjxEsc(r.k||r.t)}" title="처리했거나 본사 판단으로 닫음 — 다음 게시부터 다시 올라오지 않습니다 (주문 기반 항목은 그 날짜까지)">확인함</button>`}</div>`).join('')}</div>` : '';
+    const rev = st&&(st.review||[]).length ? `<div class="mjx-rev">${st.review.map(r=>`<div class="mjx-rev-r">⚠ ${mjxEsc(r.m)}${/^(pending|addr)$/.test(r.t)||!(r.k||r.t)?'':` <button class="mjx-done" data-id="${mjxEsc(st.id)}" data-k="${mjxEsc(r.k||r.t)}" title="처리했거나 본사 판단으로 닫음 — 다음 게시부터 다시 올라오지 않습니다 (주문 기반 항목은 그 날짜까지)">확인함</button>`}</div>`).join('')}</div>` : '';
     const chip = m.src==='mb' ? `<span class="no" style="--c:${col}">${String(m.no).padStart(2,'0')}</span>` : `<span class="no edu" style="--c:${col}">${mjxEsc(m.label||'·')}</span>`;
     const sel = m.src==='mb' ? `<select class="cat" data-no="${m.no}" title="MICRO BLACK 명단 분야 — 바꾸면 저장되고 다음 게시 때 전문점 분야에 반영"><option${m.cat==='두피'?' selected':''}>두피</option><option${m.cat==='피부'?' selected':''}>피부</option></select>` : '';
     const line3 = `${mjxEsc(m.addr)}${m.lat?'':' <em>· 지도 위치 없음</em>'}${m.ph?`<br><a href="tel:${mjxEsc(m.ph)}">${mjxEsc(mbFmtPh(m.ph))}</a>`:''}`;
-    const eduLine = ed ? `<div class="mjx-r3 edu">전문점 교육 할인 구성 결제 ${ed.date.slice(2).replace(/-/g,'.')} · ${Math.round(ed.amt).toLocaleString('ko-KR')}원 · 담당 파트너 ${ed.partner?mjxEsc(ed.partner)+(st&&st.edu&&st.edu.partnerName?' → '+mjxEsc(st.edu.partnerName):' <em style="color:#B3261E">(파트너 명단과 대조 안 됨)</em>'):'<em style="color:#B3261E">선택 없음 — 필수 (MJ-SPEC-002)</em>'}</div>` : '';
+    const eduLine = ed ? `<div class="mjx-r3 edu">전문점 교육 할인 구성 결제 ${ed.date.slice(2).replace(/-/g,'.')} · ${Math.round(ed.amt).toLocaleString('ko-KR')}원 · 담당 파트너 ${ed.partner?mjxEsc(ed.partner)+(st&&st.edu&&('partnerName' in st.edu)?(st.edu.partnerName?' → '+mjxEsc(st.edu.partnerName):' <em style="color:#B3261E">(파트너 명단과 대조 안 됨)</em>'):''):'<em style="color:#B3261E">선택 없음 — 필수 (MJ-SPEC-002)</em>'}</div>` : '';
     return `<div class="mjx-row${mjxSel===m.k?' on':''}${m.src!=='mb'?' is-edu':''}" data-k="${mjxEsc(m.k)}">
       <div class="mjx-r1">${chip}<b>${mjxEsc(m.shop||m.nm)}</b>${m.nm&&m.shop&&m.shop!==m.nm?`<span class="own">${mjxEsc(m.nm)} 원장</span>`:''}${sel}${st?`<button class="mjx-edit" data-k="${mjxEsc(m.k)}" title="본사 결정으로 전문점 상태 변경">상태 변경</button>`:''}</div>
       <div class="mjx-r2">${mjxTitleBadges(st)}${eduB}${eduSt}${pre}${sup}${bund}${ref}${m.src==='mb'?mbSvcChips(m.svc):''}</div>
@@ -2642,14 +2642,17 @@ function buildMbList(){
 }
 /* 확인 필요 항목 닫기 — mj_sites.reviewDone 에 키를 넣으면 분류기(mj_program)가 그 항목을 다시 올리지 않는다 (주문 기반 mjonly·ratio 는 't@마지막 발송일'). 관리대장 본사 알람과 같은 동작 */
 async function mjxReviewDone(id, k, btn){
+  if(!id||!k) return;
   if(!confirm('이 항목을 "확인함"으로 닫을까요? 다음 게시부터 다시 올라오지 않습니다.')) return;
   if(btn) btn.disabled=true;
   try{
     await fdb.collection('mj_sites').doc(id).set({reviewDone:firebase.firestore.FieldValue.arrayUnion(k)},{merge:true});
     await fdb.collection('shop_log').add({at:C.nowStamp(), by:'본사', action:'mj_review_done', ids:[id], detail:'확인 필요 항목 닫음: '+k});
-    const st=MJ_SITES[id]; if(st){ st.reviewDone=(st.reviewDone||[]).concat([k]); st.review=(st.review||[]).filter(r=>(r.k||r.t)!==k); await fdb.collection('mj_sites').doc(id).set({review:st.review},{merge:true}); }
-    const pd=await fdb.collection('private').doc('mjprogram').get();
-    if(pd.exists){ const x=pd.data(); const reviews=(x.reviews||[]).map(r=>r.id!==id?r:Object.assign({},r,{items:(r.items||[]).filter(it=>(it.k||it.t)!==k)})).filter(r=>(r.items||[]).length); await fdb.collection('private').doc('mjprogram').set({reviews, review:reviews.length},{merge:true}); MJ_PROG=Object.assign({},MJ_PROG||{},{reviews, review:reviews.length}); }
+    const st=MJ_SITES[id]; if(st){ st.reviewDone=(st.reviewDone||[]).concat([k]); st.review=(st.review||[]).filter(r=>(r.k||r.t)!==k); }   // 화면만 갱신 — mj_sites.review 는 다음 게시 때 분류기가 다시 계산
+    // 관리대장 본사 알람이 읽는 private/mjprogram.reviews 에서도 뺀다 (게시 파이프라인과 겹칠 수 있어 트랜잭션으로)
+    const pref=fdb.collection('private').doc('mjprogram'), drop=(x)=>(x.reviews||[]).map(r=>r.id!==id?r:Object.assign({},r,{items:(r.items||[]).filter(it=>(it.k||it.t)!==k)})).filter(r=>(r.items||[]).length);
+    await fdb.runTransaction(async tx=>{ const pd=await tx.get(pref); if(!pd.exists) return; tx.set(pref,{reviews:drop(pd.data())},{merge:true}); });
+    if(MJ_PROG) MJ_PROG=Object.assign({},MJ_PROG,{reviews:drop(MJ_PROG)});
     buildMbList(); mjxBadge(); toast('확인함으로 닫았습니다');
   }catch(err){ toast('실패: '+err.message); if(btn) btn.disabled=false; }
 }
@@ -3281,7 +3284,7 @@ function openMasterEdit(id){
     d.querySelector('#me-new').onkeydown=ev=>{ if(ev.key==='Enter'){ ev.preventDefault(); d.querySelector('#me-add').click(); } };
     d.querySelector('#me-mb').onclick=async()=>{ try{ const on=!m.mb; await masterWrite(id,{mb:on?{no:0,name:m.name,svc:'',manual:true}:null},on?'mb_link':'mb_unlink',on?'마이크로블랙 전문점 수동 지정':'마이크로블랙 전문점 해제'); d.remove(); await loadMaster(); renderMaster(); toast(on?'전문점으로 지정했습니다. 다음 게시부터 명세서에 반영됩니다':'전문점 태그를 해제했습니다'); }catch(err){ toast('실패: '+err.message); } };
     d.querySelector('#me-x').onclick=()=>d.remove();
-    d.querySelector('#me-eduby').onclick=async()=>{ try{ const on=!m.eduBy; const at=C.nowStamp().slice(0,10); await masterWrite(id, on?{eduBy:'배랩', eduByAt:at}:{eduBy:null, eduByAt:null}, on?'edu_by':'edu_by_off', on?'본사 직접 교육 완료 표시 (배랩 '+at+') — 마이크로젝션 교육 근거':'본사 직접 교육 표시 해제'); d.remove(); await loadMaster(); renderMaster(); toast(on?'본사 직접 교육 완료로 표시했습니다. 다음 게시부터 MJ 납품 가능으로 분류됩니다':'해제했습니다'); } catch(err){ toast('실패: '+err.message); } };
+    d.querySelector('#me-eduby').onclick=async()=>{ try{ const on=!m.eduBy; const at=C.nowStamp().slice(0,10); await masterWrite(id, on?{eduBy:'배랩', eduByAt:at}:{eduBy:firebase.firestore.FieldValue.delete(), eduByAt:firebase.firestore.FieldValue.delete()}, on?'edu_by':'edu_by_off', on?'본사 직접 교육 완료 표시 (배랩 '+at+') — 마이크로젝션 교육 근거':'본사 직접 교육 표시 해제'); d.remove(); await loadMaster(); renderMaster(); toast(on?'본사 직접 교육 완료로 표시했습니다. 다음 게시부터 MJ 납품 가능으로 분류됩니다':'해제했습니다'); } catch(err){ toast('실패: '+err.message); } };
     d.querySelector('#me-excl').onclick=async()=>{ try{ const ex=m.status==='excluded'; await masterWrite(id,{status:ex?'active':'excluded'},ex?'include':'exclude',ex?'집계 제외 해제':'집계 제외'); d.remove(); await loadMaster(); renderMaster(); toast(ex?'다시 포함했습니다':'집계에서 제외했습니다'); }catch(err){ toast('실패: '+err.message); } };
     d.querySelector('#me-ok').onclick=async()=>{
       const name=d.querySelector('#me-name').value.trim(); if(!name){ toast('이름을 입력하세요'); return; }
