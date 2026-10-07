@@ -1298,7 +1298,7 @@ async function loadMasterFromServer(){
     const d = CLOUD ? (CDB ? await cloudJson('master') : null)
                     : await fetch('/api/master', {cache:'no-store'}).then(r=>r.ok ? r.json() : null);
     if(!d) return;
-    MASTER = d.shops || {}; MASTER_AT = d.generated || ''; MB_SHOPS = d.mbShops || []; PEDU_SHOPS = d.peduShops || []; MASTER_BY_ADDR = null;
+    MASTER = d.shops || {}; MASTER_AT = d.generated || ''; PARTNER_AMBIG = null; MB_SHOPS = d.mbShops || []; PEDU_SHOPS = d.peduShops || []; MASTER_BY_ADDR = null;
   }catch(e){ console.warn('거래처 마스터 로딩 실패:', e.message); }
 }
 /* 시트 → 거래처 마스터 항목. 거래처ID 가 없는 시트(추가발송 등)는 배송지 주소키로 찾는다. */
@@ -1316,10 +1316,32 @@ function masterOfShop(s){
   return mm || null;
 }
 /* 멘토링 담당 파트너 — 거래처 마스터의 partner (파트너 관리대장 연결, 컨트롤 타워가 채움). 표시는 괄호(지점) 뺀 파트너 이름. */
+/* 파트너 표기 — 보통은 괄호(지점)를 떼지만, 같은 이름이 여러 지점이면 지점까지 적는다
+   (마이크로 블랙&레드: 청담·대구·광주). 애매하지 않은 파트너는 '마이온스킨' 처럼 짧게. */
+let PARTNER_AMBIG = null;
+function ambiguousPartnerBases(){
+  if(!PARTNER_AMBIG){
+    const by = new Map();
+    Object.values(MASTER).forEach(m=>{
+      const n = String(m.partner||'').trim(); if(!n) return;
+      const base = n.replace(/\s*\(.*?\)\s*/g,'').trim();
+      if(!by.has(base)) by.set(base, new Set());
+      by.get(base).add(n.replace(/\s+/g,''));
+    });
+    PARTNER_AMBIG = new Set([...by.entries()].filter(([,v])=>v.size>1).map(([b])=>b));
+  }
+  return PARTNER_AMBIG;
+}
+function partnerLabel(name){
+  const full = String(name||'').trim(); if(!full) return '';
+  const base = full.replace(/\s*\(.*?\)\s*/g,'').trim();
+  if(!ambiguousPartnerBases().has(base)) return base;
+  const br = (/\(([^)]*)\)/.exec(full)||[])[1];
+  return br ? `${base} (${br.trim()})` : base;
+}
 function mentorOf(s){
   const mm = masterOfShop(s);
-  const name = (mm && mm.partner) ? String(mm.partner) : String((s && s.partnerPick) || '');
-  return name ? name.replace(/\s*\(.*?\)\s*/g,'').trim() : '';
+  return partnerLabel((mm && mm.partner) ? mm.partner : ((s && s.partnerPick) || ''));
 }
 /* 받침에 맞는 조사: 미네일은 / 에밀리는 (한글이 아니면 '은(는)') */
 function josaEunNeun(w){
