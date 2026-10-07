@@ -1080,6 +1080,12 @@ function accumShopRow(map, mapKey, r){
   if(!s.sid && COLS.sid && r[COLS.sid]) s.sid = String(r[COLS.sid]).trim();
   const pn = parseShopName(r[COLS.opt]);
   if(!s.name && pn) s.name = pn;
+  // 교육 구성 주문에서 고른 담당 파트너 (예: "파트너 원장님 선택: 로하나코스킨(강남구청)")
+  // — 관리대장 등록이 늦어도 첫 명세서부터 멘토링 안내가 나가도록 쓴다
+  if(!s.partnerPick){
+    const mp = /파트너[^:：\/]*선택\s*[:：]\s*([^\/]+)/.exec(String(r[COLS.opt]||''));
+    if(mp) s.partnerPick = mp[1].trim();
+  }
   // 거래처ID 가 없거나(새 주문) 합쳐져 사라진 옛 ID 면 엔티티의 대표 거래처ID로 바꿔 쓴다 (이름·수료 정보가 끊기지 않게)
   if(!s.sid || !MASTER[s.sid]){ const es = ENT_SID.get(ENT.find('A:'+s.key)); if(es) s.sid = es; }
   const mm = s.sid && MASTER[s.sid];
@@ -1289,11 +1295,14 @@ function masterOfShop(s){
 /* 멘토링 담당 파트너 — 거래처 마스터의 partner (파트너 관리대장 연결, 컨트롤 타워가 채움). 표시는 괄호(지점) 뺀 파트너 이름. */
 function mentorOf(s){
   const mm = masterOfShop(s);
-  return mm && mm.partner ? String(mm.partner).replace(/\s*\(.*?\)\s*/g,'').trim() : '';
+  const name = (mm && mm.partner) ? String(mm.partner) : String((s && s.partnerPick) || '');
+  return name ? name.replace(/\s*\(.*?\)\s*/g,'').trim() : '';
 }
 /* 받침에 맞는 조사: 미네일은 / 에밀리는 (한글이 아니면 '은(는)') */
 function josaEunNeun(w){
-  const c = String(w||'').trim().slice(-1).charCodeAt(0);
+  // 괄호·공백 등 뒤쪽 군더더기를 걷어내고 마지막 한글 글자로 판정 ("슬로우뷰티 (양슬기)" → '는')
+  const s = String(w||'').replace(/\s*\([^)]*\)\s*$/,'').replace(/[^가-힣A-Za-z0-9]+$/,'').trim();
+  const c = s ? s.slice(-1).charCodeAt(0) : 0;
   if(!(c>=0xAC00 && c<=0xD7A3)) return '은(는)';
   return (c-0xAC00)%28 ? '은' : '는';
 }
