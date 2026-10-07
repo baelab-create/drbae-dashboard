@@ -1335,8 +1335,8 @@ function MENTOR_BOX(s){
     // 파트너 멘토링이 아니라 본사가 직접 교육한 샵 (거래처 마스터 eduBy='배랩')
     const mm = masterOfShop(s);
     if(mm && mm.eduBy === '배랩')
-      return `<div class="mentorBox"><b>${esc(s.name)}</b>${josaEunNeun(s.name)} <b class="partner">배랩</b> <span class="penMark">직접 교육</span> 수료 샵입니다.<br>`
-           + `제품 사용 등 문의 사항이 있으면 언제든지 편하게 <b class="partner">닥터배 본사</b>로 문의 바랍니다.</div>`;
+      return `<div class="mentorBox"><b>${esc(s.name)}</b>${josaEunNeun(s.name)} <b class="partner">[배랩]</b> <span class="penMark">직접 교육</span> 수료 샵입니다.<br>`
+           + `제품 사용 등 문의 사항이 있으면 언제든지 편하게 <b class="partner">[닥터배 본사]</b>로 문의 바랍니다.</div>`;
     return '';
   }
   return `<div class="mentorBox"><b>${esc(s.name)}</b>${josaEunNeun(s.name)} 현재 <b class="partner">[${esc(p)}]</b> <span class="penMark">멘토링</span> 담당 샵입니다.<br>`
