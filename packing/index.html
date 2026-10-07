@@ -190,6 +190,13 @@
   .sh-shop{margin:7mm 0 0;}
   .sh-shop .label{font-size:10.5px; letter-spacing:.2em; color:var(--brand); font-weight:800;}
   .sh-shop .name{font-size:30px; font-weight:900; letter-spacing:-.5px; margin:1mm 0 3mm; line-height:1.15;}
+  .sh-shop .name .specTag{
+    display:inline-block; vertical-align:middle; margin-left:3mm;
+    font-size:12px; font-weight:800; letter-spacing:-.2px; color:#fff; background:#1F3F7A;
+    padding:1mm 3mm; border-radius:99px; border:1.5px solid #1F3F7A;
+    -webkit-print-color-adjust:exact; print-color-adjust:exact;
+  }
+  .sheet.fit2 .sh-shop .name .specTag{font-size:10.5px;}
   .sh-shop .name .heart{font-size:22px; -webkit-print-color-adjust:exact; print-color-adjust:exact;}
   .meta{width:100%; border-collapse:collapse; font-size:12.5px;}
   .meta td{padding:1.6mm 0; vertical-align:top;}
@@ -832,7 +839,7 @@ function ingest(header, label){
     if(!DATE_COLS.length) DATE_COLS = header.filter(h => RAW.filter(r=>toDate(r[h])).length > RAW.length*0.5);
     curDateCol = DATE_COLS.find(h=>h.includes('주문일')) || DATE_COLS.find(h=>h.includes('발송일')) || DATE_COLS[0] || null;
     curDate = null;
-    SHEET_DATES = null;        // 데이터가 바뀌면 샵별 명세서 날짜 집합도 다시 계산
+    SHEET_DATES = null; SPEC_ENT = null;   // 데이터가 바뀌면 샵별 명세서 날짜·전문점 집합도 다시 계산
     buildEntities();
 
     $('#fileInfo').style.display='block';
@@ -1269,6 +1276,22 @@ function mbOf(shop){
   }
   return null;
 }
+/* 닥터배 전문점 — ①거래처 마스터 use 의 specialist(본사 분류) ②'전문점' 세트를 구매한 샵(첫 구매 즉시 반영).
+   분류가 아직 '심사 중'이어도 전문점 세트를 샀으면 그 시점부터 전문점으로 표시한다. */
+let SPEC_ENT = null;
+function specEntities(){
+  if(!SPEC_ENT){
+    SPEC_ENT = new Set();
+    RAW.forEach(r=>{ if(/전문점/.test(String(r[COLS.prod]||'')+String(r[COLS.opt]||''))) SPEC_ENT.add(ENT.find('A:'+addrKey(r))); });
+  }
+  return SPEC_ENT;
+}
+function isSpecialist(s){
+  const mm = masterOfShop(s);
+  if(((mm && mm.use) || []).some(t=>t.k==='specialist')) return true;
+  return !!(s && s.key) && specEntities().has(ENT.find('A:'+s.key));
+}
+const SPEC_TAG = s => isSpecialist(s) ? '<span class="specTag">닥터배 전문점</span>' : '';
 const MB_BADGE = s => { const mb = mbOf(s); return mb ? `<div class="mbBadge"><span class="mbDia">◆</span> MICRO BLACK · <b>MJ-전문점-${esc(mb.cat||'두피')}</b>${mb.no?` <small>No.${String(mb.no).padStart(2,'0')}</small>`:''}</div>` : ''; };
 async function loadMasterFromServer(){
   try{
@@ -1690,7 +1713,7 @@ function renderSheets(){
       </div>
       <div class="sh-shop">
         <div class="label">SHIP TO</div>
-        <div class="name">${esc(s.name)} <span class="heart">❤️</span></div>
+        <div class="name">${esc(s.name)} <span class="heart">❤️</span>${SPEC_TAG(s)}</div>
         ${MB_BADGE(s)}
         ${MJ_BADGE(s)}
         ${MJ_RULE_BADGE(s)}
