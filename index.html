@@ -2558,7 +2558,7 @@ function mjxEduEntries(){
   rows.forEach(r=>{
     const opt=String(r['옵션정보']||''), prod=String(r['상품명']||'');
     let course=(opt.match(/교육\s*과정\s*선택\s*[:：]\s*([^/]+)/)||[])[1]||(/^\s*CASE\s*\d/.test(prod)?prod:'');
-    const hdr=/교육\s*구성/.test(prod);
+    const hdr=/교육\s*구성|전문점.?할인\s*세트/.test(prod)||/파트너\s*원장님\s*선택|수료증용/.test(opt);   // 2026-10 표기 '[닥터배 파트너] 전문점-할인 세트 구성'
     if(!course&&!hdr) return;
     const key=String(r['거래처ID']||r['대표샵명']||r['통합배송지']||'').trim(); if(!key) return;
     let e=by.get(key);
