@@ -270,8 +270,6 @@
   .sheet.mb::before{content:''; position:absolute; left:0; top:0; bottom:0; width:3.5mm;
     background:linear-gradient(180deg,#0B0B0C,#6B6E73); -webkit-print-color-adjust:exact; print-color-adjust:exact;}
   /* ✓ 마이크로젝션 납품샵 · 멘토링 완료 (거래처 마스터 partnerEdu → pedu) */
-  .useBadge{display:table; margin:1.5mm 0 2mm; padding:1.2mm 3mm; border-radius:1.2mm; font-size:11px; font-weight:800; letter-spacing:-.2px;
-    background:#EAF2FE; color:#1D4E9E; border:1.5px solid #3B82F6; -webkit-print-color-adjust:exact; print-color-adjust:exact;}
   /* 마이크로젝션 교육 수료 뱃지 — 포장 전 납품 가능 여부 확인용 */
   .mjBadge{
     display:table; margin:1.5mm 0 2mm; padding:1.2mm 3mm; border-radius:1.2mm;
@@ -319,7 +317,9 @@
   .mjCheck{margin:1mm 0 2mm; padding:6px 10px; border-radius:8px; background:#FFF8EC; border:1.5px dashed #D2691E; font-size:11.5px; line-height:1.5; color:#3A2A14;}
   .mjCheck .ck{display:flex; gap:6px; align-items:flex-start;}
   .mjCheck .ck b{flex:0 0 auto; font-weight:900;}
-  .mjCheck .ck.block b{color:#C0261B;} .mjCheck .ck.warn b{color:#B35C00;} .mjCheck .ck.ok b{color:#1E7A46;}
+  .mjCheck .ck.block b{color:#C0261B;} .mjCheck .ck.hold b{color:#B35C00;} .mjCheck .ck.warn b{color:#B35C00;} .mjCheck .ck.ok b{color:#1E7A46;}
+  /* A4 자동 맞춤 측정 중에는 화면 전용 블록을 빼고 잰다 (인쇄에 없는 것 때문에 과축소되지 않게) */
+  body.measuring .mjCheck, body.measuring .mjBadge.warn, body.measuring .mjBadge.hold, body.measuring .mjBadge small{display:none !important;}
   .mjCheck .hd{font-weight:900; color:#7A3E00; margin-bottom:2px;}
   .mjCheck.blocked{background:#FDECEA; border-color:#C0261B;} .mjCheck.blocked .hd{color:#9B1C1C;}
 
@@ -1422,7 +1422,6 @@ function certOf(shop){
 }
 /* 마이크로젝션 사용 구분 — 거래처 마스터의 use(본사 분류 태그)·pedu(납품샵 · 멘토링 완료).
    파트너가 관리대장에서 '마이크로젝션 납품샵 · 멘토링 완료'를 누르면 pedu 가 생기고, 교육·키트(150만/200만) 구매 + 수료증이면 분류기가 전문점(use specialist)으로 바꾼다. */
-const USE_F = {skin:'피부', scalp:'두피'};
 /* 도로명 + 건물번호 조각 (예: '서초대로396', '중앙로1275번길60-21') — 거래처 마스터 내보내기(shop_resolve addrFrags)와 같은 규칙 */
 const addrFragsOf = a => { const out = []; String(a||'').replace(/\([^)]*\)/g,' ').replace(/([가-힣A-Za-z0-9]+(?:로|길))\s*(\d+(?:-\d+)?)/g, (x,r,n)=>{ out.push(r+n); return x; }); return out; };
 function peduOf(s){
@@ -1457,34 +1456,37 @@ const MJ_BADGE = s => {
   const edu = c ? ` · 교육 수료 ${esc(dfmt(String(c.date)))}${c.name?` · ${esc(c.name)} 원장님`:''}` : '';
   const men = p ? ` · 멘토링 완료 ${esc(dfmt(String(p.date)))}${p.partner?` · ${esc(String(p.partner).replace(/\s*\(.*?\)\s*/g,'').trim())}`:''}` : '';
   const note = c ? (c.viaMaster ? (s.sid?` <small>(거래처 ${esc(s.sid)})</small>`:'') : ` <small>(수료 명부 이름 일치: ${esc(c.shop)} — 거래처 관리에서 연결 확인)</small>`) : '';
+  // 교육 확인(ue)은 mjEduState 한 곳에서만 정한다 — 뱃지·점검표·왼쪽 목록이 같은 판단을 쓴다
   const ue = mjEduState(s);
-  const hold = ue === '확인 전' ? `<div class="mjBadge hold">⚠ 전문점 결제 샵 · 교육 완료 확인 전 — 마이크로젝션 발송 보류 (담당 파트너 확인 후 발송 · MJ-EDU-001)</div>` : '';
+  const hold = ue === '확인 전' ? `<div class="mjBadge hold">⚠ 전문점 결제 샵 · 교육 완료 확인 전 — 마이크로젝션 발송 보류 (담당 파트너 확인 후 발송 · MJ-EDU-001)</div>`
+             : ue === '없음' ? `<div class="mjBadge warn">⛔ 교육 기록 없음 (수료증·파트너 교육 완료·본사 교육 없음) · 마이크로젝션 취소 대상, 스킨부스터만 발송 가능 (MJ-EDU-001 §8.1)${CERT_SOURCE==='none'?' (명부를 불러오지 못함)':''}</div>` : '';
   if(spec) return `<div class="mjBadge ok spec">◆ ${specTxt}${edu}${note}</div>` + (sup&&fOf(sup.f)?`<div class="mjBadge ok sup">✓ ${esc(supTxt)}</div>`:'') + hold;
-  if(pend && ue === '확인 전') return `<div class="mjBadge ok spec">◆ ${esc('MJ-전문점'+(fOf(pend.f)?'-'+fOf(pend.f):''))} <small>(지역 심사 중)</small></div>` + hold;
-  if(c || p || sup || ue === '수료') return `<div class="mjBadge ok sup">✓ ${esc(supTxt)}${edu}${men}${mm&&mm.eduBy?` · 본사 직접 교육(${esc(mm.eduBy)})`:''}${!c&&!p&&pend?' · 전문교육 신청':''}${pend?' <small>(전문점 심사 중)</small>':''}${note}</div>`;
-  return `<div class="mjBadge warn">⛔ MJ 주문 — 교육 기록 없음 (수료증·파트너 교육 완료·본사 교육 없음) · 마이크로젝션 취소 대상, 스킨부스터만 발송 가능 (MJ-EDU-001 §8.1)`
-       + `${CERT_SOURCE==='none'?' (명부를 불러오지 못함)':''}</div>`;
+  if(pend) return `<div class="mjBadge ok spec">◆ ${esc('MJ-전문점'+(fOf(pend.f)?'-'+fOf(pend.f):''))} <small>(지역 심사 중)</small></div>` + hold;   // 구성 결제 즉시 전문점 표시 (MJ-SPEC-001)
+  if(ue === '수료') return `<div class="mjBadge ok sup">✓ ${esc(supTxt)}${edu}${men}${mm&&mm.eduBy?` · 본사 직접 교육(${esc(mm.eduBy)})`:''}${note}</div>`;
+  return hold || `<div class="mjBadge warn">⚠ MJ 주문 — 교육 확인 필요</div>`;
 };
 /* 교육 확인 상태 — 거래처 마스터 useEdu(분류 엔진 mj_program 이 씀) 우선, 없으면(옛 내보내기) 이 화면의 근거로 판단 */
 function mjEduState(s){
+  if(mbOf(s)) return '수료';                                   // MICRO BLACK 명단 = 자체 교육 수료
   const mm = masterOfShop(s);
-  if(mm && mm.useEdu) return mm.useEdu;
-  if(certOf(s) || peduOf(s) || (mm && mm.eduBy) || mbOf(s)) return '수료';
+  if(mm && mm.useEdu) return mm.useEdu;                        // 분류 엔진(drbae-map tools/mj_program.mjs → shop_master.json useEdu)
+  if(certOf(s) || peduOf(s) || (mm && mm.eduBy)) return '수료';
   const use = (mm && mm.use) || [];
-  if(use.some(t=>t.k==='specialist'||t.k==='pending')) return mm.useEdu === undefined ? '수료' : '확인 전';   // 옛 내보내기(useEdu 없음)는 전문점을 그대로 믿는다
-  return use.some(t=>t.k==='supply') ? '수료' : '없음';
+  if(use.some(t=>t.k==='specialist'||t.k==='pending'||t.k==='supply')) return '수료';   // 옛 내보내기(useEdu 없음)는 분류를 그대로 믿는다
+  if(kitOf(s)) return '확인 전';                               // 마스터에 아직 없는 첫 주문 — 구성 결제는 했으나 교육 기록이 없으면 보류 (취소 대상 아님)
+  return '없음';
 }
-/* 이 시트에 전문점 교육 할인 구성 주문이 있는가 (CASE n · 교육 구성 행) */
-const kitOf = s => s.isExtra ? false : [...s.items.values()].some(it => /CASE\s*\d|교육\s*과정\s*선택|교육\s*구성|전문점.?할인\s*세트|파트너\s*원장님\s*선택/.test((it.main||'')+' '+(it.sub||'')));
+/* 이 시트에 전문점 교육 할인 구성(실물 150만/200만 행)이 있는가 — 2,500원 등록 행(파트너 선택)만 있는 시트는 아님 */
+const kitOf = s => s.isExtra ? false : [...s.items.values()].some(it => /CASE\s*\d|교육\s*과정\s*선택/.test((it.main||'')+' '+(it.sub||'')));
 /* 마이크로젝션 출고 점검표 (화면 전용) — 공통 운영규칙 §17.1: 해당되는 판정을 모두 함께 보여 준다 */
 const MJ_CHECK = s => {
   const mj = hasMJOf(s), kit = kitOf(s); if(!mj && !kit) return '';
   const rows = []; let blocked = false;
-  const add = (lv, head, body) => { if(lv==='block') blocked = true; rows.push(`<div class="ck ${lv}"><b>${lv==='block'?'⛔':lv==='warn'?'⚠':'✓'} ${head}</b><span>${body}</span></div>`); };
+  const add = (lv, head, body) => { if(lv==='block'||lv==='hold') blocked = true; rows.push(`<div class="ck ${lv}"><b>${lv==='block'?'⛔':lv==='warn'?'⚠':'✓'} ${head}</b><span>${body}</span></div>`); };
   if(mj){
     const ue = mjEduState(s), mm = masterOfShop(s);
     if(ue === '수료') add('ok', '교육', '교육 기록 확인 (수료증 · 파트너 교육 완료 · 본사 교육 · MB) — MJ 발송 가능');
-    else if(ue === '확인 전') add('warn', '교육 확인 전', '전문점 구성 결제는 됐지만 교육 완료 기록이 없음 — MJ 발송 보류, 담당 파트너' + (mm&&mm.partner?` [${esc(partnerLabel(mm.partner))}]`:'') + ' 확인 후 발송 (EDUCATION_RECORD_UNCONFIRMED)');
+    else if(ue === '확인 전') add('block', '교육 확인 전 — 발송 보류', '전문점 구성 결제는 됐지만 교육 완료 기록이 없음 — 담당 파트너' + (mm&&mm.partner?` [${esc(partnerLabel(mm.partner))}]`:'') + ' 확인 후 발송 (EDUCATION_RECORD_UNCONFIRMED)');
     else add('block', '교육 기록 없음', '마이크로젝션 취소 대상 · 스킨부스터만 발송 가능. 교육을 받았다면 파트너가 관리대장에서 "교육 완료" 등록 (MJ-EDU-001)');
     const v = mjRuleOf(s);
     if(v){
@@ -1495,8 +1497,9 @@ const MJ_CHECK = s => {
     }
   }
   if(kit){
-    const pick = s.partnerPick || '';
-    if(pick) add('ok', '담당 파트너', `전문점 구성 주문 · 파트너 원장님 선택 [${esc(pick)}] (MJ-SPEC-002)`);
+    const mm2 = masterOfShop(s), pick = s.partnerPick ? partnerLabel(s.partnerPick) : '', linked = mm2 && mm2.partner ? partnerLabel(mm2.partner) : '';
+    if(pick) add('ok', '담당 파트너', `전문점 구성 주문 · 파트너 원장님 선택 [${esc(pick)}]${linked&&linked!==pick?` · 관리대장 [${esc(linked)}]`:''} (MJ-SPEC-002)`);
+    else if(linked) add('ok', '담당 파트너', `주문 옵션에 선택은 없지만 관리대장 [${esc(linked)}]에 등록된 샵 (MJ-SPEC-002)`);
     else add('warn', '담당 파트너 선택 없음', '전문점 구성 주문은 담당 파트너 원장님 선택이 필수 — 주문 옵션 확인, 미확인이면 본사 확인 (PARTNER_SELECTION_MISSING)');
     add('ok', '할인 구성 출고', '전문점 교육 할인 구성은 정해진 공장 박스 수량 그대로 발송 — 박스를 쪼개어 소량 발송하지 않는다 (MJ-PACK-001)');
   }
@@ -1524,12 +1527,12 @@ function mjRuleOf(s){
 }
 const MJ_RULE_BADGE = s => {
   const v = mjRuleOf(s); if(!v) return '';
-  const head = v.lv === 'crit' ? '⚠ 마이크로젝션 단독 주문 — 스킨부스터를 함께 주문해 주세요'
-             : v.lv === 'warn' ? (v.sb === 0 ? '⚠ 이번 주문에 스킨부스터가 없습니다 — 마이크로젝션은 스킨부스터와 함께 주문해 주세요' : '⚠ 마이크로젝션 수량이 스킨부스터보다 많습니다 — 구매 수량 안내')
+  const head = v.lv === 'crit' ? '⚠ 마이크로젝션 단독 주문 — 다음 주문부터는 스킨부스터를 꼭 함께 주문해 주세요'
+             : v.lv === 'warn' ? (v.sb === 0 ? '⚠ 이번 주문에 스킨부스터가 없습니다 — 다음 주문부터는 꼭 함께 주문해 주세요' : '⚠ 마이크로젝션 수량이 스킨부스터보다 많습니다 — 구매 수량 안내')
              : '✓ 마이크로젝션 · 스킨부스터 함께 구매 확인';
   return `<div class="ruleWarn ${v.lv}"><b>${head}</b>`
        + `<span>이번 발송 마이크로젝션 ${v.mj}박스 · 스킨부스터 ${v.sb}박스 &nbsp;|&nbsp; 최근 90일(이번 발송 포함) 마이크로젝션 ${v.mj90}박스 · 스킨부스터 ${v.sb90}박스</span>`
-       + `<span><b>마이크로젝션은 단독 주문이 불가하며, 마이크로젝션 1박스에 스킨부스터 1박스 이상을 함께 주문해 주셔야 발송됩니다.</b> 닥터배는 마이크로젝션과 스킨부스터의 구매 수량을 샵별로 집계·관리하고 있습니다.</span>`
+       + `<span><b>마이크로젝션은 단독 주문이 불가하며, 마이크로젝션 1박스에 스킨부스터 1박스 이상을 함께 주문하셔야 합니다.</b> 닥터배는 마이크로젝션과 스킨부스터의 구매 수량을 샵별로 집계·관리하고 있습니다.</span>`
        + `<small>마이크로젝션은 닥터배 스킨부스터와 함께 사용해 주세요. 타사 제품과 함께 사용하지 말아 주세요. 데모 샘플은 정식 주문의 동시 구매 조건을 대신하지 않습니다.</small></div>`;
 };
 
@@ -1840,7 +1843,8 @@ function renderSheets(){
 /* ── A4 자동 맞춤: 시트가 한 장(296mm)을 넘으면 fit1→fit2→fit3 순으로 축소 적용 ── */
 function autofitSheets(){
   const budget = Math.ceil(296 * 96 / 25.4) + 3;   // 296mm를 px로 (여유 3px)
-  document.querySelectorAll('#stage .sheet').forEach(sh=>{
+  document.body.classList.add('measuring');         // 인쇄에 안 나오는 본사 전용 블록(점검표·경고)은 빼고 잰다
+  try{ document.querySelectorAll('#stage .sheet').forEach(sh=>{
     sh.classList.remove('fit1','fit2','fit3');
     const over = ()=> sh.scrollHeight > budget;
     if(!over()) return;
@@ -1848,7 +1852,7 @@ function autofitSheets(){
       sh.classList.add(c);                          // 누적 적용 (fit2는 fit1 위에)
       if(!over()) break;
     }
-  });
+  }); } finally { document.body.classList.remove('measuring'); }
 }
 
 /* ══════════════ 인쇄 ══════════════ */

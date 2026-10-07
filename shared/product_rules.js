@@ -55,7 +55,8 @@ function productsOfSku(opt, nm){
   for(const [k,v] of optPairs(opt)){
     if(k.includes('샵')) continue;
     const kv=k+' '+v;
-    if(kv.includes('마이크로젝션')) ps.add('MJ');
+    if(k.includes('교육')||/^\s*CASE\s*\d/.test(v)||k.includes('파트너 원장님')) ps.add('EDU');   // 교육 과정·파트너 선택 행 — 'CASE 2 [피부] 마이크로젝션-심화'가 MJ 로 잡히지 않게 맨 앞에서
+    else if(kv.includes('마이크로젝션')) ps.add('MJ');
     else if(kv.includes('더마커런트')) ps.add('DERMA');
     else if(k.includes('퍼밍 재생크림')) ps.add('FIRM');
     else if(k.includes('더블')) ps.add('ADAPTER');
@@ -117,7 +118,7 @@ function productsOfSku(opt, nm){
   if(!ps.size){                                        // 옵션으로 판정 실패 → 상품명 폴백
     nm=String(nm||'');
     if(nm.includes('첫구매')||nm.includes('데모')) ps.add('DEMO');
-    else if(nm.includes('교육')) ps.add('EDU');         // 교육 과정 (닥터배 교육 구성 등)
+    else if(nm.includes('교육')||/전문점.?할인\s*세트|세트\s*구성/.test(nm)) ps.add('EDU');   // 교육 과정 ('[닥터배 (공인) 파트너] 교육 구성', 2026-10 '[닥터배 파트너] 전문점-할인 세트 구성')
     else if(nm.includes('세미나')) ps.add('SEMINAR');   // 오프라인 세미나 결제 건
     else if(nm.includes('여름 피부열')) ps.add('SUMMER_SET');
     // "샴푸, 에센스겔, 토닉"처럼 구성만 나열된 결제창 기본 항목(3천원)은 제품이 아니라 기타.
@@ -153,10 +154,10 @@ const GROUP_OF = {
   SEMINAR:'etc', EDU:'etc', SB_ETC:'etc', BASE:'etc'
 };
 
-/* ══════════════ 마이크로젝션 구매 규칙 (교수님 확정 2026-09-28) ══════════════
-   ▶ 마이크로젝션만 사는 것은 불가능하다. 반드시  마이크로젝션 박스 수 < 스킨부스터 박스 수.
-     이유: 마이크로젝션만 사고 닥터배 스킨부스터를 쓰지 않는 경우를 막기 위함.
-   ▶ 위반이면 발송 명세서 화면에 경고(본사 확인용, 인쇄물에는 나오지 않음).
+/* ══════════════ 마이크로젝션 구매 규칙 (공통 운영규칙 v1.0.0, 2026-10-07 — MJ-SHIP-001/002) ══════════════
+   ▶ 마이크로젝션 단독 주문 불가(교육을 받았어도 취소 대상). 최소 동시 구매 = 마이크로젝션 1박스 + 스킨부스터 1박스 이상.
+     그 이상의 비율(MJ 2박스일 때 SB 몇 박스, 엄격한 MJ<SB 등)은 미확정(U01·U02) → 자동 거절하지 않고 본사 확인.
+   ▶ 발송 명세서: 구매 수량 안내는 고객 인쇄물에 포함, 출고 점검표(교육·단독·비율·파트너)는 본사 화면 전용.
    스킨부스터 박스로 세는 것 = '스킨부스터 N종 교차선택' 라인
        엑소토카인 블루 · 피디로엔 핑크 · 엑소토카인 블랙 · 토코포르테 · 리퀴드 필링 · 칼리파우더,
        구성 미표기 스킨부스터(SB_ETC), 더마커런트 세트 안의 '스킨부스터 … N박스'
@@ -166,7 +167,7 @@ const GROUP_OF = {
 const MJ_RULE_SB = new Set(['EXO_BLUE','PDRN','EXO_BLACK','TOCO_LIQ','LIQMASK','CALCI','SB_ETC']);
 function mjRuleCount(opt, nm, qty){
   const o = String(opt||''), p = String(nm||''), q = Number(qty)||1;
-  if(/^\s*CASE\s*\d/.test(p) || /교육\s*과정\s*선택/.test(o) || /교육\s*구성/.test(p)) return {mj:0, sb:0};
+  if(/^\s*CASE\s*\d/.test(p) || /교육\s*과정\s*선택|파트너\s*원장님\s*선택/.test(o) || /교육\s*구성|전문점.?할인\s*세트/.test(p)) return {mj:0, sb:0};
   if(/^\s*\[서비스\]/.test(p) || /[:：]\s*서비스\s*$/.test(o.trim())) return {mj:0, sb:0};
   const cs = productsOfSku(o, p);
   // 묶음 구성은 옵션에 적힌 박스 수로 센다: "(3+1)4박스" → 4, "3+3 (6박스/50%할인)" → 6, "10 vial (1박스…)" → 1
