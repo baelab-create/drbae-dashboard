@@ -299,6 +299,7 @@
     display:flex; flex-direction:column; gap:2px;}
   .ruleWarn.crit{background:#C0261B; color:#fff;}
   .ruleWarn.warn{background:#FFF1DC; color:#8A4B00; border:1.5px dashed #E08A00;}
+  .ruleWarn.ok{background:#EEF5FC; color:#1C3F66; border:1.5px solid #2F80D0;}   /* 비율 정상 — 집계·사용 안내 */
   .ruleWarn small{opacity:.85; font-size:11px;}
   .ruleDot{font-weight:900; font-size:12px;}
   .ruleDot.crit{color:#C0261B;} .ruleDot.warn{color:#E08A00;}
@@ -437,7 +438,6 @@
     body.printOne .sheet{display:none;}
     body.printOne .sheet.target{display:flex;}
     #cjOverlay{display:none !important;}
-    .ruleWarn{display:none !important;}   /* 마이크로젝션 구매 규칙 경고는 본사 화면 전용 */
     .mjBadge.warn, .mjBadge small{display:none !important;}   /* 멘토링·수료 기록 없음 경고·거래처ID·명부 표기는 본사 화면 전용 (고객이 받는 인쇄물 제외) */
   }
   @media (max-width:900px){
@@ -1199,7 +1199,7 @@ function renderShopList(){
     const dp = s.sheetDate ? `<span class="qty">${s.sheetDate.slice(5).replace('-','.')}</span> ` : '';
     const xb = s.isExtra ? '<span style="color:#C24A08;font-weight:800">➕</span> ' : '';
     const rv = mjRuleOf(s);
-    const rb = rv ? `<span class="ruleDot ${rv.lv}" title="이번 발송 마이크로젝션 ${rv.mj}박스 · 스킨부스터 ${rv.sb}박스 / 최근 90일(이번 발송 포함) 마이크로젝션 ${rv.mj90}박스 · 스킨부스터 ${rv.sb90}박스">⚠</span>` : '';
+    const rb = (rv && rv.lv !== 'ok') ? `<span class="ruleDot ${rv.lv}" title="이번 발송 마이크로젝션 ${rv.mj}박스 · 스킨부스터 ${rv.sb}박스 / 최근 90일(이번 발송 포함) 마이크로젝션 ${rv.mj90}박스 · 스킨부스터 ${rv.sb90}박스">⚠</span>` : '';
     return `<div class="shopRow">${rb}
       ${dp}${xb}<span class="nm" title="${s.name}">${s.name}</span>
       <span class="qty">${q}개</span>
@@ -1407,22 +1407,25 @@ if(typeof mjRuleCount !== 'function') window.mjRuleCount = function(){ return {m
    crit: 이번 발송도, 최근 90일 누적도 마이크로젝션 ≥ 스킨부스터
    warn: 이번 발송만 위반 (최근 90일 누적으로는 스킨부스터가 더 많음) */
 function mjRuleOf(s){
-  const r = s.rule; if(s.isExtra || !r || !r.mj || r.mj < r.sb) return null;
+  const r = s.rule; if(s.isExtra || !r || !r.mj) return null;   // 마이크로젝션이 포함된 발송이면 항상 안내 (집계·혼용 금지)
   const endK = s.sheetDate || (curDate===UNSHIPPED ? dkey(new Date()) : curDate);
   const d0 = new Date(endK+'T00:00:00'); d0.setDate(d0.getDate()-90); const fromK = dkey(d0);
   let mj90 = 0, sb90 = 0;
   ((s.hist && s.hist.rule) || []).forEach(x=>{ if(x.k > fromK && x.k <= endK){ mj90 += x.mj; sb90 += x.sb; } });
   if(curDate===UNSHIPPED){ mj90 += r.mj; sb90 += r.sb; }          // 미발송 주문은 이력(발송일 기준)에 아직 없음
   mj90 = Math.max(mj90, r.mj); sb90 = Math.max(sb90, r.sb);
-  return {lv: mj90 >= sb90 ? 'crit' : 'warn', mj:r.mj, sb:r.sb, mj90, sb90};
+  return {lv: mj90 >= sb90 ? 'crit' : 'ok', mj:r.mj, sb:r.sb, mj90, sb90};
 }
 const MJ_RULE_BADGE = s => {
   const v = mjRuleOf(s); if(!v) return '';
-  const head = v.lv==='crit' ? '⚠ 마이크로젝션 구매 규칙 위반 — 스킨부스터 없이 마이크로젝션 위주 구매'
-                             : '⚠ 이번 발송은 마이크로젝션이 스킨부스터보다 많거나 같음';
+  const diff = v.sb90 - v.mj90;
+  const head = v.lv === 'crit'
+      ? '⚠ 마이크로젝션 구매 비율 확인 필요 — 최근 90일 누적 마이크로젝션이 스킨부스터보다 많거나 같습니다'
+      : '✓ 마이크로젝션 · 스킨부스터 구매 비율 정상' + (diff > 0 ? ` (최근 90일 스킨부스터가 ${diff}박스 더 많음)` : '');
   return `<div class="ruleWarn ${v.lv}"><b>${head}</b>`
        + `<span>이번 발송 마이크로젝션 ${v.mj}박스 · 스킨부스터 ${v.sb}박스 &nbsp;|&nbsp; 최근 90일(이번 발송 포함) 마이크로젝션 ${v.mj90}박스 · 스킨부스터 ${v.sb90}박스</span>`
-       + `<small>규칙: 마이크로젝션 수량은 반드시 스킨부스터 박스 수량보다 적어야 합니다 · 본사 확인용 표시(인쇄되지 않음)</small></div>`;
+       + `<span><b>닥터배는 마이크로젝션과 스킨부스터의 구매 수량을 샵별로 집계·관리하고 있습니다.</b> 마이크로젝션 구매 수량은 같은 기간 스킨부스터 박스 수량보다 적어야 합니다.</span>`
+       + `<small>마이크로젝션은 닥터배 스킨부스터와 함께 사용해 주세요. 타사 제품과 함께 사용하지 말아 주세요.</small></div>`;
 };
 
 let memoUnsub = null;
