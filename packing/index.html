@@ -1199,7 +1199,7 @@ function renderShopList(){
     const dp = s.sheetDate ? `<span class="qty">${s.sheetDate.slice(5).replace('-','.')}</span> ` : '';
     const xb = s.isExtra ? '<span style="color:#C24A08;font-weight:800">➕</span> ' : '';
     const rv = mjRuleOf(s);
-    const rb = rv ? `<span class="ruleDot ${rv.lv}" title="마이크로젝션 ${rv.mj}박스 · 스킨부스터 ${rv.sb}박스 (최근 90일 ${rv.mj90} · ${rv.sb90})">⚠</span>` : '';
+    const rb = rv ? `<span class="ruleDot ${rv.lv}" title="이번 발송 마이크로젝션 ${rv.mj}박스 · 스킨부스터 ${rv.sb}박스 / 최근 90일(이번 발송 포함) 마이크로젝션 ${rv.mj90}박스 · 스킨부스터 ${rv.sb90}박스">⚠</span>` : '';
     return `<div class="shopRow">${rb}
       ${dp}${xb}<span class="nm" title="${s.name}">${s.name}</span>
       <span class="qty">${q}개</span>
@@ -1299,7 +1299,14 @@ function josaEunNeun(w){
 }
 function MENTOR_BOX(s){
   const p = mentorOf(s);
-  if(!p) return '';
+  if(!p){
+    // 파트너 멘토링이 아니라 본사가 직접 교육한 샵 (거래처 마스터 eduBy='배랩')
+    const mm = masterOfShop(s);
+    if(mm && mm.eduBy === '배랩')
+      return `<div class="mentorBox"><b>${esc(s.name)}</b>${josaEunNeun(s.name)} <b class="partner">배랩</b> <span class="penMark">직접 교육</span> 수료 샵입니다.<br>`
+           + `제품 사용 등 문의 사항이 있으면 언제든지 편하게 <b class="partner">닥터배 본사</b>로 문의 바랍니다.</div>`;
+    return '';
+  }
   return `<div class="mentorBox"><b>${esc(s.name)}</b>${josaEunNeun(s.name)} 현재 <b class="partner">${esc(p)}</b> <span class="penMark">멘토링</span> 담당 샵입니다.<br>`
        + `제품 사용 등 문의 사항이 있으면 언제든지 편하게 <b class="partner">${esc(p)}</b>에 문의 바랍니다.</div>`;
 }
@@ -1414,7 +1421,7 @@ const MJ_RULE_BADGE = s => {
   const head = v.lv==='crit' ? '⚠ 마이크로젝션 구매 규칙 위반 — 스킨부스터 없이 마이크로젝션 위주 구매'
                              : '⚠ 이번 발송은 마이크로젝션이 스킨부스터보다 많거나 같음';
   return `<div class="ruleWarn ${v.lv}"><b>${head}</b>`
-       + `<span>이번 발송 마이크로젝션 ${v.mj}박스 · 스킨부스터 ${v.sb}박스 &nbsp;|&nbsp; 최근 90일 마이크로젝션 ${v.mj90} · 스킨부스터 ${v.sb90}박스</span>`
+       + `<span>이번 발송 마이크로젝션 ${v.mj}박스 · 스킨부스터 ${v.sb}박스 &nbsp;|&nbsp; 최근 90일(이번 발송 포함) 마이크로젝션 ${v.mj90}박스 · 스킨부스터 ${v.sb90}박스</span>`
        + `<small>규칙: 마이크로젝션 수량은 반드시 스킨부스터 박스 수량보다 적어야 합니다 · 본사 확인용 표시(인쇄되지 않음)</small></div>`;
 };
 
