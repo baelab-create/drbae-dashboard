@@ -789,6 +789,9 @@ header{background:var(--neu-page);border-bottom:0;box-shadow:0 14px 28px -18px r
 
 .mjx-st.t-on.skin,.mjx-st.t-on.scalp{background:#1F3F7A;color:#fff}   /* MJ-전문점 태그: 분야와 무관하게 남색 */
 .mjx-st.t-pend{background:#B7791F;color:#fff}
+.mjx-st.t-hold{background:#D2691E;color:#fff}   /* 교육 확인 전 — MJ 발송 보류 */
+.mjx-rev-r{display:flex;gap:6px;align-items:flex-start;padding:1px 0}
+.mjx-done{margin-left:auto;flex:0 0 auto;font-family:inherit;font-size:10.5px;font-weight:700;border:1px solid #D9A7A2;background:#fff;color:#8A2B24;border-radius:8px;padding:2px 7px;cursor:pointer}
 .mjx-st.t-end{background:#9AA3AD;color:#fff;text-decoration:line-through}
 .mjx-rev{margin-top:6px;font-size:11px;line-height:1.5;color:#B3261E;background:#FDF1EF;border-radius:10px;padding:6px 9px}
 .mjx-edit{margin-left:6px;font-family:inherit;font-size:11px;font-weight:700;border:0;border-radius:10px;padding:4px 8px;background:var(--neu-card);box-shadow:var(--neu-out-sm);color:#2A2E36;cursor:pointer;white-space:nowrap}
@@ -1086,7 +1089,7 @@ header{background:var(--neu-page);border-bottom:0;box-shadow:0 14px 28px -18px r
 <div class="page-el mjxpage" id="page-mb">
   <div class="mjx-side">
     <div class="mjx-head">
-      <small>운영규칙 v1.0 · 시즌 1 · 본사 전용</small>
+      <small>공통 운영규칙 v1.0.0 (2026-10-07) · 시즌 1 · 본사 전용</small>
       <h3>마이크로젝션 전문점 분포 <b id="mjx-total">0곳</b></h3>
     </div>
     <div class="mjx-cards" id="mjx-cards"></div>
@@ -1112,6 +1115,7 @@ header{background:var(--neu-page);border-bottom:0;box-shadow:0 14px 28px -18px r
       <div><i style="--c:#111214"></i>MJ-전문점-두피 · <i style="--c:#2F80ED"></i>MJ-전문점-피부</div>
       <div><i class="edu"></i>전문교육·키트 주문 (C2 피부 · C2+ 피부+두피 · C3 두피)</div>
       <div><i class="ring"></i>유지 중 전문점의 같은 분야 반경 2km 보호 (일반 납품샵은 제한 없음)</div>
+      <div>전문점 표시(구성 결제)와 교육 완료 확인은 별개 — "교육 확인 전"은 MJ 발송 보류 (MJ-EDU-001)</div>
     </div>
   </div>
 </div>
@@ -2610,8 +2614,9 @@ function buildMbList(){
     <div class="mjx-card"><small>전문점 사업장</small><b>${P.specialistSites!=null?P.specialistSites:'–'}곳</b></div>
     <div class="mjx-card blu"><small>MJ-전문점-피부</small><b>${P.skin!=null?P.skin:'–'}</b></div>
     <div class="mjx-card blk"><small>MJ-전문점-두피</small><b>${P.scalp!=null?P.scalp:'–'}</b></div>
+    <div class="mjx-card ex"><small>교육 확인 전 (MJ 발송 보류)</small><b>${P.eduPending!=null?P.eduPending:'–'}곳</b></div>
     <div class="mjx-card ex"><small>심사 중 · 확인 필요</small><b>${P.pending||0} · ${P.review||0}</b></div>
-    <div class="mjx-card"><small>적용 정책</small><b style="font-size:13px">${P.policy==='S1'?'시즌 1 · ~2027.01.31':mjxEsc(P.policy||'–')}</b></div>`;
+    <div class="mjx-card"><small>적용 정책</small><b style="font-size:12px;line-height:1.3">${P.policy==='S1'?'시즌 1 · 2km 보호·할인 구성 시범 2026.09~2027.02<br>유지기준(20/40스탬프) ~2027.01.31':mjxEsc(P.policy||'–')}</b></div>`;
   document.querySelectorAll('#mjx-seg button').forEach(b=>{ const f=b.dataset.f; const n=all.filter(m=>mjxInSrc(m)&&(f==='all'||(f==='두피'?m.fScalp:m.fSkin))).length;
     b.textContent=(f==='all'?'전체':'MJ-전문점-'+f)+' '+n; b.classList.toggle('on',f===mjxFilter); });
   document.querySelectorAll('#mjx-src button').forEach(b=>b.classList.toggle('on',b.dataset.s===mjxSrc));
@@ -2620,19 +2625,33 @@ function buildMbList(){
   box.innerHTML=list.map(m=>{ const st=m.site, col=m.fSkin&&!m.fScalp?MB_CAT_COLOR['피부']:MB_CAT_COLOR['두피'], cert=mjxCert(m), ed=m.src==='edu'?m:m.edu;
     const eduB = ed ? ed.courses.map(c=>`<span class="mjx-st course${/\[두피\]/.test(c)&&!/\[피부\]/.test(c)?' scalp':''}">${mjxEsc(c)}</span>`).join('') : '';
     const pre = st&&st.edu&&st.edu.pre ? `<span class="mjx-st ord" title="파트너 관리대장 등록">납품샵 · 멘토링 완료 ${mjxEsc(String(st.edu.pre.date).slice(2).replace(/-/g,'.'))}${st.edu.pre.partner?' · '+mjxEsc(String(st.edu.pre.partner).replace(/\s*\(.*?\)\s*/g,'')):''}</span>` : '';
-    const eduSt = st&&st.edu ? `<span class="mjx-st ${st.edu.status==='수료'?'cert':'none'}">교육 ${st.edu.status}${cert?' · '+(st.edu.kind&&st.edu.kind!=='닥터배 수료증'?mjxEsc(st.edu.kind)+' (수료증 미발급)':'수료증 '+cert.last.slice(2).replace(/-/g,'.')):''}</span>` : '';
+    const eduSt = st&&st.edu ? `<span class="mjx-st ${st.edu.status==='수료'?'cert':st.edu.status==='교육 확인 전'?'t-hold':'none'}" title="${mjxEsc(st.edu.basis||'')}">교육 ${st.edu.status}${st.edu.status==='교육 확인 전'?' · MJ 발송 보류':''}${cert?' · '+(st.edu.kind&&st.edu.kind!=='닥터배 수료증'?mjxEsc(st.edu.kind)+' (수료증 미발급)':'수료증 '+cert.last.slice(2).replace(/-/g,'.')):''}${st.edu.eduBy?' · 본사 직접 교육('+mjxEsc(st.edu.eduBy)+')':''}</span>` : '';
+    const bund = st&&(st.bundles||[]).length ? `<span class="mjx-st none" title="최근 발송 묶음별 마이크로젝션·스킨부스터 박스 (MJ-SHIP-001/002)">발송 ${st.bundles.slice(-3).map(b=>`${b.d.slice(5).replace('-','.')} MJ${b.mj}·SB${b.sb}${b.sb===0?'⛔':b.mj>b.sb?'⚠':''}`).join(' / ')}</span>` : '';
     const sup = st&&st.supply ? `<span class="mjx-st ${st.supply.status==='가능'?'ord':'none'}" title="${mjxEsc(st.supply.basis||'')}">납품 ${st.supply.status}</span>` : '';
     const ref = st&&st.ref&&st.ref.mj90 ? `<span class="mjx-st none" title="${mjxEsc(st.ref.note||'')}">최근 90일 구매 ${Math.round(st.ref.mj90).toLocaleString('ko-KR')}원 (참고 · 판정 무관)</span>` : '';
-    const rev = st&&(st.review||[]).length ? `<div class="mjx-rev">${st.review.map(r=>'⚠ '+mjxEsc(r.m)).join('<br>')}</div>` : '';
+    const rev = st&&(st.review||[]).length ? `<div class="mjx-rev">${st.review.map(r=>`<div class="mjx-rev-r">⚠ ${mjxEsc(r.m)}${/^(pending|addr)$/.test(r.t)?'':` <button class="mjx-done" data-id="${mjxEsc(st.id)}" data-k="${mjxEsc(r.k||r.t)}" title="처리했거나 본사 판단으로 닫음 — 다음 게시부터 다시 올라오지 않습니다 (주문 기반 항목은 그 날짜까지)">확인함</button>`}</div>`).join('')}</div>` : '';
     const chip = m.src==='mb' ? `<span class="no" style="--c:${col}">${String(m.no).padStart(2,'0')}</span>` : `<span class="no edu" style="--c:${col}">${mjxEsc(m.label||'·')}</span>`;
     const sel = m.src==='mb' ? `<select class="cat" data-no="${m.no}" title="MICRO BLACK 명단 분야 — 바꾸면 저장되고 다음 게시 때 전문점 분야에 반영"><option${m.cat==='두피'?' selected':''}>두피</option><option${m.cat==='피부'?' selected':''}>피부</option></select>` : '';
     const line3 = `${mjxEsc(m.addr)}${m.lat?'':' <em>· 지도 위치 없음</em>'}${m.ph?`<br><a href="tel:${mjxEsc(m.ph)}">${mjxEsc(mbFmtPh(m.ph))}</a>`:''}`;
-    const eduLine = ed ? `<div class="mjx-r3 edu">전문교육·키트 주문 ${ed.date.slice(2).replace(/-/g,'.')} · ${Math.round(ed.amt).toLocaleString('ko-KR')}원${ed.partner?' · 담당 파트너 '+mjxEsc(ed.partner):''}</div>` : '';
+    const eduLine = ed ? `<div class="mjx-r3 edu">전문점 교육 할인 구성 결제 ${ed.date.slice(2).replace(/-/g,'.')} · ${Math.round(ed.amt).toLocaleString('ko-KR')}원 · 담당 파트너 ${ed.partner?mjxEsc(ed.partner)+(st&&st.edu&&st.edu.partnerName?' → '+mjxEsc(st.edu.partnerName):' <em style="color:#B3261E">(파트너 명단과 대조 안 됨)</em>'):'<em style="color:#B3261E">선택 없음 — 필수 (MJ-SPEC-002)</em>'}</div>` : '';
     return `<div class="mjx-row${mjxSel===m.k?' on':''}${m.src!=='mb'?' is-edu':''}" data-k="${mjxEsc(m.k)}">
       <div class="mjx-r1">${chip}<b>${mjxEsc(m.shop||m.nm)}</b>${m.nm&&m.shop&&m.shop!==m.nm?`<span class="own">${mjxEsc(m.nm)} 원장</span>`:''}${sel}${st?`<button class="mjx-edit" data-k="${mjxEsc(m.k)}" title="본사 결정으로 전문점 상태 변경">상태 변경</button>`:''}</div>
-      <div class="mjx-r2">${mjxTitleBadges(st)}${eduB}${eduSt}${pre}${sup}${ref}${m.src==='mb'?mbSvcChips(m.svc):''}</div>
+      <div class="mjx-r2">${mjxTitleBadges(st)}${eduB}${eduSt}${pre}${sup}${bund}${ref}${m.src==='mb'?mbSvcChips(m.svc):''}</div>
       <div class="mjx-r3">${line3}</div>${eduLine}${rev}
     </div>`; }).join('') || '<div class="mjx-empty">조건에 맞는 사업장이 없습니다.</div>';
+}
+/* 확인 필요 항목 닫기 — mj_sites.reviewDone 에 키를 넣으면 분류기(mj_program)가 그 항목을 다시 올리지 않는다 (주문 기반 mjonly·ratio 는 't@마지막 발송일'). 관리대장 본사 알람과 같은 동작 */
+async function mjxReviewDone(id, k, btn){
+  if(!confirm('이 항목을 "확인함"으로 닫을까요? 다음 게시부터 다시 올라오지 않습니다.')) return;
+  if(btn) btn.disabled=true;
+  try{
+    await fdb.collection('mj_sites').doc(id).set({reviewDone:firebase.firestore.FieldValue.arrayUnion(k)},{merge:true});
+    await fdb.collection('shop_log').add({at:C.nowStamp(), by:'본사', action:'mj_review_done', ids:[id], detail:'확인 필요 항목 닫음: '+k});
+    const st=MJ_SITES[id]; if(st){ st.reviewDone=(st.reviewDone||[]).concat([k]); st.review=(st.review||[]).filter(r=>(r.k||r.t)!==k); await fdb.collection('mj_sites').doc(id).set({review:st.review},{merge:true}); }
+    const pd=await fdb.collection('private').doc('mjprogram').get();
+    if(pd.exists){ const x=pd.data(); const reviews=(x.reviews||[]).map(r=>r.id!==id?r:Object.assign({},r,{items:(r.items||[]).filter(it=>(it.k||it.t)!==k)})).filter(r=>(r.items||[]).length); await fdb.collection('private').doc('mjprogram').set({reviews, review:reviews.length},{merge:true}); MJ_PROG=Object.assign({},MJ_PROG||{},{reviews, review:reviews.length}); }
+    buildMbList(); mjxBadge(); toast('확인함으로 닫았습니다');
+  }catch(err){ toast('실패: '+err.message); if(btn) btn.disabled=false; }
 }
 /* 본사 결정: 피부/두피 전문점 상태를 직접 정한다 → manual 로 저장되어 자동 분류가 덮어쓰지 않는다 */
 function mjxEditTitle(k){
@@ -2640,7 +2659,7 @@ function mjxEditTitle(k){
   const d=document.createElement('div'); d.className='mst-edit';
   const opt=(cur)=>['미등록','심사 중','유지 중','종료'].map(v=>`<option${v===cur?' selected':''}>${v}</option>`).join('');
   d.innerHTML=`<div class="box"><h4>${mjxEsc(st.name)} <span style="font-family:monospace;font-size:11px;color:#7A8B93">${mjxEsc(st.id)}</span></h4>
-    <div style="font-size:12px;color:#7A8B93;margin-bottom:6px">본사 결정으로 저장하면 자동 분류가 이 분야 상태를 바꾸지 않습니다. 종료해도 교육 이력·납품자격은 유지됩니다(§3.6).</div>
+    <div style="font-size:12px;color:#7A8B93;margin-bottom:6px">본사 결정으로 저장하면 자동 분류가 이 분야 상태를 바꾸지 않습니다. 종료하면 해당 분야 타이틀·2km 보호·전문점 할인 혜택이 끝나고, 교육 이력·거래 기록·납품샵 자격은 유지됩니다(공통 운영규칙 §14.2). 종료 사유·효력일·승인자(본사)가 이력에 남습니다.</div>
     <label>MJ-전문점-피부</label><select id="mt-skin">${opt((st.skin||{}).status||'미등록')}</select>
     <label>MJ-전문점-두피</label><select id="mt-scalp">${opt((st.scalp||{}).status||'미등록')}</select>
     <label>시작일 (유지 중으로 바꿀 때)</label><input type="text" id="mt-since" placeholder="YYYY-MM-DD" value="${new Date(Date.now()+9*3600e3).toISOString().slice(0,10)}">
@@ -2672,6 +2691,7 @@ document.getElementById('mjx-seg').addEventListener('click',e=>{ const b=e.targe
 document.getElementById('mjx-src').addEventListener('click',e=>{ const b=e.target.closest('button[data-s]'); if(!b) return; mjxSrc=b.dataset.s; buildMbList(); if(mjxMap) mjxDraw(true); });
 document.getElementById('mb-list').addEventListener('change',e=>{ const sel=e.target.closest('select.cat'); if(sel) mbSetCat(+sel.dataset.no, sel.value); });
 document.getElementById('mb-list').addEventListener('click',e=>{ const eb=e.target.closest('.mjx-edit'); if(eb){ e.stopPropagation(); mjxEditTitle(eb.dataset.k); return; }
+  const db2=e.target.closest('.mjx-done'); if(db2){ e.stopPropagation(); mjxReviewDone(db2.dataset.id, db2.dataset.k, db2); return; }
   if(e.target.closest('select,a')) return; const r=e.target.closest('.mjx-row'); if(r) mjxFocus(r.dataset.k); });
 function mjxOpen(){
   let tries=0;
@@ -3248,6 +3268,9 @@ function openMasterEdit(id){
       <button type="button" id="me-mb" style="margin-left:auto;font-family:inherit;font-size:12px;border:1px solid #DFDCD2;background:#fff;border-radius:4px;padding:4px 9px;cursor:pointer">${m.mb?'MICRO BLACK 명단 해제':'MICRO BLACK 명단 수동 지정'}</button></div>
     <label>MJ-납품샵 (파트너 멘토링)</label>
     <div style="font-size:12.5px">${m.partnerEdu&&m.partnerEdu.date?`✓ 멘토링 완료 ${msEsc(m.partnerEdu.date)} · ${msEsc(m.partnerEdu.partner||'')} <span style="color:#7A8B93;font-size:11.5px">(파트너 관리대장에서 등록·취소)</span>`:'<span style="color:#7A8B93">등록 없음 — 담당 파트너가 관리대장 멘토링 기록에서 "마이크로젝션 납품샵 · 멘토링 완료"로 등록</span>'}</div>
+    <label>본사 직접 교육 (배랩 — 파트너 멘토링이 아니라 본사가 직접 교육한 샵)</label>
+    <div style="font-size:12.5px;display:flex;align-items:center;gap:8px">${m.eduBy?`✓ 본사 직접 교육 완료 · ${msEsc(m.eduBy)}${m.eduByAt?' · '+msEsc(m.eduByAt):''}`:'<span style="color:#7A8B93">없음</span>'}
+      <button type="button" id="me-eduby" style="margin-left:auto;font-family:inherit;font-size:12px;border:1px solid #DFDCD2;background:#fff;border-radius:4px;padding:4px 9px;cursor:pointer">${m.eduBy?'본사 직접 교육 해제':'본사 직접 교육 완료 표시'}</button></div>
     <label>교육 수료 (닥터배 수료증 — 전문점 여부와 별개)</label>
     <div style="font-size:12.5px">${m.cert&&m.cert.last?`✓ 수료증 ${m.cert.count}건 · 최근 ${msEsc(m.cert.last)}${m.cert.name?' · '+msEsc(m.cert.name)+' 원장님':''}<div style="font-size:11px;color:#7A8B93;margin-top:2px">${(m.cert.records||[]).map(r=>msEsc(r.date+' '+r.shop+(r.name?' ('+r.name+')':''))).join('<br>')}</div>`:'<span style="color:#9A3B33">기록 없음</span> <span style="font-size:11px;color:#7A8B93">— 수료증 발급 사이트 명부에 이 거래처 이름·별칭과 맞는 기록이 없습니다. 명부 표기가 다르면 그 표기를 별칭으로 추가하세요</span>'}</div>
     <label>주소 ${(m.addrKeys||[]).length}곳 · 주문 ${(m.stats||{}).rows||0}행 · ${msWon((m.stats||{}).amount)}원</label>
@@ -3258,6 +3281,7 @@ function openMasterEdit(id){
     d.querySelector('#me-new').onkeydown=ev=>{ if(ev.key==='Enter'){ ev.preventDefault(); d.querySelector('#me-add').click(); } };
     d.querySelector('#me-mb').onclick=async()=>{ try{ const on=!m.mb; await masterWrite(id,{mb:on?{no:0,name:m.name,svc:'',manual:true}:null},on?'mb_link':'mb_unlink',on?'마이크로블랙 전문점 수동 지정':'마이크로블랙 전문점 해제'); d.remove(); await loadMaster(); renderMaster(); toast(on?'전문점으로 지정했습니다. 다음 게시부터 명세서에 반영됩니다':'전문점 태그를 해제했습니다'); }catch(err){ toast('실패: '+err.message); } };
     d.querySelector('#me-x').onclick=()=>d.remove();
+    d.querySelector('#me-eduby').onclick=async()=>{ try{ const on=!m.eduBy; const at=C.nowStamp().slice(0,10); await masterWrite(id, on?{eduBy:'배랩', eduByAt:at}:{eduBy:null, eduByAt:null}, on?'edu_by':'edu_by_off', on?'본사 직접 교육 완료 표시 (배랩 '+at+') — 마이크로젝션 교육 근거':'본사 직접 교육 표시 해제'); d.remove(); await loadMaster(); renderMaster(); toast(on?'본사 직접 교육 완료로 표시했습니다. 다음 게시부터 MJ 납품 가능으로 분류됩니다':'해제했습니다'); } catch(err){ toast('실패: '+err.message); } };
     d.querySelector('#me-excl').onclick=async()=>{ try{ const ex=m.status==='excluded'; await masterWrite(id,{status:ex?'active':'excluded'},ex?'include':'exclude',ex?'집계 제외 해제':'집계 제외'); d.remove(); await loadMaster(); renderMaster(); toast(ex?'다시 포함했습니다':'집계에서 제외했습니다'); }catch(err){ toast('실패: '+err.message); } };
     d.querySelector('#me-ok').onclick=async()=>{
       const name=d.querySelector('#me-name').value.trim(); if(!name){ toast('이름을 입력하세요'); return; }
