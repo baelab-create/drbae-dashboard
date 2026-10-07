@@ -1475,7 +1475,7 @@ function mjEduState(s){
   return use.some(t=>t.k==='supply') ? '수료' : '없음';
 }
 /* 이 시트에 전문점 교육 할인 구성 주문이 있는가 (CASE n · 교육 구성 행) */
-const kitOf = s => s.isExtra ? false : [...s.items.values()].some(it => it.sku==='EDU' || /^\s*CASE\s*\d/.test(it.main||''));
+const kitOf = s => s.isExtra ? false : [...s.items.values()].some(it => /CASE\s*\d|교육\s*과정\s*선택|교육\s*구성|전문점.?할인\s*세트|파트너\s*원장님\s*선택/.test((it.main||'')+' '+(it.sub||'')));
 /* 마이크로젝션 출고 점검표 (화면 전용) — 공통 운영규칙 §17.1: 해당되는 판정을 모두 함께 보여 준다 */
 const MJ_CHECK = s => {
   const mj = hasMJOf(s), kit = kitOf(s); if(!mj && !kit) return '';
