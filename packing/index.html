@@ -2070,11 +2070,30 @@ async function checkForUpdate(){
     info.textContent += '  ↻ 새 주문 반영됨';
   }
 }
+/* 프로그램 새 버전 자동 새로고침 (포장 PC 전용) — run_daily 가 새 코드를 받아도 열려 있는 창은 옛 코드로 돌았다 (2026-10-13 대시보드 메모가 안 보이던 원인).
+   1분마다 /api/version 을 보고 파일이 바뀌었으면 새로고침. 메모를 입력 중이면 마칠 때까지 미루고 위쪽에 안내만 띄운다. */
+let VER0 = null, verTimer = null;
+async function versionStamp(){ try{ const r = await fetch('/api/version', {cache:'no-store'}); return r.ok ? JSON.stringify(await r.json()) : null; }catch(e){ return null; } }
+async function checkVersion(){
+  const v = await versionStamp(); if(!v) return;
+  if(!VER0){ VER0 = v; return; }
+  if(v === VER0) return;
+  const editing = document.activeElement === $('#memoText') || document.activeElement === $('#searchBox');
+  const saving = !!(document.getElementById('memoSaveWarn') && document.getElementById('memoSaveWarn').style.display !== 'none');
+  if(editing || saving){
+    let b = document.getElementById('verBanner');
+    if(!b){ b = document.createElement('div'); b.id = 'verBanner'; b.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:#1F3F7A;color:#fff;font-size:13px;font-weight:800;padding:6px 12px;text-align:center;'; document.body.appendChild(b); }
+    b.textContent = '프로그램 새 버전이 받아졌습니다 — 메모 입력을 마치면 자동으로 새로고침됩니다.';
+    return;
+  }
+  location.reload();
+}
 function startAutoWatch(){
   clearInterval(autoWatchTimer);
   fileStamp().then(s=>lastStamp = s);
   autoWatchTimer = setInterval(checkForUpdate, 60000);   // 1분 간격
   if(!CLOUD){ clearInterval(memoPollTimer); memoPollTimer = setInterval(refreshMemosLocal, 15000); }   // 대시보드 메모 15초 내 반영
+  if(!CLOUD){ clearInterval(verTimer); checkVersion(); verTimer = setInterval(checkVersion, 60000); }   // 새 코드 자동 반영
 }
 
 /* ══════════════ 🔄 최신화: 수집기 실행 → 파일 재로딩 (선택 날짜 유지) ══════════════ */
