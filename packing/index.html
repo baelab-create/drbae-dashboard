@@ -361,6 +361,16 @@
   .sheet.fit2 .memoBox .svcp{font-size:9.5px;}
   .sheet.fit2 .sh-foot .ord{font-size:8.5px;}
 
+  /* fitc: 차트를 지우기 전에 한 단계 더 압축 — 몇 px 모자라 12개월 차트가 통째로 사라지던 문제 (2026-10-15 민앤모어뷰티) */
+  .sheet.fitc .sh-shop{margin-top:4mm;}
+  .sheet.fitc .items td{padding:1mm 3mm;}
+  .sheet.fitc .hist{margin-top:3mm; padding:2mm 3mm 1mm;}
+  .sheet.fitc .hist svg{width:72%; margin:0 auto; display:block;}
+  .sheet.fitc .hist-head .ht{font-size:10.5px;}
+  .sheet.fitc .hist-head .hs{font-size:9.5px;}
+  .sheet.fitc .ruleWarn{font-size:10.5px; padding:5px 9px; margin:2mm 0 1mm;}
+  .sheet.fitc .mentorBox{font-size:10.5px; padding:2mm 3.5mm;}
+  .sheet.fitc .mjBadge{font-size:10px; padding:0.9mm 2.4mm;}
   .sheet.fit3 .hist{display:none;}
   .sheet.fit3 .items td{padding:1.1mm 3mm;}
   .sheet.fit3 .pname{font-size:10.5px;}
@@ -1845,10 +1855,10 @@ function autofitSheets(){
   const budget = Math.ceil(296 * 96 / 25.4) + 3;   // 296mm를 px로 (여유 3px)
   document.body.classList.add('measuring');         // 인쇄에 안 나오는 본사 전용 블록(점검표·경고)은 빼고 잰다
   try{ document.querySelectorAll('#stage .sheet').forEach(sh=>{
-    sh.classList.remove('fit1','fit2','fit3');
+    sh.classList.remove('fit1','fit2','fitc','fit3');
     const over = ()=> sh.scrollHeight > budget;
     if(!over()) return;
-    for(const c of ['fit1','fit2','fit3']){
+    for(const c of ['fit1','fit2','fitc','fit3']){   // fit3(차트 숨김)은 최후 수단
       sh.classList.add(c);                          // 누적 적용 (fit2는 fit1 위에)
       if(!over()) break;
     }
