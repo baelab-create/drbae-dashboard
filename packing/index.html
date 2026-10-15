@@ -1536,7 +1536,9 @@ function mjRuleOf(s){
   return {lv, mj:r.mj, sb:r.sb, mj90, sb90};
 }
 const MJ_RULE_BADGE = s => {
-  const v = mjRuleOf(s); if(!v) return '';
+  const v = mjRuleOf(s);
+  // 정상 주문(스킨부스터를 조건대로 함께 산 경우)에는 안내를 넣지 않는다 — 문제가 있는 주문에만 표시 (2026-10-15 요청)
+  if(!v || v.lv === 'ok') return '';
   const head = v.lv === 'crit' ? '⚠ 마이크로젝션 단독 주문 — 다음 주문부터는 스킨부스터를 꼭 함께 주문해 주세요'
              : v.lv === 'warn' ? (v.sb === 0 ? '⚠ 이번 주문에 스킨부스터가 없습니다 — 다음 주문부터는 꼭 함께 주문해 주세요' : '⚠ 마이크로젝션 수량이 스킨부스터보다 많습니다 — 구매 수량 안내')
              : '✓ 마이크로젝션 · 스킨부스터 함께 구매 확인';
