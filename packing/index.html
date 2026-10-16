@@ -1720,9 +1720,10 @@ function persistMemo(s, text, products, qty){
     }
     buildShops();   // 명세서 메모 박스 + 차트 '서비스 제공' 마커 갱신
   };
-  memoSaveTimer = setTimeout(memoSaveRun, 500);
+  if(CLOUD) memoSaveState('✎ 아직 안 보냄 — 「포장 PC로 보내기」를 눌러 주세요');   // 대시보드: 버튼을 눌러야 전송 (교수님 2026-10-16 — 자주 있는 일이 아니라 실시간 대신 확실하게)
+  else memoSaveTimer = setTimeout(memoSaveRun, 500);                               // 포장 PC: 0.5초 뒤 자동 저장
 }
-/* 저장 대기 중인 메모를 즉시 저장 — 입력칸을 떠나거나 탭을 숨기거나 창을 닫을 때 (0.5초 지연 사이에 떠나면 저장이 안 되던 문제, 2026-10-16) */
+/* 저장 대기 중인 메모를 즉시 저장 — 포장 PC: 입력칸을 떠나거나 탭을 숨기거나 창을 닫을 때 / 대시보드: 「포장 PC로 보내기」 버튼 또는 샵 전환 때 (2026-10-16) */
 let memoSaveRun = null;
 function flushMemoSave(){ if(memoSaveRun){ clearTimeout(memoSaveTimer); memoSaveRun(); } }
 /* 메모 저장 상태 표시 — 대시보드에서는 '포장 PC로 전송됨 HH:MM' 까지 보여 저장 여부를 바로 알 수 있게 */
@@ -2169,9 +2170,19 @@ async function reloadLatest(){
     loadMemoIntoBox();
   });
   $('#memoText').addEventListener('input', onMemoEdited);
-  $('#memoText').addEventListener('blur', flushMemoSave);
-  document.addEventListener('visibilitychange', ()=>{ if(document.hidden) flushMemoSave(); });
-  window.addEventListener('beforeunload', flushMemoSave);
+  if(CLOUD){
+    // 대시보드: 「포장 PC로 보내기」 버튼 — 누르면 Firestore 로 저장되고 포장 PC 가 15초 안에 받는다. 샵을 바꾸면 대기 중인 메모는 자동 전송
+    const b = document.createElement('button'); b.id = 'memoSendBtn'; b.type = 'button'; b.textContent = '📤 포장 PC로 보내기';
+    b.style.cssText = 'display:block;width:100%;margin-top:6px;padding:9px 10px;border:0;border-radius:10px;background:#1F3F7A;color:#fff;font:inherit;font-size:13px;font-weight:800;cursor:pointer;';
+    b.addEventListener('click', ()=>{ if(!memoSaveRun){ memoSaveState('보낼 변경이 없습니다 (이미 전송됨)'); return; } flushMemoSave(); });
+    $('#memoText').insertAdjacentElement('afterend', b);
+    $('#memoShop').addEventListener('change', flushMemoSave);
+    window.addEventListener('beforeunload', e=>{ if(memoSaveRun){ e.preventDefault(); e.returnValue = ''; } });   // 안 보낸 메모가 있으면 닫기 전에 묻는다
+  }else{
+    $('#memoText').addEventListener('blur', flushMemoSave);
+    document.addEventListener('visibilitychange', ()=>{ if(document.hidden) flushMemoSave(); });
+    window.addEventListener('beforeunload', flushMemoSave);
+  }
   $('#cjClose').onclick = ()=>$('#cjOverlay').classList.remove('open');
   let searchTimer = null;
   $('#searchBox').addEventListener('input', ()=>{
