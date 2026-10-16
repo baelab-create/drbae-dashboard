@@ -1697,7 +1697,8 @@ function persistMemo(s, text, products, qty){
   else delete MEMOS[k];
   const entrySnap = MEMOS[k] ? JSON.parse(JSON.stringify(MEMOS[k])) : null;   // 저장 시점까지 원격 갱신에 덮이지 않게 지금 값을 잡아 둔다
   clearTimeout(memoSaveTimer);
-  memoSaveTimer = setTimeout(async ()=>{
+  memoSaveState('저장 중…');
+  memoSaveRun = async ()=>{ memoSaveRun = null;
     const payload = JSON.stringify({key:k, date, name:s.name, recv:s.recv, addr:s.addr,
                                     memo:text, products,
                                     ...(isX ? {type:'extra', qty:q} : {})});
@@ -1711,14 +1712,24 @@ function persistMemo(s, text, products, qty){
         headers:{'Content-Type':'application/json'}, body:payload});
       if(!res.ok) throw new Error('HTTP '+res.status);
     };
-    try{ await post(); memoSaveWarn(false); delete PENDING_EXTRA[k]; }
+    try{ await post(); memoSaveWarn(false); delete PENDING_EXTRA[k]; memoSaveState((CLOUD?'☁ 포장 PC로 전송됨 ':'저장됨 ')+new Date().toTimeString().slice(0,5)); }
     catch(e1){
       await new Promise(r=>setTimeout(r,1500));            // 1회 재시도
-      try{ await post(); memoSaveWarn(false); delete PENDING_EXTRA[k]; }
-      catch(e2){ memoSaveWarn(true); console.warn('메모 저장 실패:', e2.message); }
+      try{ await post(); memoSaveWarn(false); delete PENDING_EXTRA[k]; memoSaveState((CLOUD?'☁ 포장 PC로 전송됨 ':'저장됨 ')+new Date().toTimeString().slice(0,5)); }
+      catch(e2){ memoSaveWarn(true); memoSaveState(''); console.warn('메모 저장 실패:', e2.message); }
     }
     buildShops();   // 명세서 메모 박스 + 차트 '서비스 제공' 마커 갱신
-  }, 500);
+  };
+  memoSaveTimer = setTimeout(memoSaveRun, 500);
+}
+/* 저장 대기 중인 메모를 즉시 저장 — 입력칸을 떠나거나 탭을 숨기거나 창을 닫을 때 (0.5초 지연 사이에 떠나면 저장이 안 되던 문제, 2026-10-16) */
+let memoSaveRun = null;
+function flushMemoSave(){ if(memoSaveRun){ clearTimeout(memoSaveTimer); memoSaveRun(); } }
+/* 메모 저장 상태 표시 — 대시보드에서는 '포장 PC로 전송됨 HH:MM' 까지 보여 저장 여부를 바로 알 수 있게 */
+function memoSaveState(txt){
+  let el = document.getElementById('memoSaveState');
+  if(!el){ el = document.createElement('div'); el.id = 'memoSaveState'; el.style.cssText = 'font-size:11px;font-weight:700;color:#1E7A46;margin-top:4px;min-height:14px;'; $('#memoText').insertAdjacentElement('afterend', el); }
+  el.textContent = txt || ''; el.style.color = /중/.test(txt) ? '#B35C00' : '#1E7A46';
 }
 
 /* ══════════════ A4 시트 렌더 ══════════════ */
@@ -2158,6 +2169,9 @@ async function reloadLatest(){
     loadMemoIntoBox();
   });
   $('#memoText').addEventListener('input', onMemoEdited);
+  $('#memoText').addEventListener('blur', flushMemoSave);
+  document.addEventListener('visibilitychange', ()=>{ if(document.hidden) flushMemoSave(); });
+  window.addEventListener('beforeunload', flushMemoSave);
   $('#cjClose').onclick = ()=>$('#cjOverlay').classList.remove('open');
   let searchTimer = null;
   $('#searchBox').addEventListener('input', ()=>{
