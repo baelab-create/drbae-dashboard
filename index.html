@@ -44,6 +44,8 @@
 
 <link rel="stylesheet" as="style" crossorigin
   href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+<!-- 교수님 애용 서체 G마켓 산스 — 공통 웹폰트 저장소(baelab-create/drbae-fonts, GitHub Pages). 다른 닥터배 사이트도 이 한 줄로 같이 쓴다 -->
+<link rel="stylesheet" href="https://baelab-create.github.io/drbae-fonts/gmarket.css">
 
 <style>
 :root{
@@ -67,7 +69,7 @@ body.pg-report{--accent:var(--violet);--accent-deep:var(--violet-deep);--accent-
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%}
 body{
-  font-family:'Pretendard Variable',Pretendard,system-ui,sans-serif;
+  font-family:'Gmarket Sans','Pretendard Variable',Pretendard,system-ui,sans-serif;   /* G마켓 산스(300·500·700) 우선, 없으면 Pretendard */
   color:var(--ink); background:var(--paper);
   display:flex; flex-direction:column; height:100vh; overflow:hidden;
   -webkit-font-smoothing:antialiased;
