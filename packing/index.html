@@ -1270,6 +1270,8 @@ const memoKey = (shopKey, dk) => (dk || memoDateKey()) + '|' + shopKey;
 const SERVICE_SKUS = ['EXO_BLUE','PDRN','CALCI','TOCO_LIQ','GEL500','GEL150','LIQMASK',
                       'EXO_BLACK','SCALP_B','SCALP_S','HAIR_T','FIRM','CALM','MJ','DERMA','AIR','ADAPTER'];
 const SVC_MARK = ['#12B886','서비스 제공'];   // 12개월 차트 마커 색·라벨
+// 12개월 창에 주문이 없는 샵(장기 미거래)도 차트를 그린다 — '없는 상태'를 빈 축으로 보여줌 (2026-11-13 이플스킨)
+const EMPTY_HIST = () => ({byDate:new Map(), orders:new Set(), byMonth:new Map()});
 const isLightColor = hex => { const n=parseInt(hex.slice(1),16);
   return (0.299*(n>>16)+0.587*((n>>8)&255)+0.114*(n&255)) > 150; };
 
@@ -1831,14 +1833,14 @@ function renderSheets(){
         <tbody>${itemsHtml}</tbody>
       </table>
       <div class="sumRow"><span>품목 ${s.items.length}종</span><span>총 수량 <b>${totQty}개</b></span>${s.isExtra?'':`<span>총 주문금액 <b>${won(totAmt)}</b></span>`}</div>
-      ${s.hist && s.hist.byDate.size ? (()=>{ const endK = s.histEnd || endKey; return `
+      ${(()=>{ const h = s.hist || EMPTY_HIST(); const endK = s.histEnd || endKey; return `
       <div class="hist">
         <div class="hist-head">
           <span class="ht">최근 12개월 · 월별 제품군별 주문 현황 <small>(${dfmt(s.histStart)} ~ ${dfmt(endK)})</small></span>
-          <span class="hs">주문 ${s.hist.orders.size}건 · 누적 ${won([...s.hist.byDate.values()].reduce((a,b)=>a+b,0))}</span>
+          <span class="hs">주문 ${h.orders.size}건 · 누적 ${won([...h.byDate.values()].reduce((a,b)=>a+b,0))}</span>
         </div>
-        ${historySVG(s.hist, s.histStart, endK, s.svcMonths)}
-      </div>`; })() : ''}
+        ${historySVG(h, s.histStart, endK, s.svcMonths)}
+      </div>`; })()}
       ${(()=>{
         if(s.isExtra){   // 추가발송: 제품은 위 품목표에 있으므로 사유 메모만
           const e = MEMOS[s.extraKey];
