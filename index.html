@@ -3150,7 +3150,7 @@ function renderMaster(){
       ? `<button data-act="certpick" data-rv="${rv.id}" data-shop="${msEsc(ev.certShop||sub.name)}">다른 거래처 찾아 연결</button><button data-act="keep" data-rv="${rv.id}">해당 거래처 없음 (그대로 둠)</button>`
       : rv.type==='cert_missing'
       ? `<button data-act="keep" data-rv="${rv.id}">확인함</button><button data-act="edit" data-a="${sub.id}">거래처 수정</button>`
-      : `<button data-act="keep" data-rv="${rv.id}">다른 거래처 (그대로 둠)</button><button data-act="edit" data-a="${sub.id}">이름·별칭 수정</button>`;
+      : `${rv.type==='partner_conflict'?`<button data-act="hqfix" data-rv="${rv.id}" data-a="${sub.id}">본사 직거래로 지정</button>`:''}<button data-act="keep" data-rv="${rv.id}">다른 거래처 (그대로 둠)</button><button data-act="edit" data-a="${sub.id}">이름·별칭 수정</button>`;
     return `<div class="rv" data-id="${rv.id}">
       <div class="rv-t"><span class="rv-type">${T[rv.type]||rv.type}</span>${msEsc(isCert?sub.name:masterName(sub.id))} <span style="font-family:monospace;font-size:11px;color:#7A8B93">${isCert?'':sub.id}</span></div>
       <div class="rv-ev">${msEsc(evLine)}${!isCert&&(rv.candidates||[])[0]&&(rv.candidates||[])[0].reason?' · 근거: '+msEsc(rv.candidates[0].reason):''}</div>
@@ -3213,7 +3213,7 @@ function renderMasterList(){
   document.getElementById('mst-list').innerHTML=items.slice(0,400).map((x,idx)=>{
     const m=x.m, sh=x.sh, bd=BAND[recencyBand(x.last)];
     const money=key?x[key]:x.total, w=Math.round(money/max*100);
-    const badge = sh ? ptag(sh) : (x.pt?`<span class="ptag p">${msEsc(String(x.pt.partnerName||'').replace(/\s*\(.*\)$/,''))}</span>`:'<span class="ptag d">직거래</span>');
+    const badge = sh ? ptag(sh) : (x.pt?`<span class="ptag p">${msEsc(String(x.pt.partnerName||'').replace(/\s*\(.*\)$/,''))}</span>`:(m.hqDirect?'<span class="ptag d" title="본사가 직거래로 지정 — 자동 연결 안 함">직거래 · 지정</span>':'<span class="ptag d">직거래</span>'));
     return `<div class="mrow${m.mergedInto?' merged':''}" data-id="${m.id}" data-i="${sh?sh._i:''}">
       <span class="id"><span class="rknum">${idx+1}</span>${m.id}</span>
       <span class="nm">${msEsc(m.name)}${m.partnerOwn?`<span class="ptag own" title="파트너 원장님 본인 샵">★ 파트너 ${msEsc(String(m.partnerOwn.partnerName||'').replace(/\s*\(.*\)$/,''))}</span>`:''}${m.mb?`<span class="ptag mbt" title="마이크로블랙 전문점${m.mb.no?' No.'+m.mb.no:''}${m.mb.name?' · '+msEsc(m.mb.name):''}">◆ MICRO BLACK</span>`:''}${badge}${m.cert&&m.cert.last?`<span class="ptag cert" title="닥터배 수료증 ${m.cert.count}건 (교육 수료 — 전문점 여부와 별개) · 최근 ${msEsc(m.cert.last)}${m.cert.name?' · '+msEsc(m.cert.name):''}">✓ 교육 수료 ${msEsc(String(m.cert.last).slice(2))}</span>`:''}${m.partnerEdu&&m.partnerEdu.date?`<span class="ptag pedu" title="파트너 멘토링 완료 ${msEsc(m.partnerEdu.date)} · ${msEsc(m.partnerEdu.partner||'')} — 관리대장에서 등록">✓ 납품샵 · 멘토링 ${msEsc(String(m.partnerEdu.date).slice(2))}</span>`:''}${m.mergedInto?' <span style="color:#9A3B33;font-weight:400;font-size:11px">→ '+msEsc(masterName(m.mergedInto))+' 에 합쳐짐</span>':''}
@@ -3245,6 +3245,7 @@ document.getElementById('page-master').addEventListener('click', async e=>{
     if(act==='merge'){ const bId=b.dataset.b; if(!confirm(masterName(a)+' ('+a+') 을(를) '+masterName(bId)+' ('+bId+') 에 합칩니다. 주문·금액이 하나로 묶입니다. 계속할까요?')) return;
       await mergeInto(a,bId); if(b.dataset.rv) await reviewDone(b.dataset.rv,'merge:'+bId); toast('합쳤습니다. 다음 게시부터 반영됩니다'); }
     else if(act==='keep'){ await reviewDone(b.dataset.rv,'keep'); toast('처리했습니다'); }
+    else if(act==='hqfix'){ await masterWrite(a,{partner:null, hqDirect:true},'hq_direct','본사 직거래로 지정 (자동 연결 안 함)'); await reviewDone(b.dataset.rv,'hq'); toast('본사 직거래로 지정했습니다. 자동 연결에서 빠집니다'); }
     else if(act==='certlink'){ const bId=b.dataset.b, shop=b.dataset.shop;
       await masterWrite(bId,{aliases:firebase.firestore.FieldValue.arrayUnion(shop)},'cert_alias','수료증 명부 표기 "'+shop+'" 를 별칭으로 연결');
       await reviewDone(b.dataset.rv,'certlink:'+bId); toast('연결했습니다. 다음 게시부터 수료로 표시됩니다'); }
@@ -3267,7 +3268,7 @@ function openMasterEdit(id){
     <label>별칭 — 이 거래처가 주문할 때 실제로 적은 표기들. 오타를 알게 되면 여기 추가하세요</label>
     <div class="chips" id="me-chips">${aliases.map((a,i)=>`<span class="chip">${msEsc(a)}<i data-i="${i}">✕</i></span>`).join('')||'<span style="font-size:12px;color:#9AA7AE">없음</span>'}</div>
     <div style="display:flex;gap:6px;margin-top:6px"><input type="text" id="me-new" placeholder="새 별칭 (예: 스킨노블렙)"><button id="me-add" style="font-family:inherit;border:1px solid #DFDCD2;background:#fff;border-radius:4px;padding:0 10px;cursor:pointer">추가</button></div>
-    <label>파트너 연결</label><select id="me-partner"><option value="">본사 직거래</option>${PARTNERS.map(p=>`<optgroup label="${msEsc(p.name)}">`+PSHOPS.filter(x=>x.ledgerKey===p.key).map(x=>`<option value="${x.ledgerKey}|${x.id}" ${m.partner&&m.partner.ledgerKey===x.ledgerKey&&m.partner.shopId===x.id?'selected':''}>${msEsc(x.name)}</option>`).join('')+'</optgroup>').join('')}</select>
+    <label>파트너 연결 — 확실할 때만 파트너 거래처에 연결하고, 아니면 본사 직거래</label><select id="me-partner"><option value="">본사 직거래 · 미지정 (확실한 파트너 거래처가 나타나면 자동 연결)</option><option value="__hq" ${!m.partner&&m.hqDirect?'selected':''}>본사 직거래로 지정 (자동 연결 안 함)</option>${PARTNERS.map(p=>`<optgroup label="${msEsc(p.name)}">`+PSHOPS.filter(x=>x.ledgerKey===p.key).map(x=>`<option value="${x.ledgerKey}|${x.id}" ${m.partner&&m.partner.ledgerKey===x.ledgerKey&&m.partner.shopId===x.id?'selected':''}>${msEsc(x.name)}</option>`).join('')+'</optgroup>').join('')}</select>
     <label>마이크로블랙 전문점</label>
     <div style="font-size:12.5px;display:flex;align-items:center;gap:8px">${m.mb?`<span class="ptag mbt">◆ MICRO BLACK${m.mb.no?' No.'+m.mb.no:''}</span> <span style="color:#7A8B93;font-size:11.5px">${msEsc(m.mb.name||'')}${m.mb.manual?' · 수동 지정':''}</span>`:'<span style="color:#7A8B93">아님</span>'}
       <button type="button" id="me-mb" style="margin-left:auto;font-family:inherit;font-size:12px;border:1px solid #DFDCD2;background:#fff;border-radius:4px;padding:4px 9px;cursor:pointer">${m.mb?'MICRO BLACK 명단 해제':'MICRO BLACK 명단 수동 지정'}</button></div>
@@ -3291,13 +3292,14 @@ function openMasterEdit(id){
     d.querySelector('#me-ok').onclick=async()=>{
       const name=d.querySelector('#me-name').value.trim(); if(!name){ toast('이름을 입력하세요'); return; }
       const pv=d.querySelector('#me-partner').value; let partner=null;
-      if(pv){ const [lk,sid]=pv.split('|'); const ps=PSHOPS.find(x=>x.ledgerKey===lk&&x.id===sid); partner={ledgerKey:lk, shopId:sid, partnerName:ps?ps.partner:'', shopName:ps?ps.name:''}; }
+      const hq=pv==='__hq';
+      if(pv&&!hq){ const [lk,sid]=pv.split('|'); const ps=PSHOPS.find(x=>x.ledgerKey===lk&&x.id===sid); partner={ledgerKey:lk, shopId:sid, partnerName:ps?ps.partner:'', shopName:ps?ps.name:''}; }
       const changes=[]; if(name!==m.name) changes.push('이름 '+m.name+' → '+name);
       const added=aliases.filter(a=>!(m.aliases||[]).includes(a)), removed=(m.aliases||[]).filter(a=>!aliases.includes(a));
       if(added.length) changes.push('별칭 추가 '+added.join(', ')); if(removed.length) changes.push('별칭 삭제 '+removed.join(', '));
-      const p0=m.partner?m.partner.ledgerKey+'|'+m.partner.shopId:''; if(p0!==pv) changes.push(pv?'파트너 연결 '+(partner.partnerName+' · '+partner.shopName):'파트너 연결 해제');
+      const p0=m.partner?m.partner.ledgerKey+'|'+m.partner.shopId:(m.hqDirect?'__hq':''); if(p0!==pv) changes.push(hq?'본사 직거래로 지정':pv?'파트너 연결 '+(partner.partnerName+' · '+partner.shopName):(m.partner?'파트너 연결 해제':'본사 직거래 지정 해제'));
       if(!changes.length){ d.remove(); return; }
-      try{ await masterWrite(id,{name, aliases, partner},'edit',changes.join(' / ')); d.remove(); await loadMaster(); renderMaster(); computeAssign();  toast('저장했습니다. 다음 게시부터 모든 화면에 반영됩니다'); }
+      try{ await masterWrite(id,{name, aliases, partner, hqDirect:hq},'edit',changes.join(' / ')); d.remove(); await loadMaster(); renderMaster(); computeAssign();  toast('저장했습니다. 다음 게시부터 모든 화면에 반영됩니다'); }
       catch(err){ toast('실패: '+err.message); }
     };
   };
